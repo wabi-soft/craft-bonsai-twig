@@ -2,7 +2,6 @@
 
 namespace wabisoft\bonsaitwig\web\twig;
 
-use Craft;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 use wabisoft\bonsaitwig\services\CategoryLoader;

@@ -3,35 +3,57 @@
 namespace wabisoft\bonsaitwig\services;
 
 use Craft;
+use Twig\Error\LoaderError;
+use Twig\Error\RuntimeError;
+use Twig\Error\SyntaxError;
 use yii\base\Component;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
+use yii\base\Exception;
+use yii\base\InvalidArgumentException;
 
-/**
- * Hierarchy Template Loader service
- */
 class HierarchyTemplateLoader extends Component
 {
-    public static function load($templates, $variables, $basePath, $type = 'entry', $showPathParam = null, $showHierarchyParam = null) {
+    /**
+     * @throws SyntaxError
+     * @throws Exception
+     * @throws RuntimeError
+     * @throws LoaderError
+     */
+    public static function load($templates, $variables, $basePath, $type = 'entry', $showPathParam = null, $showHierarchyParam = null): string
+    {
+        if (!is_string($basePath) || !is_array($templates)) {
+            throw new InvalidArgumentException("Invalid parameters provided");
+        }
+
         $basePath = StringHelper::trim($basePath, '/');
         $isDev = Craft::$app->getConfig()->general->devMode;
 
-        foreach ($templates as $template) {
-            if(Craft::$app->view->doesTemplateExist($basePath . '/' .$template)) {
-                $content = Craft::$app->view->renderTemplate($basePath . '/' . $template, $variables);
-                if(!$isDev) {
+        $cacheKey = 'load:' . $basePath . ':' . implode(',', $templates) . ':' . $type;
+        $result = self::getCached($cacheKey);
+        if($result) {
+            return $result;
+        }
+        if ($result === false) {
+            foreach ($templates as $template) {
+                $fullPath = $basePath . '/' .$template;
+                if(Craft::$app->view->doesTemplateExist($fullPath)) {
+                    $content = Craft::$app->view->renderTemplate($fullPath, $variables);
+                    if(!$isDev) {
+                        return $content;
+                    }
+                    // if dev mode and param show stuff
+                    if(Craft::$app->request->getParam($showPathParam)) {
+                        $info = $fullPath;
+                        $content = self::renderInfo($content, $info, $type);
+                    }
+                    if(Craft::$app->request->getParam($showHierarchyParam)) {
+                        $info = Json::encode($templates);
+                        $content = self::renderInfo($content, 'directory: ' . $basePath . ': ' . $info, $type);
+                    }
+                    Craft::$app->cache->set($cacheKey, $content, 3600);
                     return $content;
                 }
-                // if dev mode and param show stuff
-                if(Craft::$app->request->getParam($showPathParam)) {
-                    $info = $basePath . '/' . $template;
-                    $content = self::renderInfo($content, $info, $type);
-                }
-                if(Craft::$app->request->getParam($showHierarchyParam)) {
-                    $info = Json::encode($templates);
-                    $content = self::renderInfo($content, 'directory: ' . $basePath . ': ' . $info, $type);
-                }
-                return $content;
             }
         }
         Craft::error(
@@ -39,19 +61,33 @@ class HierarchyTemplateLoader extends Component
             __METHOD__
         );
         if($isDev) {
-            return '<div><strong>Unable to find templates in "<span style="color: red;">' . $basePath  . '</span>" directory. Templates Dump:</strong></div>' . '<div style="font-size: 12px; margin-bottom: 20px; font-family: monospace;">' . Json::encode($templates) . '</div>';
+            throw new \RuntimeException('Unable to find templates in "' . $basePath . '" directory. Templates Dump: ' . Json::encode($templates));
         }
         return '';
     }
 
-    private static function renderInfo($content, $info, $type = 'entry') {
+
+    private static function getCached($key) {
+        $isDev = Craft::$app->getConfig()->general->devMode;
+        if($isDev) {
+            return false;
+        }
+        return Craft::$app->cache->get($key);
+    }
+
+    /**
+     * @throws SyntaxError
+     * @throws Exception
+     * @throws RuntimeError
+     * @throws LoaderError
+     */
+    private static function renderInfo($content, $info, $type = 'entry'): string
+    {
         if($type == 'entry') {
-            $infoBar = '<div class="" style="color: red; font-size: 11px; font-family: monospace; position: fixed; top: 0; left: 0; z-index: 10; background-color: rgba(255,255,255,.8)">' . $info . '</div>';
-            return $infoBar . $content;
+            return Craft::$app->view->renderTemplate('_bonsai-twig/_partials/infobar', ['info' => $info, 'content' => $content]);
         }
         if($type == 'item') {
-            $infoBar = '<span class="opacity-0 hover:opacity-100 group-hover:opacity-100" style="color: red; font-size: 11px; font-family: monospace; position: absolute; z-index: 10; background-color: rgba(255,255,255,.8)">' . $info . '</span>';
-            return '<div class="group" style="position: relative;">' . $infoBar . $content . '</div>';
+            return Craft::$app->view->renderTemplate('_bonsai-twig/_partials/infobar_group.twig', ['info' => $info, 'content' => $content]);
         }
         return $content;
     }

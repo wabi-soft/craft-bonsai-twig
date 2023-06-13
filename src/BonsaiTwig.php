@@ -10,6 +10,10 @@ use wabisoft\bonsaitwig\services\HierarchyTemplateLoader;
 use wabisoft\bonsaitwig\services\ItemLoader;
 use wabisoft\bonsaitwig\services\MatrixLoader;
 use wabisoft\bonsaitwig\web\twig\Templates;
+use craft\web\View;
+use yii\base\Event;
+use craft\events\RegisterTemplateRootsEvent;
+
 
 /**
  * Bonsai Twig plugin
@@ -36,17 +40,19 @@ class BonsaiTwig extends Plugin
     {
         parent::init();
 
-        // Defer most setup tasks until Craft is fully initialized
         Craft::$app->onInit(function() {
             $this->attachEventHandlers();
-            // ...
         });
         Craft::$app->view->registerTwigExtension(new Templates());
     }
 
     private function attachEventHandlers(): void
     {
-        // Register event handlers here ...
-        // (see https://craftcms.com/docs/4.x/extend/events.html to get started)
+        $isDev = Craft::$app->getConfig()->general->devMode;
+        if ($isDev) {
+            Event::on(View::class, View::EVENT_REGISTER_SITE_TEMPLATE_ROOTS, function (RegisterTemplateRootsEvent $event) {
+                $event->roots['_bonsai-twig'] = __DIR__ . '/templates';
+            });
+        }
     }
 }

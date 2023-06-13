@@ -2,38 +2,41 @@
 
 namespace wabisoft\bonsaitwig\services;
 
-use Craft;
-use yii\base\Component;
 use craft\helpers\ArrayHelper;
+use craft\base\Element;
 
 /**
  * Category Loader service
  */
-class CategoryLoader extends Component
+class CategoryLoader
 {
     public static function load(array $variables = []): string
     {
-        $entry = ArrayHelper::getValue($variables, 'entry');
+        $category = ArrayHelper::getValue($variables, 'entry');
         $path = ArrayHelper::getValue($variables, 'path') ?: 'category';
 
-        // clean up
-        $group = $entry->group->handle;
-        $slug = $entry->slug;
+        if (!$category instanceof Element) {
+            throw new \InvalidArgumentException('CategoryLoader::load() expects "entry" to be a valid Craft Element.');
+        }
+
+        $group = $category->group->handle ?? '';
+        $slug = $category->slug ?? '';
         $default = 'default';
 
-        $checkTemplates = [];
-
-        $checkTemplates[] = $group . '/' . $slug;
-        $checkTemplates[] = $group . '/' . $default;
-        $checkTemplates[] = $group;
-        $checkTemplates[] = $default;
+        $checkTemplates = [
+            $group . '/' . $slug,
+            $group . '/' . $default,
+            $group,
+            $default,
+        ];
 
         return HierarchyTemplateLoader::load(
             $checkTemplates,
             $variables,
             $path,
-            'entry',
-            'showEntryPath',
-            'showEntryHierarchy');
+            'category',
+            'showCategoryPath',
+            'showCategoryHierarchy'
+        );
     }
 }
