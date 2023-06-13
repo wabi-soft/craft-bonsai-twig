@@ -1,0 +1,41 @@
+{
+    "name": "wabisoft/craft-bonsai-twig",
+    "description": "Internal use template helper",
+    "type": "craft-plugin",
+    "require": {
+        "php": ">=8.0.2",
+        "craftcms/cms": "^4.4.0"
+    },
+    "require-dev": {
+        "craftcms/ecs": "dev-main",
+        "craftcms/phpstan": "dev-main"
+    },
+    "autoload": {
+        "psr-4": {
+            "wabisoft\\bonsaitwig\\": "src/"
+        }
+    },
+    "extra": {
+        "handle": "_bonsai-twig",
+        "name": "Bonsai Twig",
+        "developer": "Wabisoft",
+        "documentationUrl": "",
+        "class": "wabisoft\\bonsaitwig\\BonsaiTwig"
+    },
+    "scripts": {
+        "check-cs": "ecs check --ansi",
+        "fix-cs": "ecs check --ansi --fix",
+        "phpstan": "phpstan --memory-limit=1G"
+    },
+    "config": {
+        "sort-packages": true,
+        "platform": {
+            "php": "8.0.2"
+        },
+        "allow-plugins": {
+            "yiisoft/yii2-composer": true,
+            "craftcms/plugin-installer": true
+        }
+    }
+}
+
