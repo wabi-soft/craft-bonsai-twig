@@ -22,40 +22,50 @@ class ItemLoader
         }
 
         $path = ArrayHelper::getValue($variables, 'path') ?: 'item';
-        $style = ArrayHelper::getValue($variables, 'style');
-        $ctx = ArrayHelper::getValue($variables, 'ctx');
+        $style = ArrayHelper::getValue($variables, 'style') ?: null;
+        $ctx = ArrayHelper::getValue($variables, 'ctx') ?: null;
         $default = ArrayHelper::getValue($variables, 'default') ?: 'default';
         $ctxPath = ArrayHelper::getValue($variables, 'ctxPath') ?: 'ctx';
         $ctxPath = StringHelper::trim($ctxPath, '/');
 
         $section = $entry->section->handle ?? $entry->group->handle;
-        $type = $entry->type->handle;
+        $type = $entry->type->handle ?? false;
         $slug = $entry->slug;
 
         $checkTemplates = [];
-        $defaultTemplates = [$default, $section, $default];
 
-        if($ctx && $ctx->section) {
-            $ctxSectionType = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}";
-            $ctxSection = "{$section}/{$ctxPath}/{$ctx->section->handle}";
-
-            $ctxTemplates = $style ? [$ctxSectionType.'/'.$style, $ctxSection.'/'.$style] : [];
-            $typeTemplates = $type ? [$ctxSectionType.'/'.$type, $ctxSectionType.'/'.$default, $ctxSection.'/'.$type] : [];
-
-            $checkTemplates = array_merge($checkTemplates, $ctxTemplates, $typeTemplates, [$ctxSection.'/'.$default, $ctxSection]);
+        if($ctx) {
+            if($style) {
+                $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$style}";
+            }
+            if($type) {
+                $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$type}";
+                $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$default}";
+            }
+            if($style) {
+                $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$style}";
+            }
+            if($type) {
+                $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$type}";
+            }
+            $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$default}";
+            $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}";
         }
 
         if($style) {
-            $styleTemplates = $type ? ["{$section}/{$type}/{$style}", "{$section}/{$style}"] : [];
-            $checkTemplates = array_merge($checkTemplates, $styleTemplates);
+            if($type) {
+                $checkTemplates[] = "{$section}/{$type}/{$style}";
+            }
+            $checkTemplates[] = "{$section}/{$style}";
         }
-
         if($type) {
-            $typeTemplates = ["{$section}/{$type}/{$slug}", "{$section}/{$type}", "{$section}/{$type}/{$default}"];
-            $checkTemplates = array_merge($checkTemplates, $typeTemplates);
+            $checkTemplates[] = "{$section}/{$type}/{$slug}";
+            $checkTemplates[] = "{$section}/{$type}";
+            $checkTemplates[] = "{$section}/{$type}/{$default}";
         }
-
-        $checkTemplates = array_merge($checkTemplates, $defaultTemplates);
+        $checkTemplates[] = "{$section}/{$default}";
+        $checkTemplates[] = $section;
+        $checkTemplates[] = $default;
 
         return HierarchyTemplateLoader::load(
             $checkTemplates,
