@@ -83,12 +83,17 @@ class HierarchyTemplateLoader extends Component
      */
     private static function renderInfo($content, $info, $type = 'entry'): string
     {
-        if($type == 'entry') {
-            return Craft::$app->view->renderTemplate('_bonsai-twig/_partials/infobar', ['info' => $info, 'content' => $content]);
-        }
+        $templatePath = '_wabisabi/bonsai/infobar';
         if($type == 'item') {
-            return Craft::$app->view->renderTemplate('_bonsai-twig/_partials/infobar_group.twig', ['info' => $info, 'content' => $content]);
+            $templatePath = '_wabisabi/bonsai/infobar_group.twig';
         }
-        return $content;
+
+        if (!Craft::$app->view->doesTemplateExist($templatePath)) {
+            $templatePath = '_bonsai-twig/_partials/infobar';
+            if($type == 'item') {
+                $templatePath = '_bonsai-twig/_partials/infobar_group.twig';
+            }
+        }
+        return Craft::$app->view->renderTemplate($templatePath, ['info' => $info, 'content' => $content]);
     }
 }
