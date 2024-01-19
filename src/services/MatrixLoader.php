@@ -20,6 +20,8 @@ class MatrixLoader
             throw new \InvalidArgumentException('MatrixLoader::load() expects "block" to be a valid Craft Element.');
         }
 
+        RenderDetails::blockDetails($block);
+
         $path = ArrayHelper::getValue($variables, 'path') ?: 'matrix';
         $style = ArrayHelper::getValue($variables, 'style');
         $ctx = ArrayHelper::getValue($variables, 'ctx');
@@ -54,4 +56,5 @@ class MatrixLoader
             'showMatrixPath',
             'showMatrixHierarchy');
     }
+
 }

@@ -1,0 +1,41 @@
+<div style="font-family: monospace; font-size: 0.9em; border: 1px dotted gray; padding: 15px; margin: 15px;">
+
+{% if block is defined %}
+    {% set blockType = block.type %}
+
+    {# Get the FieldLayout from the FieldLayoutId #}
+    {% set fieldLayout = craft.app.fields.getLayoutById(blockType.fieldLayoutId) %}
+
+    {# Check if fieldLayout is valid and get the customFields #}
+    {% if fieldLayout %}
+        {% set fields = fieldLayout.customFields %}
+
+        {# Output the type of the block #}
+        <p>Handle: {{ blockType.handle }}</p>
+        <p style='margin-bottom: 9px'>Name: {{ blockType.name }}</p>
+
+        {# List the field handles and types for this block type's field layout in a table format #}
+        <table style="font-size: 0.8em; width: 100%; border-collapse: collapse;">
+            <thead>
+            <tr>
+                <th style="border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;">Field Handle</th>
+                <th style="border: 1px solid #ccc; padding: 5px; background-color: #f9f9f9;">Field Type</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for field in fields %}
+                {% set fieldType = field.className()|split('\\')|last %}
+                <tr>
+                    <td style="border: 1px solid #ccc; padding: 5px;">{{ field.handle }}</td>
+                    <td style="border: 1px solid #ccc; padding: 5px;">{{ fieldType }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Field layout not found for the block type.</p>
+    {% endif %}
+{% else %}
+    <p>Block is not defined.</p>
+{% endif %}
+</div>
