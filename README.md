@@ -47,6 +47,23 @@ Enhance your debugging with the following optional parameters in **devMode**:
 
 In Craft CMS 5, categories and matrix elements are now treated as entries and follow the entry model. This unification simplifies template handling and ensures consistency across different element types.
 
+
+## Integration with Craft 5 `render()`
+
+Craft 5 introduces a convenient `render()` method for elements, enabling the rendering of elements directly within templates. By default, the `render()` function looks for templates in the `_partials` directory, using the element’s type and name.
+
+### Default Template Path
+
+- **Path Structure**: `_partials/{elementType}/{elementName}.twig`
+- **Example**: For an asset in a volume with the handle `images`, the path would be `_partials/asset/images.twig`.
+
+### Using `render()` for Nested Matrix Blocks
+
+You can utilize `render()` to manage nested matrix blocks effectively:
+
+```twig
+{{ element.render() }}
+
 ## Example Usages
 
 ### Basic Usage
