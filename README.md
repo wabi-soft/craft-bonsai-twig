@@ -69,6 +69,29 @@ Append URL paramters to the URL to render debug info while in devMode
 |- both: showMatrixPath=true&showMatrixHierarchy=true
 #}
 ```
+**Advanced Matrix** 
+Additionally, you can set this up to handle additional parameters. The built-in on is "style" to easily change the visual of the block. To do so, you can feed the blocks in individually like this 
+```
+{% if matrix|length %}
+
+    {% set style = style ?? null %}
+    {% for block in matrix.collect() ?? null %}
+        {{ matrixTemplates({
+            block: block,
+            style: style,
+            ctx: entry ?? null,
+            next: block.next.type ?? false,
+            prev: block.prev.type ?? false,
+            isFirst: loop.first,
+            context: context|default(null) ? context : 'basic',
+            entry: entry is defined ? entry : null,
+            overridableSettings: overridableSettings ?? null
+        }) }}
+    {% endfor %}
+{% endif %}
+```
+rather thank passing the entire "matrix" group in.
+
 ### Parameters
 
 Enhance your debugging with the following optional parameters in **devMode**:
