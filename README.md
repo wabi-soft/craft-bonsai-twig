@@ -60,7 +60,7 @@ Append URL paramters to the URL to render debug info while in devMode
    - **Usage**: `{{ matrixTemplates({ matrix }) }}`
    - **Description**: Loads templates for matrix rows.
    - **Suggested Commment**:
-  
+  ```
 {#
 Matrix Handler
 Append URL paramters to the URL to render debug info while in devMode
@@ -68,7 +68,7 @@ Append URL paramters to the URL to render debug info while in devMode
 |- two: showMatrixHierarchy=true
 |- both: showMatrixPath=true&showMatrixHierarchy=true
 #}
-
+```
 ### Parameters
 
 Enhance your debugging with the following optional parameters in **devMode**:
