@@ -15,16 +15,45 @@ Welcome to the **Twig Template Code Helper Plugin** README! This plugin is desig
    - **Function**: `itemTemplates`
    - **Usage**: `{{ itemTemplates({ entry }) }}`
    - **Description**: Loops through nested entries.
-
+   - **Suggested Comment**:
+```  
+{#
+Item Handler
+Append URL paramters to the URL to render debug info while in devMode
+|- one: ?showItemPath=true
+|- two: ?showItemHierarchy=true
+|- both: ?showItemPath=true&showItemHierarchy=true
+#}
+```
 2. **Entry Templates**
    - **Function**: `entryTemplates`
    - **Usage**: `{{ entryTemplates({ entry }) }}`
    - **Description**: Loads templates for core entry elements.
+   - **Suggested Comments**:
+```     
+{#
+Entry Handler
+ Append URL paramters to the URL to render debug info while in devMode
+ |- use one: ?showEntryPath=true
+ |- the other: ?showEntryHierarchy=true
+ |- or both: ?showEntryPath=true&showEntryHierarchy=true
+#}
+```
 
 3. **Category Templates**
    - **Function**: `categoryTemplates`
    - **Usage**: `{{ categoryTemplates({ entry }) }}`
    - **Description**: Loads templates for category elements.
+   - **Suggested Comments**:
+```
+{#
+Category Handler
+Append URL paramters to the URL to render debug info while in devMode
+|- one: ?showCategoryPath=true
+|- two: ?showCategoryHierarchy=true
+|- both: ?showCategoryPath=true&showCategoryHierarchy=true
+#}
+```
 
 4. **Matrix Templates**
    - **Function**: `matrixTemplates`
