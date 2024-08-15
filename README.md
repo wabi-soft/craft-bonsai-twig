@@ -33,10 +33,10 @@ Append URL paramters to the URL to render debug info while in devMode
 ```     
 {#
 Entry Handler
- Append URL paramters to the URL to render debug info while in devMode
- |- use one: ?showEntryPath=true
- |- the other: ?showEntryHierarchy=true
- |- or both: ?showEntryPath=true&showEntryHierarchy=true
+Append URL paramters to the URL to render debug info while in devMode
+|- use one: ?showEntryPath=true
+|- the other: ?showEntryHierarchy=true
+|- or both: ?showEntryPath=true&showEntryHierarchy=true
 #}
 ```
 
