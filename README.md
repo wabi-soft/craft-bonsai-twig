@@ -64,9 +64,9 @@ Append URL paramters to the URL to render debug info while in devMode
 {#
 Matrix Handler
 Append URL paramters to the URL to render debug info while in devMode
-|- one: showMatrixPath=true&showMatrixHierarchy=true
-|- two: showMatrixHierarchy=true
-|- both: showMatrixPath=true&showMatrixHierarchy=true
+|- one: ?showMatrixPath=true&showMatrixHierarchy=true
+|- two: ?showMatrixHierarchy=true
+|- both: ?showMatrixPath=true&showMatrixHierarchy=true
 #}
 ```
 **Advanced Matrix** 
