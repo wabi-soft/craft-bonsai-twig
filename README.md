@@ -70,7 +70,7 @@ Append URL paramters to the URL to render debug info while in devMode
 #}
 ```
 **Advanced Matrix** 
-Additionally, you can set this up to handle additional parameters. The built-in on is "style" to easily change the visual of the block. To do so, you can feed the blocks in individually like this 
+Additionally, you can set this up to handle additional parameters. The built-in on is "style" to easily change the visual of the block. To do so, you can feed the blocks individually like this 
 ```
 {% if matrix|length %}
 
