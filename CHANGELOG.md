@@ -4,6 +4,11 @@
 All notable changes to this project will be documented in this file.
 <!--- END HEADER -->
 
+## [6.0.3](https://github.com/wabi-soft/craft-bonsai-twig/compare/v6.0.2...v6.0.3) (2024-11-07)
+
+
+---
+
 ## [6.0.2](https://github.com/wabi-soft/craft-bonsai-twig/compare/v6.0.1...v6.0.2) (2024-08-05)
 
 
