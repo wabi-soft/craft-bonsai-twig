@@ -1,4 +1,12 @@
-<div class="group" style="position: relative;">
-    <span class="opacity-0 hover:opacity-100 group-hover:opacity-100" style="color: red; font-size: 11px; font-family: monospace; position: absolute; z-index: 10; background-color: rgba(255,255,255,.8)">{{ info }}</span>
-    {{ content|raw }}
+<div class="bonsai-info">
+    <style>
+        .bonsai-info__hover:hover .bonsai-info__text {
+            opacity: 1 !important;
+            transition: opacity 150ms;
+        }
+    </style>
+    <div class="bonsai-info__hover">
+        <span class="bonsai-info__text" style="opacity: 0; color: red; font-size: 11px; font-family: monospace; position: absolute; z-index: 10; background-color: rgba(255,255,255,.8);">{{ info }}</span>
+        {{ content|raw }}
+    </div>
 </div>
