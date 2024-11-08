@@ -73,7 +73,8 @@ class ItemLoader
             $path,
             'item',
             'showItemPath',
-            'showItemHierarchy'
+            'showItemHierarchy',
+            'showItemInfo'
         );
     }
 }

@@ -20,7 +20,7 @@ class HierarchyTemplateLoader extends Component
      * @throws RuntimeError
      * @throws LoaderError
      */
-    public static function load($templates, $variables, $basePath, $type = 'entry', $showPathParam = null, $showHierarchyParam = null): string
+    public static function load($templates, $variables, $basePath, $type = 'entry', $showPathParam = null, $showHierarchyParam = null, $showInfoParam = null): string
     {
         if (!is_string($basePath) || !is_array($templates)) {
             throw new InvalidArgumentException("Invalid parameters provided");
@@ -44,9 +44,10 @@ class HierarchyTemplateLoader extends Component
                     }
                     $shouldShowPath = Craft::$app->request->getParam($showPathParam);
                     $shouldShowHierarchy = Craft::$app->request->getParam($showHierarchyParam);
+                    $shouldShowInfo = Craft::$app->request->getParam($showInfoParam);
 
-                    if ($shouldShowPath || $shouldShowHierarchy) {
-                        $info = $shouldShowHierarchy 
+                    if ($shouldShowPath || $shouldShowHierarchy || $shouldShowInfo) {
+                        $info = ($shouldShowHierarchy || $shouldShowInfo)
                             ? [
                                 'directory' => $basePath,
                                 'templates' => array_map(function($path) {

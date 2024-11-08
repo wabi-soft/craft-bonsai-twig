@@ -40,7 +40,8 @@ class EntryLoader
             $path,
             'entry',
             'showEntryPath',
-            'showEntryHierarchy'
+            'showEntryHierarchy',
+            'showEntryInfo'
         );
     }
 }
