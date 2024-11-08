@@ -4,6 +4,15 @@
 All notable changes to this project will be documented in this file.
 <!--- END HEADER -->
 
+## [6.1.1](https://github.com/wabi-soft/craft-bonsai-twig/compare/v6.1.0...v6.1.1) (2024-11-08)
+
+### Bug Fixes
+
+* Bug with doubling up info ([3a5dfb](https://github.com/wabi-soft/craft-bonsai-twig/commit/3a5dfbea112147cd7c1b73aed86f6bf406c8f928))
+
+
+---
+
 ## [6.1.0](https://github.com/wabi-soft/craft-bonsai-twig/compare/v6.0.3...v6.1.0) (2024-11-08)
 
 
