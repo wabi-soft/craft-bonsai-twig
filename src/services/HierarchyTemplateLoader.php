@@ -42,19 +42,19 @@ class HierarchyTemplateLoader extends Component
                     if(!$isDev) {
                         return $content;
                     }
-                    // if dev mode and param show stuff
-                    if(Craft::$app->request->getParam($showPathParam)) {
-                        $info = $fullPath;
-                        $content = self::renderInfo($content, $info, $type);
-                    }
-                    if(Craft::$app->request->getParam($showHierarchyParam)) {
-                        $formattedTemplates = array_map(function($path) {
-                            return str_replace('/', '/', $path); // Remove escape slashes
-                        }, $templates);
-                        $info = [
-                            'directory' => $basePath,
-                            'templates' => $formattedTemplates
-                        ];
+                    $shouldShowPath = Craft::$app->request->getParam($showPathParam);
+                    $shouldShowHierarchy = Craft::$app->request->getParam($showHierarchyParam);
+
+                    if ($shouldShowPath || $shouldShowHierarchy) {
+                        $info = $shouldShowHierarchy 
+                            ? [
+                                'directory' => $basePath,
+                                'templates' => array_map(function($path) {
+                                    return str_replace('/', '/', $path);
+                                }, $templates)
+                            ]
+                            : ['directory' => dirname($fullPath), 'templates' => [basename($fullPath)]];
+                        
                         $content = self::renderInfo($content, Json::encode($info), $type);
                     }
                     Craft::$app->cache->set($cacheKey, $content, 3600);
@@ -99,6 +99,7 @@ class HierarchyTemplateLoader extends Component
         } else {
             $decoded = json_decode($info, true);
             if (isset($decoded['templates']) && count($decoded['templates']) > 0) {
+                $decoded['templates'] = array_values(array_unique($decoded['templates']));
                 foreach ($decoded['templates'] as $template) {
                     $fullPath = $decoded['directory'] . '/' . $template;
                     if (Craft::$app->view->doesTemplateExist($fullPath)) {
