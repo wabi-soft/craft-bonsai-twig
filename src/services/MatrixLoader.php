@@ -76,10 +76,8 @@ class MatrixLoader
             $checkTemplates,
             $variables,
             $path,
-            'item',
-            'showMatrixPath',
-            'showMatrixHierarchy',
-            'showMatrixInfo'
+            'matrix',
+            ['matrix', 'all']
         );
     }
 }

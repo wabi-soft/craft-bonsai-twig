@@ -55,9 +55,7 @@ class CategoryLoader
             $variables,
             $path,
             'category',
-            'showCategoryPath',
-            'showCategoryHierarchy',
-            'showCategoryInfo'
+            ['category', 'all']
         );
     }
 }

@@ -30,9 +30,7 @@ class HierarchyTemplateLoader extends Component
      * @param array  $variables         Variables to pass to the template
      * @param string $basePath         Base path to prepend to template paths
      * @param string $type             Type of template being loaded (default: 'entry')
-     * @param string|null $showPathParam      URL parameter to trigger path display
-     * @param string|null $showHierarchyParam URL parameter to trigger hierarchy display
-     * @param string|null $showInfoParam      URL parameter to trigger info display
+     * @param array  $allowedBeastmodeValues Array of allowed beastmode values
      * 
      * @return string The rendered template content
      * 
@@ -42,7 +40,7 @@ class HierarchyTemplateLoader extends Component
      * @throws LoaderError If template cannot be loaded
      * @throws InvalidArgumentException If invalid parameters are provided
      */
-    public static function load($templates, $variables, $basePath, $type = 'entry', $showPathParam = null, $showHierarchyParam = null, $showInfoParam = null): string
+    public static function load($templates, $variables, $basePath, $type = 'entry', $allowedBeastmodeValues = []): string
     {
         // Validate input parameters
         if (!is_string($basePath) || !is_array($templates)) {
@@ -76,21 +74,22 @@ class HierarchyTemplateLoader extends Component
                         return $content;
                     }
 
-                    // Dev mode: Check for debug parameters
-                    $shouldShowPath = Craft::$app->request->getParam($showPathParam);
-                    $shouldShowHierarchy = Craft::$app->request->getParam($showHierarchyParam);
-                    $shouldShowInfo = Craft::$app->request->getParam($showInfoParam);
+                    // Dev mode: Check beastmode parameter
+                    $beastmodeValue = Craft::$app->request->getParam('beastmode');
+                    $shouldShowDebug = $beastmodeValue !== null && (
+                        $beastmodeValue === '' || // Empty value means show all
+                        in_array($beastmodeValue, $allowedBeastmodeValues) // Check allowed values
+                    );
 
-                    // If any debug parameters are set, prepare debug info
-                    if ($shouldShowPath || $shouldShowHierarchy || $shouldShowInfo) {
-                        $info = ($shouldShowHierarchy || $shouldShowInfo)
-                            ? [
-                                'directory' => $basePath,
-                                'templates' => array_map(function($path) {
-                                    return str_replace('/', '/', $path);
-                                }, $templates)
-                            ]
-                            : ['directory' => dirname($fullPath), 'templates' => [basename($fullPath)]];
+                    // If debug is enabled, prepare debug info
+                    if ($shouldShowDebug) {
+                        $info = [
+                            'directory' => $basePath,
+                            'templates' => array_map(function($path) {
+                                return str_replace('/', '/', $path);
+                            }, $templates),
+                            'type' => $type
+                        ];
                         
                         // Wrap content with debug info
                         $content = self::renderInfo($content, Json::encode($info), $type);

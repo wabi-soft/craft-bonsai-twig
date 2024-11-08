@@ -62,9 +62,7 @@ class EntryLoader
             $variables,
             $path,
             'entry',
-            'showEntryPath',
-            'showEntryHierarchy',
-            'showEntryInfo'
+            ['entry', 'all']
         );
     }
 }

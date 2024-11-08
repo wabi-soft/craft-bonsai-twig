@@ -101,9 +101,7 @@ class ItemLoader
             $variables,
             $path,
             'item',
-            'showItemPath',
-            'showItemHierarchy',
-            'showItemInfo'
+            ['item', 'all']
         );
     }
 }
