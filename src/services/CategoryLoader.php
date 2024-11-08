@@ -32,7 +32,6 @@ class CategoryLoader
      */
     public static function load(array $variables = []): string
     {
-        // Extract and validate the required category element
         $category = ArrayHelper::getValue($variables, 'entry');
         $path = ArrayHelper::getValue($variables, 'path') ?: 'category';
 
@@ -40,17 +39,15 @@ class CategoryLoader
             throw new \InvalidArgumentException('CategoryLoader::load() expects "entry" to be a valid Craft Element.');
         }
 
-        // Get category properties for path building
-        $group = $category->group->handle ?? '';
+        $group = $category->group?->handle ?? '';
         $slug = $category->slug ?? '';
         $default = 'default';
 
-        // Build array of possible template paths in order of specificity
         $checkTemplates = [
-            $group . '/' . $slug,      // Most specific: group/slug
-            $group . '/' . $default,   // group/default
-            $group,                    // group only
-            $default,                  // least specific: default
+            "{$group}/{$slug}",
+            "{$group}/{$default}",
+            $group,
+            $default,
         ];
 
         return HierarchyTemplateLoader::load(
@@ -59,7 +56,8 @@ class CategoryLoader
             $path,
             'category',
             'showCategoryPath',
-            'showCategoryHierarchy'
+            'showCategoryHierarchy',
+            'showCategoryInfo'
         );
     }
 }

@@ -48,7 +48,7 @@ class MatrixLoader
         $ctxPath = ArrayHelper::getValue($variables, 'ctxPath') ?: 'ctx';
 
         // Get block properties for path building
-        $type = $block->type->handle;
+        $type = $block?->type?->handle;
         $default = 'default';
 
         // Build array of possible template paths
@@ -57,18 +57,16 @@ class MatrixLoader
 
         // Add context-specific paths if context is provided
         if ($ctx) {
-            $ctxPath = $ctxPath . '/' . $ctx->section->handle . '/' . $ctx->type->handle;
+            $ctxPath = "{$ctxPath}/{$ctx?->section?->handle}/{$ctx?->type?->handle}";
 
-            // Add style-specific context paths if style is provided
-            $styleTemplates = $style ? [$ctxPath . '/style/' . $style . '/' . $type] : [];
-            $typeTemplates = [$ctxPath . '/' . $type, $ctxPath . '/' . $default];
+            $styleTemplates = $style ? ["{$ctxPath}/style/{$style}/{$type}"] : [];
+            $typeTemplates = ["{$ctxPath}/{$type}", "{$ctxPath}/{$default}"];
 
             $checkTemplates = array_merge($checkTemplates, $styleTemplates, $typeTemplates);
         }
 
-        // Add style-specific paths if style is provided and not 'none'
-        if($style && $style != 'none') {
-            $checkTemplates[] = 'style/' . $style . '/' . $type;
+        if ($style && $style != 'none') {
+            $checkTemplates[] = "style/{$style}/{$type}";
         }
 
         // Add default templates as final fallback
@@ -80,6 +78,8 @@ class MatrixLoader
             $path,
             'item',
             'showMatrixPath',
-            'showMatrixHierarchy');
+            'showMatrixHierarchy',
+            'showMatrixInfo'
+        );
     }
 }

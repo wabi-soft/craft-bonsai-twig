@@ -44,38 +44,32 @@ class ItemLoader
         }
 
         // Extract optional configuration values with defaults
-        $path = ArrayHelper::getValue($variables, 'path') ?: 'item';
-        $style = ArrayHelper::getValue($variables, 'style') ?: null;
-        $ctx = ArrayHelper::getValue($variables, 'ctx') ?: null;
-        $default = ArrayHelper::getValue($variables, 'default') ?: 'default';
-        $ctxPath = ArrayHelper::getValue($variables, 'ctxPath') ?: 'ctx';
-        $ctxPath = StringHelper::trim($ctxPath, '/');
+        $path = $variables['path'] ?? 'item';
+        $style = $variables['style'] ?? null;
+        $ctx = $variables['ctx'] ?? null;
+        $default = $variables['default'] ?? 'default';
+        $ctxPath = StringHelper::trim($variables['ctxPath'] ?? 'ctx', '/');
 
         // Get entry properties for path building
-        $section = $entry->section->handle ?? $entry->group->handle;
-        $type = $entry->type->handle ?? false;
+        $section = $entry->section?->handle ?? $entry->group?->handle ?? '';
+        $type = $entry->type?->handle ?? false;
         $slug = $entry->slug;
 
         // Build array of possible template paths in order of specificity
         $checkTemplates = [];
 
-        // Add context-specific template paths if context is provided
-        if($ctx) {
-            // Most specific: section/ctx/contextSection/contextType/style
-            if($style) {
+        if ($ctx) {
+            if ($style) {
                 $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$style}";
             }
-            // Type-specific context paths
-            if($type) {
+            if ($type) {
                 $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$type}";
                 $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$default}";
             }
-            // Style variations at context section level
-            if($style) {
+            if ($style) {
                 $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$style}";
             }
-            // Type variations at context section level
-            if($type) {
+            if ($type) {
                 $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$type}";
             }
             // Default context section fallbacks
@@ -90,7 +84,7 @@ class ItemLoader
             }
             $checkTemplates[] = "{$section}/{$style}";
         }
-        if($type) {
+        if ($type) {
             $checkTemplates[] = "{$section}/{$type}/{$slug}";
             $checkTemplates[] = "{$section}/{$type}";
             $checkTemplates[] = "{$section}/{$type}/{$default}";
@@ -108,7 +102,7 @@ class ItemLoader
             $path,
             'item',
             'showItemPath',
-            'showItemHierarchy', 
+            'showItemHierarchy',
             'showItemInfo'
         );
     }

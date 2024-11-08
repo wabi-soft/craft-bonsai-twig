@@ -124,10 +124,9 @@ class HierarchyTemplateLoader extends Component
      * @param string $key Cache key to lookup
      * @return string|false Cached content or false if not found/dev mode
      */
-    private static function getCached($key) {
-        $isDev = Craft::$app->getConfig()->general->devMode;
-        // Skip cache in dev mode
-        if($isDev) {
+    private static function getCached(string $key): string|false
+    {
+        if (Craft::$app->getConfig()->general->devMode) {
             return false;
         }
         return Craft::$app->cache->get($key);
@@ -174,11 +173,14 @@ class HierarchyTemplateLoader extends Component
         }
 
         // Render debug info template with content
-        return Craft::$app->view->renderTemplate('_bonsai-twig/_partials/infobar', [
-            'info' => $info, 
-            'content' => $content,
-            'type' => $type
-        ]);
+        return Craft::$app->view->renderTemplate(
+            template: '_bonsai-twig/_partials/infobar',
+            variables: [
+                'info' => $info, 
+                'content' => $content,
+                'type' => $type
+            ]
+        );
     }
 
     /**
@@ -187,12 +189,8 @@ class HierarchyTemplateLoader extends Component
      * @param mixed $string String to validate
      * @return bool True if valid JSON
      */
-    private static function isJson($string): bool
+    private static function isJson(mixed $string): bool
     {
-        if (!is_string($string)) {
-            return false;
-        }
-        json_decode($string);
-        return json_last_error() === JSON_ERROR_NONE;
+        return is_string($string) && json_decode($string) && json_last_error() === JSON_ERROR_NONE;
     }
 }
