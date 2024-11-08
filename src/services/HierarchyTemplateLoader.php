@@ -48,8 +48,14 @@ class HierarchyTemplateLoader extends Component
                         $content = self::renderInfo($content, $info, $type);
                     }
                     if(Craft::$app->request->getParam($showHierarchyParam)) {
-                        $info = Json::encode($templates);
-                        $content = self::renderInfo($content, 'directory: ' . $basePath . ': ' . $info, $type);
+                        $formattedTemplates = array_map(function($path) {
+                            return str_replace('/', '/', $path); // Remove escape slashes
+                        }, $templates);
+                        $info = [
+                            'directory' => $basePath,
+                            'templates' => $formattedTemplates
+                        ];
+                        $content = self::renderInfo($content, Json::encode($info), $type);
                     }
                     Craft::$app->cache->set($cacheKey, $content, 3600);
                     return $content;
@@ -83,6 +89,14 @@ class HierarchyTemplateLoader extends Component
      */
     private static function renderInfo($content, $info, $type = 'entry'): string
     {
+        // If info is not already JSON, encode it as a structured object
+        if (!self::isJson($info)) {
+            $info = Json::encode([
+                'directory' => dirname($info),
+                'templates' => [basename($info)]
+            ]);
+        }
+
         if($type == 'entry') {
             return Craft::$app->view->renderTemplate('_bonsai-twig/_partials/infobar', ['info' => $info, 'content' => $content]);
         }
@@ -90,5 +104,14 @@ class HierarchyTemplateLoader extends Component
             return Craft::$app->view->renderTemplate('_bonsai-twig/_partials/infobar_group.twig', ['info' => $info, 'content' => $content]);
         }
         return $content;
+    }
+
+    private static function isJson($string): bool
+    {
+        if (!is_string($string)) {
+            return false;
+        }
+        json_decode($string);
+        return json_last_error() === JSON_ERROR_NONE;
     }
 }

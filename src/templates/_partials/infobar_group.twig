@@ -1,12 +1,43 @@
-<div class="bonsai-info">
-    <style>
-        .bonsai-info__hover:hover .bonsai-info__text {
-            opacity: 1 !important;
-            transition: opacity 150ms;
-        }
-    </style>
-    <div class="bonsai-info__hover">
-        <span class="bonsai-info__text" style="opacity: 0; color: red; font-size: 11px; font-family: monospace; position: absolute; z-index: 10; background-color: rgba(255,255,255,.8);">{{ info }}</span>
-        {{ content|raw }}
+{% set data = info|json_decode %}
+<style>
+    .bonsai-info__hover {
+        position: relative;
+    }
+    .bonsai-info__hover:hover .bonsai-info__text {
+        opacity: 1 !important;
+        transition: opacity 150ms;
+    }
+    .bonsai-info__text {
+        position: absolute;
+        top: 0;
+        left: 0;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        font-family: monospace;
+        font-size: 12px;
+        padding: 8px;
+        z-index: 1000;
+        max-width: 100%;
+        overflow-x: auto;
+        opacity: 0;
+    }
+    .bonsai-info__templates {
+        margin-top: 4px;
+    }
+    .bonsai-info__template-list {
+        padding-left: 8px;
+    }
+</style>
+<div class="bonsai-info__hover">
+<div class="bonsai-info__text">
+    GROUP:
+    <div>Directory: {{ data.directory }}</div>
+    <div class="bonsai-info__templates">Templates:</div>
+    <div class="bonsai-info__template-list">
+        {% for template in data.templates %}
+            <div>{{ template }}</div>
+        {% endfor %}
     </div>
+</div>
+{{ content|raw }}
 </div>
