@@ -89,21 +89,32 @@ class HierarchyTemplateLoader extends Component
      */
     private static function renderInfo($content, $info, $type = 'entry'): string
     {
-        // If info is not already JSON, encode it as a structured object
         if (!self::isJson($info)) {
+            $currentTemplate = $info;
             $info = Json::encode([
                 'directory' => dirname($info),
-                'templates' => [basename($info)]
+                'templates' => [basename($info)],
+                'currentTemplate' => $currentTemplate
             ]);
+        } else {
+            $decoded = json_decode($info, true);
+            if (isset($decoded['templates']) && count($decoded['templates']) > 0) {
+                foreach ($decoded['templates'] as $template) {
+                    $fullPath = $decoded['directory'] . '/' . $template;
+                    if (Craft::$app->view->doesTemplateExist($fullPath)) {
+                        $decoded['currentTemplate'] = $fullPath;
+                        break;
+                    }
+                }
+                $info = Json::encode($decoded);
+            }
         }
 
-        if($type == 'entry') {
-            return Craft::$app->view->renderTemplate('_bonsai-twig/_partials/infobar', ['info' => $info, 'content' => $content]);
-        }
-        if($type == 'item') {
-            return Craft::$app->view->renderTemplate('_bonsai-twig/_partials/infobar_group.twig', ['info' => $info, 'content' => $content]);
-        }
-        return $content;
+        return Craft::$app->view->renderTemplate('_bonsai-twig/_partials/infobar', [
+            'info' => $info, 
+            'content' => $content,
+            'type' => $type
+        ]);
     }
 
     private static function isJson($string): bool

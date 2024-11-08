@@ -27,15 +27,21 @@
     .bonsai-info__template-list {
         padding-left: 8px;
     }
+    .bonsai-info__template--current {
+        color: #00ff00;
+        font-weight: bold;
+    }
 </style>
 <div class="bonsai-info__hover">
 <div class="bonsai-info__text">
-    NOT GROUP:
     <div>Directory: {{ data.directory }}</div>
     <div class="bonsai-info__templates">Templates:</div>
     <div class="bonsai-info__template-list">
         {% for template in data.templates %}
-            <div>{{ template }}</div>
+            {% set fullPath = data.directory ~ '/' ~ template %}
+            <div {% if fullPath == data.currentTemplate %}class="bonsai-info__template--current"{% endif %}>
+                {{ template }}{% if fullPath == data.currentTemplate %} ← current{% endif %}
+            </div>
         {% endfor %}
     </div>
 </div>
