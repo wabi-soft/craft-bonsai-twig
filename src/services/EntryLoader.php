@@ -26,7 +26,7 @@ class EntryLoader
      * @param array $variables Configuration array containing:
      *        - entry: Required. Craft Entry element to base template paths on
      *        - path: Optional. Base path prefix (defaults to 'entry')
-     *        - baseSite: Optional. Base site handle (defaults to 'default')
+     *        - baseSite: Optional. Base site handle (defaults to false)
      * 
      * @throws \InvalidArgumentException If entry is not a valid Craft Element
      * @return string The resolved template path
@@ -36,7 +36,7 @@ class EntryLoader
         // Extract and validate the required entry element
         $entry = ArrayHelper::getValue($variables, 'entry');
         $path = ArrayHelper::getValue($variables, 'path') ?: 'entry';
-        $baseSite = ArrayHelper::getValue($variables, 'baseSite') ?: 'default';
+        $baseSite = ArrayHelper::getValue($variables, 'baseSite') ?: false;
 
         if (!$entry instanceof Element) {
             throw new \InvalidArgumentException('EntryLoader::load() expects "entry" to be a valid Craft Element.');
@@ -52,10 +52,10 @@ class EntryLoader
 
         // Helper to add both baseSite and default versions of a path
         $addPath = function($templatePath) use (&$checkTemplates, $baseSite, $path) {
-            if ($baseSite !== 'default') {
+            if ($baseSite) {
                 $checkTemplates[] = $baseSite . '/' . $path . '/' . $templatePath;
+                $checkTemplates[] = 'default/' . $path . '/' . $templatePath;
             }
-            $checkTemplates[] = 'default/' . $path . '/' . $templatePath;
             $checkTemplates[] = $path . '/' . $templatePath;
         };
 
