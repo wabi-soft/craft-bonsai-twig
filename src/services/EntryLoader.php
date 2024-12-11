@@ -26,6 +26,7 @@ class EntryLoader
      * @param array $variables Configuration array containing:
      *        - entry: Required. Craft Entry element to base template paths on
      *        - path: Optional. Base path prefix (defaults to 'entry')
+     *        - baseSite: Optional. Base site handle (defaults to 'default')
      * 
      * @throws \InvalidArgumentException If entry is not a valid Craft Element
      * @return string The resolved template path
@@ -35,6 +36,7 @@ class EntryLoader
         // Extract and validate the required entry element
         $entry = ArrayHelper::getValue($variables, 'entry');
         $path = ArrayHelper::getValue($variables, 'path') ?: 'entry';
+        $baseSite = ArrayHelper::getValue($variables, 'baseSite') ?: 'default';
 
         if (!$entry instanceof Element) {
             throw new \InvalidArgumentException('EntryLoader::load() expects "entry" to be a valid Craft Element.');
@@ -44,23 +46,32 @@ class EntryLoader
         $section = $entry->section->handle ?? '';
         $type = $entry->type->handle ?? '';
         $slug = $entry->slug ?? '';
-        $default = 'default';
 
-        // Build array of possible template paths in order of specificity
-        $checkTemplates = [
-            $section . '/' . $type . '/' . $slug,  // Most specific: section/type/slug
-            $section . '/' . $slug,                // section/slug
-            $section . '/' . $type,                // section/type
-            $section . '/' . $default,             // section/default
-            $section,                              // section only
-            $type,                                 // type only
-            $default,                              // least specific: default
-        ];
+        // Build array of possible template paths matching Craft's native pattern
+        $checkTemplates = [];
+
+        // Helper to add both baseSite and default versions of a path
+        $addPath = function($templatePath) use (&$checkTemplates, $baseSite, $path) {
+            if ($baseSite !== 'default') {
+                $checkTemplates[] = $baseSite . '/' . $path . '/' . $templatePath;
+            }
+            $checkTemplates[] = 'default/' . $path . '/' . $templatePath;
+            $checkTemplates[] = $path . '/' . $templatePath;
+        };
+
+        // Add paths in order of specificity
+        $addPath($section . '/' . $type . '/' . $slug);       // [site/]entry/section/type/slug
+        $addPath($section . '/' . $slug);                     // [site/]entry/section/slug
+        $addPath($section . '/' . $type);                     // [site/]entry/section/type
+        $addPath($section . '/default');                      // [site/]entry/section/default
+        $addPath($section);                                   // [site/]entry/section
+        $addPath($type);                                      // [site/]entry/type
+        $addPath('default');                                  // [site/]entry/default
 
         return HierarchyTemplateLoader::load(
             $checkTemplates,
             $variables,
-            $path,
+            '',  // No base path needed since we include it in template paths
             'entry',
             ['entry', 'all']
         );
