@@ -2,7 +2,7 @@
     "name": "wabisoft/craft-bonsai-twig",
     "description": "Internal use template helper",
     "type": "craft-plugin",
-    "version": "6.2.1",
+    "version": "6.2.2-alpha.1",
     "require": {
         "php": ">=8.2.0",
         "craftcms/cms": "^5.0.0"
