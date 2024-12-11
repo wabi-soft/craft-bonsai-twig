@@ -71,7 +71,7 @@ class EntryLoader
         return HierarchyTemplateLoader::load(
             $checkTemplates,
             $variables,
-            '',  // No base path needed since we include it in template paths
+            '',  // basePath is no longer used
             'entry',
             ['entry', 'all']
         );

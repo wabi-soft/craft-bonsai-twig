@@ -43,16 +43,17 @@ class HierarchyTemplateLoader extends Component
     public static function load($templates, $variables, $basePath, $type = 'entry', $allowedBeastmodeValues = []): string
     {
         // Validate input parameters
-        if (!is_string($basePath) || !is_array($templates)) {
-            throw new InvalidArgumentException("Invalid parameters provided");
+        if (!is_array($templates)) {
+            throw new InvalidArgumentException("Templates must be an array");
         }
 
-        // Normalize base path by trimming slashes
-        $basePath = StringHelper::trim($basePath, '/');
         $isDev = Craft::$app->getConfig()->general->devMode;
 
+        // Get the directory from variables or type
+        $directory = $variables['path'] ?? $type;
+
         // Generate cache key based on template info
-        $cacheKey = 'load:' . $basePath . ':' . implode(',', $templates) . ':' . $type;
+        $cacheKey = 'load:' . implode(',', $templates) . ':' . $type;
         
         // Try to get cached version first
         $result = self::getCached($cacheKey);
@@ -63,7 +64,8 @@ class HierarchyTemplateLoader extends Component
         // If no cache or dev mode, process templates
         if ($result === false) {
             foreach ($templates as $template) {
-                $fullPath = $basePath . '/' .$template;
+                // Use template path as is, since it's already properly formatted
+                $fullPath = StringHelper::trim($template, '/');
                 
                 // Check if template exists before trying to render
                 if(Craft::$app->view->doesTemplateExist($fullPath)) {
@@ -83,11 +85,15 @@ class HierarchyTemplateLoader extends Component
 
                     // If debug is enabled, prepare debug info
                     if ($shouldShowDebug) {
+                        // Process templates to remove directory prefix for display
+                        $displayTemplates = array_map(function($path) use ($directory) {
+                            return preg_replace('/^' . preg_quote($directory . '/', '/') . '/', '', $path);
+                        }, $templates);
+
                         $info = [
-                            'directory' => $basePath,
-                            'templates' => array_map(function($path) {
-                                return str_replace('/', '/', $path);
-                            }, $templates),
+                            'directory' => $directory,
+                            'templates' => $displayTemplates,
+                            'currentTemplate' => $fullPath,
                             'type' => $type
                         ];
                         
@@ -103,14 +109,16 @@ class HierarchyTemplateLoader extends Component
         }
 
         // Log error if no template was found
-        Craft::error(
-            "Error locating any templates",
-            __METHOD__
+        $errorMessage = sprintf(
+            "Unable to find any matching templates. Tried:\n%s",
+            implode("\n", array_map(fn($t) => "- $t", $templates))
         );
+        
+        Craft::error($errorMessage, __METHOD__);
 
         // In dev mode, throw exception with detailed info
         if($isDev) {
-            throw new \RuntimeException('Unable to find templates in "' . $basePath . '" directory. Templates Dump: ' . Json::encode($templates));
+            throw new \RuntimeException($errorMessage);
         }
 
         // In production, return empty string
@@ -139,38 +147,9 @@ class HierarchyTemplateLoader extends Component
      * @param string $type Template type identifier
      * 
      * @return string Content wrapped with debug information
-     * 
-     * @throws SyntaxError
-     * @throws Exception
-     * @throws RuntimeError
-     * @throws LoaderError
      */
     private static function renderInfo($content, $info, $type = 'entry'): string
     {
-        // Check if info is already JSON encoded
-        if (!self::isJson($info)) {
-            $currentTemplate = $info;
-            $info = Json::encode([
-                'directory' => dirname($info),
-                'templates' => [basename($info)],
-                'currentTemplate' => $currentTemplate
-            ]);
-        } else {
-            // Process JSON info to find current template
-            $decoded = json_decode($info, true);
-            if (isset($decoded['templates']) && count($decoded['templates']) > 0) {
-                $decoded['templates'] = array_values(array_unique($decoded['templates']));
-                foreach ($decoded['templates'] as $template) {
-                    $fullPath = $decoded['directory'] . '/' . $template;
-                    if (Craft::$app->view->doesTemplateExist($fullPath)) {
-                        $decoded['currentTemplate'] = $fullPath;
-                        break;
-                    }
-                }
-                $info = Json::encode($decoded);
-            }
-        }
-
         // Render debug info template with content
         return Craft::$app->view->renderTemplate(
             template: '_bonsai-twig/_partials/infobar',

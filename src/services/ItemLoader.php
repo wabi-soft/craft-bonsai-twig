@@ -31,6 +31,7 @@ class ItemLoader
      *        - ctx: Optional. Context Element for additional path variations
      *        - default: Optional. Default template name (defaults to 'default') 
      *        - ctxPath: Optional. Context path segment (defaults to 'ctx')
+     *        - baseSite: Optional. Base site handle (defaults to false)
      * 
      * @throws \InvalidArgumentException If entry is not a valid Craft Element
      * @return string The resolved template path
@@ -49,57 +50,68 @@ class ItemLoader
         $ctx = $variables['ctx'] ?? null;
         $default = $variables['default'] ?? 'default';
         $ctxPath = StringHelper::trim($variables['ctxPath'] ?? 'ctx', '/');
+        $baseSite = ArrayHelper::getValue($variables, 'baseSite') ?: false;
 
         // Get entry properties for path building
         $section = $entry->section?->handle ?? $entry->group?->handle ?? '';
         $type = $entry->type?->handle ?? false;
         $slug = $entry->slug;
 
-        // Build array of possible template paths in order of specificity
+        // Build array of possible template paths matching Craft's native pattern
         $checkTemplates = [];
 
+        // Helper to add both baseSite and default versions of a path
+        $addPath = function($templatePath) use (&$checkTemplates, $baseSite, $path) {
+            if ($baseSite) {
+                $checkTemplates[] = $baseSite . '/' . $path . '/' . $templatePath;
+                $checkTemplates[] = 'default/' . $path . '/' . $templatePath;
+            }
+            $checkTemplates[] = $path . '/' . $templatePath;
+        };
+
+        // Add context-specific paths
         if ($ctx) {
             if ($style) {
-                $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$style}";
+                $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$style}");
             }
             if ($type) {
-                $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$type}";
-                $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$default}";
+                $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$type}");
+                $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$default}");
             }
             if ($style) {
-                $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$style}";
+                $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$style}");
             }
             if ($type) {
-                $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$type}";
+                $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$type}");
             }
             // Default context section fallbacks
-            $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}/{$default}";
-            $checkTemplates[] = "{$section}/{$ctxPath}/{$ctx->section->handle}";
+            $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$default}");
+            $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}");
         }
 
         // Add non-context template paths
         if($style) {
             if($type) {
-                $checkTemplates[] = "{$section}/{$type}/{$style}";
+                $addPath("{$section}/{$type}/{$style}");
             }
-            $checkTemplates[] = "{$section}/{$style}";
+            $addPath("{$section}/{$style}");
         }
         if ($type) {
-            $checkTemplates[] = "{$section}/{$type}/{$slug}";
-            $checkTemplates[] = "{$section}/{$type}";
-            $checkTemplates[] = "{$section}/{$type}/{$default}";
+            $addPath("{$section}/{$type}/{$slug}");
+            $addPath("{$section}/{$type}");
+            $addPath("{$section}/{$type}/{$default}");
         }
         
         // Add most general fallback paths
-        $checkTemplates[] = "{$section}/{$default}";
-        $checkTemplates[] = $section;
-        $checkTemplates[] = $default;
+        $addPath("{$section}/{$default}");
+        $addPath($section);
+        $addPath($default);
 
         // Use HierarchyTemplateLoader to find first matching template
         return HierarchyTemplateLoader::load(
             $checkTemplates,
             $variables,
-            $path,
+            '',  // basePath is no longer used
             'item',
             ['item', 'all']
         );
