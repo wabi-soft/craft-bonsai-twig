@@ -62,11 +62,23 @@ class ItemLoader
 
         // Helper to add both baseSite and default versions of a path
         $addPath = function($templatePath) use (&$checkTemplates, $baseSite, $path) {
+            $pathsToAdd = [];
+            
+            // Add site-specific path if baseSite is set
             if ($baseSite) {
-                $checkTemplates[] = $baseSite . '/' . $path . '/' . $templatePath;
-                $checkTemplates[] = 'default/' . $path . '/' . $templatePath;
+                $pathsToAdd[] = $baseSite . '/' . $path . '/' . $templatePath;
+                $pathsToAdd[] = 'default/' . $path . '/' . $templatePath;
             }
-            $checkTemplates[] = $path . '/' . $templatePath;
+            
+            // Add base path
+            $pathsToAdd[] = $path . '/' . $templatePath;
+            
+            // Add only unique paths
+            foreach ($pathsToAdd as $p) {
+                if (!in_array($p, $checkTemplates)) {
+                    $checkTemplates[] = $p;
+                }
+            }
         };
 
         // Add context-specific paths

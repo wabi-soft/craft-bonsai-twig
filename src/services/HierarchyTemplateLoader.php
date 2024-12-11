@@ -87,7 +87,8 @@ class HierarchyTemplateLoader extends Component
                     if ($shouldShowDebug) {
                         // Process templates to remove directory prefix for display
                         $displayTemplates = array_map(function($path) use ($directory) {
-                            return preg_replace('/^' . preg_quote($directory . '/', '/') . '/', '', $path);
+                            // Don't modify paths that already have the directory prefix
+                            return $path;
                         }, $templates);
 
                         $info = [
