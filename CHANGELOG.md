@@ -4,6 +4,15 @@
 All notable changes to this project will be documented in this file.
 <!--- END HEADER -->
 
+## [6.4.0](https://github.com/wabi-soft/craft-bonsai-twig/compare/v6.3.0...v6.4.0) (2024-12-17)
+
+### Bug Fixes
+
+* Path issue ([20bb27](https://github.com/wabi-soft/craft-bonsai-twig/commit/20bb2799a3ac189c4e2de7431bc32c77ff7d2bac))
+
+
+---
+
 ## [6.3.0](https://github.com/wabi-soft/craft-bonsai-twig/compare/v6.2.1...v6.3.0) (2024-12-11)
 
 
