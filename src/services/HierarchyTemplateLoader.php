@@ -65,7 +65,7 @@ class HierarchyTemplateLoader extends Component
         if ($result === false) {
             foreach ($templates as $template) {
                 // Use template path as is, since it's already properly formatted
-                $fullPath = StringHelper::trim($template, '/');
+                $fullPath = $basePath ? StringHelper::trim($basePath . '/' . $template, '/') : StringHelper::trim($template, '/');
                 
                 // Check if template exists before trying to render
                 if(Craft::$app->view->doesTemplateExist($fullPath)) {
