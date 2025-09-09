@@ -378,6 +378,106 @@ class CacheService extends Component
     }
 
     /**
+     * Caches site-specific template resolution result.
+     *
+     * Stores template resolution results with site-specific context for
+     * multi-site template handling and proper fallback mechanisms.
+     *
+     * @param TemplateContext $context Template resolution context
+     * @param array<string> $attemptedPaths All paths that were attempted
+     * @param string|null $resolvedPath The successfully resolved path (null if none found)
+     * @param string|null $fallbackSite Site used for fallback resolution
+     * @param array<string, mixed> $metadata Additional metadata about resolution
+     * @return void
+     */
+    public function cacheSiteSpecificTemplateResolution(
+        TemplateContext $context,
+        array $attemptedPaths,
+        ?string $resolvedPath,
+        ?string $fallbackSite = null,
+        array $metadata = []
+    ): void {
+        // Skip caching in development mode
+        if (Craft::$app->getConfig()->general->devMode) {
+            return;
+        }
+
+        $cacheKey = $this->generateSiteSpecificTemplateKey($context, $attemptedPaths);
+        
+        $cacheData = [
+            'resolvedPath' => $resolvedPath,
+            'attemptedPaths' => $attemptedPaths,
+            'fallbackSite' => $fallbackSite,
+            'metadata' => $metadata,
+            'timestamp' => time(),
+            'elementId' => $context->element->id,
+            'elementType' => get_class($context->element),
+            'currentSite' => $context->element->siteId ?? Craft::$app->sites->currentSite->id,
+            'baseSite' => $context->baseSite,
+        ];
+
+        // Generate site-aware cache tags for invalidation
+        $tags = $this->generateSiteAwareCacheTags($context, $fallbackSite);
+
+        Craft::$app->cache->set(
+            $cacheKey,
+            $cacheData,
+            self::TEMPLATE_CACHE_DURATION,
+            new TagDependency(['tags' => $tags])
+        );
+    }
+
+    /**
+     * Retrieves cached site-specific template resolution result.
+     *
+     * @param TemplateContext $context Template resolution context
+     * @param array<string> $attemptedPaths All paths being attempted
+     * @return array<string, mixed>|null Cached resolution data or null if not found
+     */
+    public function getCachedSiteSpecificTemplateResolution(
+        TemplateContext $context,
+        array $attemptedPaths
+    ): ?array {
+        // Skip cache in development mode
+        if (Craft::$app->getConfig()->general->devMode) {
+            return null;
+        }
+
+        $cacheKey = $this->generateSiteSpecificTemplateKey($context, $attemptedPaths);
+        $cached = Craft::$app->cache->get($cacheKey);
+
+        if ($cached === false) {
+            return null;
+        }
+
+        // Validate cached data structure
+        if (!is_array($cached) || !isset($cached['resolvedPath'], $cached['attemptedPaths'])) {
+            return null;
+        }
+
+        return $cached;
+    }
+
+    /**
+     * Invalidates cache for a specific site.
+     *
+     * Removes all cached data related to a specific site when site configuration changes.
+     *
+     * @param int|string $siteId Site ID whose cache to invalidate
+     * @return void
+     */
+    public function invalidateSiteCache(int|string $siteId): void
+    {
+        $tags = [
+            'site:' . $siteId,
+            'currentSite:' . $siteId,
+            'fallbackSite:' . $siteId,
+        ];
+
+        TagDependency::invalidate(Craft::$app->cache, $tags);
+    }
+
+    /**
      * Generates cache tags for proper invalidation.
      *
      * @param TemplateContext $context Template resolution context
@@ -402,5 +502,73 @@ class CacheService extends Component
         }
 
         return $tags;
+    }
+
+    /**
+     * Generates site-aware cache tags for multi-site template resolution.
+     *
+     * @param TemplateContext $context Template resolution context
+     * @param string|null $fallbackSite Fallback site used for resolution
+     * @return array<string> Array of cache tags
+     */
+    private function generateSiteAwareCacheTags(TemplateContext $context, ?string $fallbackSite = null): array
+    {
+        $tags = [
+            'bonsai_twig',
+            'element:' . $context->element->id,
+            'elementType:' . get_class($context->element),
+        ];
+
+        // Add current site tags
+        $currentSiteId = $context->element->siteId ?? Craft::$app->sites->currentSite->id;
+        $tags[] = 'currentSite:' . $currentSiteId;
+
+        // Add context element tags if present
+        if ($context->context) {
+            $tags[] = 'contextElement:' . $context->context->id;
+        }
+
+        // Add base site tags if applicable
+        if ($context->baseSite) {
+            $tags[] = 'site:' . $context->baseSite;
+        }
+
+        // Add fallback site tags if used
+        if ($fallbackSite && $fallbackSite !== $context->baseSite) {
+            $tags[] = 'fallbackSite:' . $fallbackSite;
+        }
+
+        return $tags;
+    }
+
+    /**
+     * Generates a secure cache key for site-specific template resolution.
+     *
+     * @param TemplateContext $context Template resolution context
+     * @param array<string> $attemptedPaths All paths being attempted
+     * @return string Secure cache key
+     */
+    private function generateSiteSpecificTemplateKey(
+        TemplateContext $context,
+        array $attemptedPaths
+    ): string {
+        $currentSiteId = $context->element->siteId ?? Craft::$app->sites->currentSite->id;
+        
+        $keyData = [
+            'elementId' => $context->element->id,
+            'elementType' => get_class($context->element),
+            'path' => $context->path,
+            'style' => $context->style,
+            'baseSite' => $context->baseSite,
+            'currentSite' => $currentSiteId,
+            'attemptedPaths' => $attemptedPaths,
+            'contextElementId' => $context->context?->id,
+        ];
+
+        return self::TEMPLATE_KEY_PREFIX . 'site:' . SecurityUtils::generateSecureCacheKey(
+            $attemptedPaths,
+            'site_template_resolution',
+            $keyData
+        );
     }
 }

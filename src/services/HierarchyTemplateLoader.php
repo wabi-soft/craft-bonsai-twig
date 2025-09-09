@@ -50,6 +50,8 @@ class HierarchyTemplateLoader extends Component
      * - Development mode debug information display
      * - Comprehensive error handling and logging
      * - Template existence validation before rendering
+     * - Optimized path deduplication and early exit strategies
+     * - Batch file system operations for improved performance
      *
      * @param array<string> $templates Array of template paths to try loading in priority order
      * @param array<string, mixed> $variables Variables to pass to the template for rendering
@@ -137,134 +139,193 @@ class HierarchyTemplateLoader extends Component
         }
         $performanceMonitor->recordCacheAccess(false, 'legacy');
 
-        // If no cache or dev mode, process templates
+        // If no cache or dev mode, process templates with optimized resolution
         if ($result === false) {
-            $attemptedPaths = [];
-            $resolvedPath = null;
-            
             $performanceMonitor->addCheckpoint($sessionId, 'start_resolution');
             
-            foreach ($validatedTemplates as $template) {
-                // Templates are already sanitized by InputValidator::validateTemplatePaths
-                // Use template path as is, since it's already properly formatted
-                $fullPath = $validatedBasePath ? StringHelper::trim($validatedBasePath . '/' . $template, '/') : StringHelper::trim($template, '/');
+            // Optimize path generation and deduplication
+            $optimizedPaths = self::optimizeTemplatePaths($validatedTemplates, $validatedBasePath);
+            $performanceMonitor->addCheckpoint($sessionId, 'paths_optimized', [
+                'original_count' => count($validatedTemplates),
+                'optimized_count' => count($optimizedPaths)
+            ]);
+            
+            // Enhance paths for multi-site template handling if context is available
+            $fallbackSite = null;
+            if (isset($templateContext)) {
+                $siteEnhancementResult = self::enhancePathsForMultiSite($optimizedPaths, $templateContext);
+                $optimizedPaths = $siteEnhancementResult['paths'];
+                $fallbackSite = $siteEnhancementResult['fallbackSite'];
                 
-                // Validate the full path before using it
-                SecurityUtils::validateTemplatePath($fullPath);
-                $attemptedPaths[] = $fullPath;
+                $performanceMonitor->addCheckpoint($sessionId, 'site_paths_enhanced', [
+                    'fallback_site' => $fallbackSite,
+                    'enhanced_count' => count($optimizedPaths)
+                ]);
                 
-                // Check cached template existence first
-                $templateExists = $cacheService->getCachedTemplateExistence($fullPath);
-                if ($templateExists === null) {
-                    // Not cached, check and cache the result
-                    $templateExists = Craft::$app->view->doesTemplateExist($fullPath);
-                    $cacheService->cacheTemplateExistence($fullPath, $templateExists);
-                    $performanceMonitor->recordCacheAccess(false, 'existence');
-                } else {
-                    $performanceMonitor->recordCacheAccess(true, 'existence');
+                // Try site-specific cache first
+                $siteSpecificCache = $cacheService->getCachedSiteSpecificTemplateResolution($templateContext, $optimizedPaths);
+                if ($siteSpecificCache !== null) {
+                    $performanceMonitor->recordCacheAccess(true, 'site_template');
+                    $performanceMonitor->endTiming($sessionId);
+                    return $siteSpecificCache['resolvedPath'] ? 
+                        Craft::$app->view->renderTemplate($siteSpecificCache['resolvedPath'], $validatedVariables) : '';
                 }
+                $performanceMonitor->recordCacheAccess(false, 'site_template');
+            }
+            
+            // Early exit: Check if we have any paths to process
+            if (empty($optimizedPaths)) {
+                $performanceData = $performanceMonitor->endTiming($sessionId);
+                $performanceMonitor->recordTemplateResolution(false, $performanceData['total_time'] ?? 0.0, 0);
                 
-                // Check if template exists before trying to render
-                if ($templateExists) {
-                    $performanceMonitor->addCheckpoint($sessionId, 'template_found', ['path' => $fullPath]);
-                    
-                    $resolvedPath = $fullPath;
-                    $content = Craft::$app->view->renderTemplate($fullPath, $validatedVariables);
-                    
-                    $performanceMonitor->addCheckpoint($sessionId, 'template_rendered');
-                    
-                    // In production, cache and return content directly
-                    if (!$isDev) {
-                        // Cache using enhanced caching service
-                        if (isset($templateContext)) {
+                $templateNotFoundException = new TemplateNotFoundException(
+                    attemptedPaths: [],
+                    templateType: $templateType,
+                    message: 'No valid template paths after optimization'
+                );
+                
+                if ($isDev) {
+                    throw $templateNotFoundException;
+                }
+                return '';
+            }
+            
+            // Batch template existence checks for better performance
+            $existenceResults = self::batchCheckTemplateExistence($optimizedPaths, $cacheService, $performanceMonitor);
+            $performanceMonitor->addCheckpoint($sessionId, 'existence_checked');
+            
+            // Find first existing template using early exit strategy
+            $resolvedPath = self::findFirstExistingTemplate($optimizedPaths, $existenceResults);
+            
+            if ($resolvedPath !== null) {
+                $performanceMonitor->addCheckpoint($sessionId, 'template_found', ['path' => $resolvedPath]);
+                
+                // Render the template
+                $content = Craft::$app->view->renderTemplate($resolvedPath, $validatedVariables);
+                $performanceMonitor->addCheckpoint($sessionId, 'template_rendered');
+                
+                // In production, cache and return content directly
+                if (!$isDev) {
+                    // Cache using enhanced caching service
+                    if (isset($templateContext)) {
+                        // Use site-specific caching if fallback site was used
+                        if ($fallbackSite !== null) {
+                            $cacheService->cacheSiteSpecificTemplateResolution(
+                                $templateContext,
+                                $optimizedPaths,
+                                $resolvedPath,
+                                $fallbackSite,
+                                ['cached_at' => time()]
+                            );
+                        } else {
                             $cacheService->cacheTemplateResolution(
                                 $templateContext,
-                                $attemptedPaths,
+                                $optimizedPaths,
                                 $resolvedPath,
                                 ['cached_at' => time()]
                             );
                         }
-                        
-                        // Legacy cache for backward compatibility
-                        Craft::$app->cache->set($cacheKey, $content, 3600);
-                        
-                        // End performance monitoring
-                        $performanceData = $performanceMonitor->endTiming($sessionId);
-                        $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($attemptedPaths));
-                        
-                        return $content;
                     }
-
-                    // Dev mode: Check beastmode parameter with validation
-                    $beastmodeValue = Craft::$app->request->getParam('beastmode');
-                    $debugMode = InputValidator::validateDebugMode($beastmodeValue, $templateType);
                     
-                    $shouldShowDebug = $debugMode->isEnabled() && (
-                        $beastmodeValue === '' || // Empty value means show all
-                        DebugMode::isValidForTemplateType((string) $beastmodeValue, $templateType) // Check template-specific values
-                    );
-
-                    // If debug is enabled, prepare debug info with performance metrics
-                    if ($shouldShowDebug) {
-                        $performanceMonitor->addCheckpoint($sessionId, 'debug_info_start');
-                        
-                        // Get performance data before ending timing
-                        $performanceData = $performanceMonitor->endTiming($sessionId);
-                        
-                        // Process templates to remove directory prefix for display
-                        $displayTemplates = array_map(function(string $path) use ($directory): string {
-                            // Don't modify paths that already have the directory prefix
-                            return $path;
-                        }, $validatedTemplates);
-
-                        $info = [
-                            'directory' => $directory,
-                            'templates' => $displayTemplates,
-                            'currentTemplate' => $fullPath,
-                            'type' => $templateType->value,
-                            'performance' => [
-                                'resolution_time' => $performanceData['total_time'] ?? 0.0,
-                                'memory_usage' => $performanceData['memory_usage'] ?? [],
-                                'checkpoints' => $performanceData['checkpoints'] ?? [],
-                            ],
-                            'cache_stats' => $performanceMonitor->getCacheStatistics(),
-                        ];
-                        
-                        // Wrap content with enhanced debug info
-                        $content = self::renderInfo($content, Json::encode($info), $templateType->value);
-                        
-                        $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($attemptedPaths));
-                    } else {
-                        // End timing without debug info
-                        $performanceData = $performanceMonitor->endTiming($sessionId);
-                        $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($attemptedPaths));
-                    }
-
-                    // Cache the result for an hour (legacy cache)
+                    // Legacy cache for backward compatibility
                     Craft::$app->cache->set($cacheKey, $content, 3600);
                     
-                    // Enhanced caching
-                    if (isset($templateContext)) {
+                    // End performance monitoring
+                    $performanceData = $performanceMonitor->endTiming($sessionId);
+                    $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($optimizedPaths));
+                    
+                    return $content;
+                }
+
+                // Dev mode: Check beastmode parameter with validation
+                $beastmodeValue = Craft::$app->request->getParam('beastmode');
+                $debugMode = InputValidator::validateDebugMode($beastmodeValue, $templateType);
+                
+                $shouldShowDebug = $debugMode->isEnabled() && (
+                    $beastmodeValue === '' || // Empty value means show all
+                    DebugMode::isValidForTemplateType((string) $beastmodeValue, $templateType) // Check template-specific values
+                );
+
+                // If debug is enabled, prepare debug info with performance metrics
+                if ($shouldShowDebug) {
+                    $performanceMonitor->addCheckpoint($sessionId, 'debug_info_start');
+                    
+                    // Get performance data before ending timing
+                    $performanceData = $performanceMonitor->endTiming($sessionId);
+                    
+                    // Process templates to remove directory prefix for display
+                    $displayTemplates = array_map(function(string $path) use ($directory): string {
+                        // Don't modify paths that already have the directory prefix
+                        return $path;
+                    }, $validatedTemplates);
+
+                    $info = [
+                        'directory' => $directory,
+                        'templates' => $displayTemplates,
+                        'optimized_templates' => $optimizedPaths,
+                        'currentTemplate' => $resolvedPath,
+                        'type' => $templateType->value,
+                        'site_info' => [
+                            'current_site' => Craft::$app->sites->currentSite->handle,
+                            'element_site' => isset($templateContext) ? ($templateContext->element->site->handle ?? null) : null,
+                            'base_site' => isset($templateContext) ? $templateContext->baseSite : null,
+                            'fallback_site' => $fallbackSite ?? null,
+                        ],
+                        'performance' => [
+                            'resolution_time' => $performanceData['total_time'] ?? 0.0,
+                            'memory_usage' => $performanceData['memory_usage'] ?? [],
+                            'checkpoints' => $performanceData['checkpoints'] ?? [],
+                            'optimization_savings' => count($validatedTemplates) - count($optimizedPaths),
+                        ],
+                        'cache_stats' => $performanceMonitor->getCacheStatistics(),
+                    ];
+                    
+                    // Wrap content with enhanced debug info
+                    $content = self::renderInfo($content, Json::encode($info), $templateType->value);
+                    
+                    $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($optimizedPaths));
+                } else {
+                    // End timing without debug info
+                    $performanceData = $performanceMonitor->endTiming($sessionId);
+                    $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($optimizedPaths));
+                }
+
+                // Cache the result for an hour (legacy cache)
+                Craft::$app->cache->set($cacheKey, $content, 3600);
+                
+                // Enhanced caching
+                if (isset($templateContext)) {
+                    // Use site-specific caching if fallback site was used
+                    if ($fallbackSite !== null) {
+                        $cacheService->cacheSiteSpecificTemplateResolution(
+                            $templateContext,
+                            $optimizedPaths,
+                            $resolvedPath,
+                            $fallbackSite,
+                            ['cached_at' => time(), 'debug_enabled' => $shouldShowDebug ?? false]
+                        );
+                    } else {
                         $cacheService->cacheTemplateResolution(
                             $templateContext,
-                            $attemptedPaths,
+                            $optimizedPaths,
                             $resolvedPath,
                             ['cached_at' => time(), 'debug_enabled' => $shouldShowDebug ?? false]
                         );
                     }
-                    
-                    return $content;
                 }
+                
+                return $content;
             }
         }
 
         // No template was found - end performance monitoring and handle error
         $performanceData = $performanceMonitor->endTiming($sessionId);
-        $performanceMonitor->recordTemplateResolution(false, $performanceData['total_time'] ?? 0.0, count($attemptedPaths ?? $validatedTemplates));
+        $finalAttemptedPaths = $optimizedPaths ?? $validatedTemplates;
+        $performanceMonitor->recordTemplateResolution(false, $performanceData['total_time'] ?? 0.0, count($finalAttemptedPaths));
         
         // Create detailed exception
         $templateNotFoundException = new TemplateNotFoundException(
-            attemptedPaths: $attemptedPaths ?? $validatedTemplates,
+            attemptedPaths: $finalAttemptedPaths,
             templateType: $templateType
         );
         
@@ -273,12 +334,23 @@ class HierarchyTemplateLoader extends Component
 
         // Cache negative result to avoid repeated failed lookups
         if (isset($templateContext)) {
-            $cacheService->cacheTemplateResolution(
-                $templateContext,
-                $attemptedPaths ?? $validatedTemplates,
-                null,
-                ['failed_at' => time(), 'error' => $templateNotFoundException->getMessage()]
-            );
+            // Use site-specific caching if fallback site was attempted
+            if (isset($fallbackSite) && $fallbackSite !== null) {
+                $cacheService->cacheSiteSpecificTemplateResolution(
+                    $templateContext,
+                    $finalAttemptedPaths,
+                    null,
+                    $fallbackSite,
+                    ['failed_at' => time(), 'error' => $templateNotFoundException->getMessage()]
+                );
+            } else {
+                $cacheService->cacheTemplateResolution(
+                    $templateContext,
+                    $finalAttemptedPaths,
+                    null,
+                    ['failed_at' => time(), 'error' => $templateNotFoundException->getMessage()]
+                );
+            }
         }
 
         // In dev mode, throw exception with detailed info
@@ -349,5 +421,267 @@ class HierarchyTemplateLoader extends Component
     private static function isJson(mixed $string): bool
     {
         return is_string($string) && json_decode($string) && json_last_error() === JSON_ERROR_NONE;
+    }
+
+    /**
+     * Optimizes template paths by deduplication and normalization.
+     *
+     * This method implements efficient path deduplication algorithms to reduce
+     * the number of file system checks needed during template resolution.
+     * It maintains the original order while removing duplicates and normalizing paths.
+     *
+     * @param array<string> $templates Original template paths
+     * @param string $basePath Base path to prepend to template paths
+     * @return array<string> Optimized and deduplicated template paths
+     */
+    private static function optimizeTemplatePaths(array $templates, string $basePath): array
+    {
+        if (empty($templates)) {
+            return [];
+        }
+
+        $optimizedPaths = [];
+        $seenPaths = [];
+        
+        foreach ($templates as $template) {
+            // Generate full path
+            $fullPath = $basePath ? StringHelper::trim($basePath . '/' . $template, '/') : StringHelper::trim($template, '/');
+            
+            // Validate the full path before using it
+            try {
+                SecurityUtils::validateTemplatePath($fullPath);
+            } catch (InvalidTemplatePathException $e) {
+                // Skip invalid paths but continue processing
+                continue;
+            }
+            
+            // Normalize path for deduplication (convert backslashes, remove double slashes)
+            $normalizedPath = str_replace(['\\', '//'], ['/', '/'], $fullPath);
+            $normalizedPath = rtrim($normalizedPath, '/');
+            
+            // Skip if we've already seen this path
+            if (isset($seenPaths[$normalizedPath])) {
+                continue;
+            }
+            
+            $seenPaths[$normalizedPath] = true;
+            $optimizedPaths[] = $normalizedPath;
+        }
+        
+        return $optimizedPaths;
+    }
+
+    /**
+     * Performs batch template existence checks for improved performance.
+     *
+     * This method optimizes file system operations by batching template existence
+     * checks and leveraging caching to minimize redundant file system access.
+     *
+     * @param array<string> $templatePaths Template paths to check
+     * @param CacheService $cacheService Cache service for storing results
+     * @param PerformanceMonitor $performanceMonitor Performance monitoring service
+     * @return array<string, bool> Map of template paths to existence status
+     */
+    private static function batchCheckTemplateExistence(
+        array $templatePaths,
+        CacheService $cacheService,
+        PerformanceMonitor $performanceMonitor
+    ): array {
+        $existenceResults = [];
+        $uncachedPaths = [];
+        
+        // First pass: Check cache for all paths
+        foreach ($templatePaths as $path) {
+            $cachedResult = $cacheService->getCachedTemplateExistence($path);
+            if ($cachedResult !== null) {
+                $existenceResults[$path] = $cachedResult;
+                $performanceMonitor->recordCacheAccess(true, 'existence');
+            } else {
+                $uncachedPaths[] = $path;
+            }
+        }
+        
+        // Second pass: Batch check uncached paths
+        if (!empty($uncachedPaths)) {
+            $view = Craft::$app->view;
+            
+            foreach ($uncachedPaths as $path) {
+                $exists = $view->doesTemplateExist($path);
+                $existenceResults[$path] = $exists;
+                
+                // Cache the result for future use
+                $cacheService->cacheTemplateExistence($path, $exists);
+                $performanceMonitor->recordCacheAccess(false, 'existence');
+            }
+        }
+        
+        return $existenceResults;
+    }
+
+    /**
+     * Finds the first existing template using early exit strategy.
+     *
+     * This method implements an early exit strategy to stop processing as soon
+     * as the first existing template is found, improving performance for cases
+     * where templates are found early in the hierarchy.
+     *
+     * @param array<string> $templatePaths Template paths in priority order
+     * @param array<string, bool> $existenceResults Pre-computed existence results
+     * @return string|null Path of first existing template or null if none found
+     */
+    private static function findFirstExistingTemplate(
+        array $templatePaths,
+        array $existenceResults
+    ): ?string {
+        foreach ($templatePaths as $path) {
+            if ($existenceResults[$path] ?? false) {
+                return $path;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Enhances template paths with site-specific variations and fallback mechanisms.
+     *
+     * This method implements multi-site template resolution logic by generating
+     * site-specific template paths and proper fallback mechanisms for missing
+     * site templates.
+     *
+     * @param array<string> $templatePaths Original template paths
+     * @param TemplateContext $context Template resolution context
+     * @return array{paths: array<string>, fallbackSite: string|null} Enhanced paths with fallback info
+     */
+    private static function enhancePathsForMultiSite(
+        array $templatePaths,
+        TemplateContext $context
+    ): array {
+        $sitesService = Craft::$app->sites;
+        $currentSite = $sitesService->currentSite;
+        $fallbackSite = null;
+        
+        // Get element's site or current site
+        $elementSiteId = $context->element->siteId ?? $currentSite->id;
+        $elementSite = $sitesService->getSiteById($elementSiteId);
+        
+        if (!$elementSite) {
+            $elementSite = $currentSite;
+        }
+        
+        $enhancedPaths = [];
+        
+        // If baseSite is specified, use it for site-specific paths
+        if ($context->baseSite) {
+            $baseSite = $sitesService->getSiteByHandle($context->baseSite);
+            if ($baseSite) {
+                // Generate site-specific paths first (highest priority)
+                foreach ($templatePaths as $path) {
+                    $siteSpecificPath = self::generateSiteSpecificPath($path, $baseSite->handle);
+                    if ($siteSpecificPath !== $path) {
+                        $enhancedPaths[] = $siteSpecificPath;
+                    }
+                }
+                
+                // Add original paths as fallback
+                $enhancedPaths = array_merge($enhancedPaths, $templatePaths);
+                
+                // If baseSite is different from element site, set up fallback
+                if ($baseSite->id !== $elementSite->id) {
+                    $fallbackSite = $elementSite->handle;
+                    
+                    // Add element site-specific paths as additional fallback
+                    foreach ($templatePaths as $path) {
+                        $fallbackPath = self::generateSiteSpecificPath($path, $elementSite->handle);
+                        if ($fallbackPath !== $path && !in_array($fallbackPath, $enhancedPaths)) {
+                            $enhancedPaths[] = $fallbackPath;
+                        }
+                    }
+                }
+            } else {
+                // Invalid baseSite handle, use original paths
+                $enhancedPaths = $templatePaths;
+            }
+        } else {
+            // No baseSite specified, use element's site for site-specific paths
+            foreach ($templatePaths as $path) {
+                $siteSpecificPath = self::generateSiteSpecificPath($path, $elementSite->handle);
+                if ($siteSpecificPath !== $path) {
+                    $enhancedPaths[] = $siteSpecificPath;
+                }
+            }
+            
+            // Add original paths as fallback
+            $enhancedPaths = array_merge($enhancedPaths, $templatePaths);
+            
+            // If element site is not the primary site, add primary site fallback
+            $primarySite = $sitesService->primarySite;
+            if ($primarySite && $primarySite->id !== $elementSite->id) {
+                $fallbackSite = $primarySite->handle;
+                
+                foreach ($templatePaths as $path) {
+                    $primarySitePath = self::generateSiteSpecificPath($path, $primarySite->handle);
+                    if ($primarySitePath !== $path && !in_array($primarySitePath, $enhancedPaths)) {
+                        $enhancedPaths[] = $primarySitePath;
+                    }
+                }
+            }
+        }
+        
+        return [
+            'paths' => array_unique($enhancedPaths),
+            'fallbackSite' => $fallbackSite,
+        ];
+    }
+
+    /**
+     * Generates a site-specific template path.
+     *
+     * This method creates site-specific template paths by inserting the site handle
+     * into the template path structure, following Craft CMS conventions.
+     *
+     * @param string $templatePath Original template path
+     * @param string $siteHandle Site handle to use for path generation
+     * @return string Site-specific template path
+     */
+    private static function generateSiteSpecificPath(string $templatePath, string $siteHandle): string
+    {
+        // Don't modify paths that already contain site-specific segments
+        if (str_contains($templatePath, '/_' . $siteHandle . '/') || 
+            str_contains($templatePath, '/' . $siteHandle . '/')) {
+            return $templatePath;
+        }
+        
+        // Split path into directory and filename
+        $pathParts = explode('/', $templatePath);
+        $filename = array_pop($pathParts);
+        $directory = implode('/', $pathParts);
+        
+        // Generate site-specific variations
+        $siteSpecificPaths = [];
+        
+        // Method 1: Add site handle as subdirectory
+        if (!empty($directory)) {
+            $siteSpecificPaths[] = $directory . '/' . $siteHandle . '/' . $filename;
+        } else {
+            $siteSpecificPaths[] = $siteHandle . '/' . $filename;
+        }
+        
+        // Method 2: Add site handle as filename prefix (for flat structures)
+        $filenameParts = explode('.', $filename);
+        if (count($filenameParts) > 1) {
+            $extension = array_pop($filenameParts);
+            $baseName = implode('.', $filenameParts);
+            $siteSpecificFilename = $baseName . '_' . $siteHandle . '.' . $extension;
+            
+            if (!empty($directory)) {
+                $siteSpecificPaths[] = $directory . '/' . $siteSpecificFilename;
+            } else {
+                $siteSpecificPaths[] = $siteSpecificFilename;
+            }
+        }
+        
+        // Return the first site-specific path (subdirectory method preferred)
+        return $siteSpecificPaths[0] ?? $templatePath;
     }
 }
