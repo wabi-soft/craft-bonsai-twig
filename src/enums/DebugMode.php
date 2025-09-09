@@ -97,7 +97,7 @@ enum DebugMode: string
         }
 
         return match($value) {
-            '' => self::DISABLED,
+            '' => self::ALL, // Empty string means show all (the ?beastmode case)
             'path' => self::PATH,
             'hierarchy' => self::HIERARCHY,
             'full' => self::FULL,
@@ -111,6 +111,7 @@ enum DebugMode: string
      *
      * Validates that the debug mode is appropriate for the given template
      * type, allowing type-specific debug modes like 'entry', 'category', etc.
+     * Now supports cross-template debugging for better development experience.
      *
      * @param string $debugValue The debug value to check
      * @param TemplateType $templateType The template type to validate against
@@ -118,13 +119,24 @@ enum DebugMode: string
      */
     public static function isValidForTemplateType(string $debugValue, TemplateType $templateType): bool
     {
+        // Empty string (from ?beastmode) means show all
+        if ($debugValue === '') {
+            return true;
+        }
+        
         // Check if it's a general debug mode
-        $generalModes = ['', 'path', 'hierarchy', 'full', 'all'];
+        $generalModes = ['path', 'hierarchy', 'full', 'all'];
         if (in_array($debugValue, $generalModes)) {
             return true;
         }
 
-        // Check if it matches the template type
-        return in_array($debugValue, $templateType->getAllowedDebugValues());
+        // Allow cross-template debugging - any template-specific debug value is valid
+        // This enables using beastmode=entry to debug matrix templates and vice versa
+        $templateSpecificModes = ['entry', 'category', 'item', 'matrix'];
+        if (in_array($debugValue, $templateSpecificModes)) {
+            return true;
+        }
+
+        return false;
     }
 }

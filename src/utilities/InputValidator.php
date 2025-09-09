@@ -344,27 +344,55 @@ class InputValidator
      */
     public static function validateDebugMode(mixed $value, TemplateType $templateType): DebugMode
     {
-        if ($value === null || $value === '') {
+        if ($value === null) {
             return DebugMode::DISABLED;
+        }
+        
+        // Empty string means "show all" - this is the ?beastmode case
+        if ($value === '') {
+            return DebugMode::ALL;
         }
 
         $debugValue = self::validateString($value, 'debug mode', false, 20);
         
-        try {
-            $debugMode = DebugMode::fromString($debugValue);
-        } catch (\ValueError $e) {
+        // For template-specific filtering, allow cross-template debugging
+        if (!DebugMode::isValidForTemplateType($debugValue, $templateType)) {
+            // If it's a template-specific value (entry, category, item, matrix) but doesn't match current type,
+            // still allow debug but use ALL mode to show template resolution info
+            if (in_array($debugValue, ['entry', 'category', 'item', 'matrix'])) {
+                return DebugMode::ALL; // Allow cross-template debugging
+            }
+            
+            // For invalid general debug modes, still throw exception
             throw new \InvalidArgumentException(
                 sprintf('Invalid debug mode "%s". Allowed values: %s', 
                     $debugValue, 
-                    implode(', ', array_map(fn($case) => $case->value, DebugMode::cases()))
+                    implode(', ', array_merge(
+                        array_map(fn($case) => $case->value, DebugMode::cases()),
+                        ['entry', 'category', 'item', 'matrix']
+                    ))
                 )
             );
         }
 
-        // Validate that the debug mode is appropriate for the template type
-        if ($debugMode->isEnabled() && !DebugMode::isValidForTemplateType($debugValue, $templateType)) {
+        // Try to convert to DebugMode enum, but handle template-specific values
+        try {
+            $debugMode = DebugMode::fromString($debugValue);
+        } catch (\ValueError $e) {
+            // If it's not a general debug mode, but it's valid for the template type,
+            // treat it as a template-specific filter (return ALL mode)
+            if (in_array($debugValue, ['entry', 'category', 'item', 'matrix'])) {
+                return DebugMode::ALL; // Template-specific filtering uses ALL mode
+            }
+            
             throw new \InvalidArgumentException(
-                sprintf('Debug mode "%s" is not valid for template type "%s"', $debugValue, $templateType->value)
+                sprintf('Invalid debug mode "%s". Allowed values: %s', 
+                    $debugValue, 
+                    implode(', ', array_merge(
+                        array_map(fn($case) => $case->value, DebugMode::cases()),
+                        ['entry', 'category', 'item', 'matrix']
+                    ))
+                )
             );
         }
 
