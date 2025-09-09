@@ -343,21 +343,21 @@ class InputValidator
             return null;
         }
 
-        if (!is_numeric($value)) {
+        // Strict integer validation (rejects floats like "3.0" and exponent forms like "1e3")
+        $options = [];
+        if ($min !== null) {
+            $options['min_range'] = $min;
+        }
+        if ($max !== null) {
+            $options['max_range'] = $max;
+        }
+        $filtered = filter_var($value, FILTER_VALIDATE_INT, ['options' => $options]);
+        if ($filtered === false) {
             throw new \InvalidArgumentException(
-                sprintf('Parameter "%s" must be a numeric value, %s given', $parameterName, get_debug_type($value))
+                sprintf('Parameter "%s" must be an integer, %s given', $parameterName, get_debug_type($value))
             );
         }
-
-        $intValue = (int) $value;
-
-        // Check if the conversion was lossy (i.e., it was a float)
-        if ((string) $intValue !== (string) $value && (float) $value != $intValue) {
-            throw new \InvalidArgumentException(
-                sprintf('Parameter "%s" must be an integer, float given', $parameterName)
-            );
-        }
-
+        $intValue = (int) $filtered;
         // Check range constraints
         if ($min !== null && $intValue < $min) {
             throw new \InvalidArgumentException(
