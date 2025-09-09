@@ -5,6 +5,7 @@ namespace wabisoft\bonsaitwig\services;
 use craft\base\Element;
 use craft\helpers\ArrayHelper;
 use craft\helpers\StringHelper;
+use wabisoft\bonsaitwig\enums\TemplateType;
 
 /**
  * Service class for loading template paths based on Craft elements and context.
@@ -57,11 +58,11 @@ class ItemLoader
         }
 
         // Extract optional configuration values with defaults
-        $path = $variables['path'] ?? 'item';
+        $path = (string) ($variables['path'] ?? 'item');
         $style = $variables['style'] ?? null;
         $ctx = $variables['ctx'] ?? null;
-        $default = $variables['default'] ?? 'default';
-        $ctxPath = StringHelper::trim($variables['ctxPath'] ?? 'ctx', '/');
+        $default = (string) ($variables['default'] ?? 'default');
+        $ctxPath = StringHelper::trim((string) ($variables['ctxPath'] ?? 'ctx'), '/');
         $baseSite = ArrayHelper::getValue($variables, 'baseSite') ?: false;
 
         // Get entry properties for path building
@@ -73,7 +74,7 @@ class ItemLoader
         $checkTemplates = [];
 
         // Helper to add both baseSite and default versions of a path
-        $addPath = function($templatePath) use (&$checkTemplates, $baseSite, $path) {
+        $addPath = function(string $templatePath) use (&$checkTemplates, $baseSite, $path): void {
             $pathsToAdd = [];
             
             // Add base path first
@@ -96,21 +97,21 @@ class ItemLoader
         // Add context-specific paths
         if ($ctx) {
             if ($style) {
-                $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$style}");
+                $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$ctx->type?->handle}/{$style}");
             }
             if ($type) {
-                $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$type}");
-                $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$default}");
+                $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$ctx->type?->handle}/{$type}");
+                $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$ctx->type?->handle}/{$default}");
             }
             if ($style) {
-                $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$style}");
+                $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$style}");
             }
             if ($type) {
-                $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$type}");
+                $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$type}");
             }
             // Default context section fallbacks
-            $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$default}");
-            $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}");
+            $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$default}");
+            $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}");
         }
 
         // Add non-context template paths
@@ -136,8 +137,8 @@ class ItemLoader
             $checkTemplates,
             $variables,
             '',  // basePath is no longer used
-            'item',
-            ['item', 'all']
+            TemplateType::ITEM,
+            TemplateType::ITEM->getAllowedDebugValues()
         );
     }
 }

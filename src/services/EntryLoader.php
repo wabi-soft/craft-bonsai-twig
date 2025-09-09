@@ -4,6 +4,7 @@ namespace wabisoft\bonsaitwig\services;
 
 use craft\base\Element;
 use craft\helpers\ArrayHelper;
+use wabisoft\bonsaitwig\enums\TemplateType;
 
 /**
  * Service class for loading template paths based on Craft entries.
@@ -54,7 +55,7 @@ class EntryLoader
     {
         // Extract and validate the required entry element
         $entry = ArrayHelper::getValue($variables, 'entry');
-        $path = ArrayHelper::getValue($variables, 'path') ?: 'entry';
+        $path = (string) (ArrayHelper::getValue($variables, 'path') ?: 'entry');
         $baseSite = ArrayHelper::getValue($variables, 'baseSite') ?: false;
 
         if (!$entry instanceof Element) {
@@ -62,15 +63,15 @@ class EntryLoader
         }
 
         // Get entry properties for path building
-        $section = $entry->section->handle ?? '';
-        $type = $entry->type->handle ?? '';
+        $section = $entry->section?->handle ?? '';
+        $type = $entry->type?->handle ?? '';
         $slug = $entry->slug ?? '';
 
         // Build array of possible template paths matching Craft's native pattern
         $checkTemplates = [];
 
         // Helper to add both baseSite and default versions of a path
-        $addPath = function($templatePath) use (&$checkTemplates, $baseSite, $path) {
+        $addPath = function(string $templatePath) use (&$checkTemplates, $baseSite, $path): void {
             $pathsToAdd = [];
             
             // Add base path first
@@ -103,8 +104,8 @@ class EntryLoader
             $checkTemplates,
             $variables,
             '',  // basePath is no longer used
-            'entry',
-            ['entry', 'all']
+            TemplateType::ENTRY,
+            TemplateType::ENTRY->getAllowedDebugValues()
         );
     }
 }

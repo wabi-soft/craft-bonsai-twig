@@ -8,6 +8,8 @@ use craft\helpers\StringHelper;
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
+use wabisoft\bonsaitwig\enums\DebugMode;
+use wabisoft\bonsaitwig\enums\TemplateType;
 use yii\base\Component;
 use yii\base\Exception;
 use yii\base\InvalidArgumentException;
@@ -46,7 +48,7 @@ class HierarchyTemplateLoader extends Component
      * @param array<string> $templates Array of template paths to try loading in priority order
      * @param array<string, mixed> $variables Variables to pass to the template for rendering
      * @param string $basePath Base path to prepend to template paths (legacy parameter)
-     * @param string $type Type of template being loaded (entry, category, item, matrix)
+     * @param TemplateType|string $type Type of template being loaded (entry, category, item, matrix)
      * @param array<string> $allowedBeastmodeValues Array of allowed beastmode debug values
      *
      * @return string The rendered template content or empty string if no template found
@@ -57,20 +59,23 @@ class HierarchyTemplateLoader extends Component
      * @throws LoaderError If template cannot be loaded by Twig
      * @throws InvalidArgumentException If invalid parameters are provided
      */
-    public static function load($templates, $variables, $basePath, $type = 'entry', $allowedBeastmodeValues = []): string
+    public static function load(array $templates, array $variables, string $basePath, TemplateType|string $type = 'entry', array $allowedBeastmodeValues = []): string
     {
         // Validate input parameters
         if (!is_array($templates)) {
             throw new InvalidArgumentException("Templates must be an array");
         }
 
+        // Convert string type to enum if needed
+        $templateType = $type instanceof TemplateType ? $type : TemplateType::fromString((string) $type);
+        
         $isDev = Craft::$app->getConfig()->general->devMode;
 
         // Get the directory from variables or type
-        $directory = $variables['path'] ?? $type;
+        $directory = (string) ($variables['path'] ?? $templateType->getDefaultPath());
 
         // Generate cache key based on template info
-        $cacheKey = 'load:' . implode(',', $templates) . ':' . $type;
+        $cacheKey = 'load:' . implode(',', $templates) . ':' . $templateType->value;
         
         // Try to get cached version first
         $result = self::getCached($cacheKey);
@@ -95,15 +100,17 @@ class HierarchyTemplateLoader extends Component
 
                     // Dev mode: Check beastmode parameter
                     $beastmodeValue = Craft::$app->request->getParam('beastmode');
-                    $shouldShowDebug = $beastmodeValue !== null && (
+                    $debugMode = DebugMode::fromString($beastmodeValue);
+                    
+                    $shouldShowDebug = $debugMode->isEnabled() && (
                         $beastmodeValue === '' || // Empty value means show all
-                        in_array($beastmodeValue, $allowedBeastmodeValues) // Check allowed values
+                        DebugMode::isValidForTemplateType((string) $beastmodeValue, $templateType) // Check template-specific values
                     );
 
                     // If debug is enabled, prepare debug info
                     if ($shouldShowDebug) {
                         // Process templates to remove directory prefix for display
-                        $displayTemplates = array_map(function($path) use ($directory) {
+                        $displayTemplates = array_map(function(string $path) use ($directory): string {
                             // Don't modify paths that already have the directory prefix
                             return $path;
                         }, $templates);
@@ -112,11 +119,11 @@ class HierarchyTemplateLoader extends Component
                             'directory' => $directory,
                             'templates' => $displayTemplates,
                             'currentTemplate' => $fullPath,
-                            'type' => $type,
+                            'type' => $templateType->value,
                         ];
                         
                         // Wrap content with debug info
-                        $content = self::renderInfo($content, Json::encode($info), $type);
+                        $content = self::renderInfo($content, Json::encode($info), $templateType->value);
                     }
 
                     // Cache the result for an hour
@@ -129,7 +136,7 @@ class HierarchyTemplateLoader extends Component
         // Log error if no template was found
         $errorMessage = sprintf(
             "Unable to find any matching templates. Tried:\n%s",
-            implode("\n", array_map(fn($t) => "- $t", $templates))
+            implode("\n", array_map(fn(string $t): string => "- $t", $templates))
         );
         
         Craft::error($errorMessage, __METHOD__);
@@ -174,7 +181,7 @@ class HierarchyTemplateLoader extends Component
      *
      * @return string Content wrapped with debug information template
      */
-    private static function renderInfo($content, $info, $type = 'entry'): string
+    private static function renderInfo(string $content, string $info, string $type = 'entry'): string
     {
         // Render debug info template with content
         return Craft::$app->view->renderTemplate(

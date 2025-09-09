@@ -4,6 +4,7 @@ namespace wabisoft\bonsaitwig\services;
 
 use craft\base\Element;
 use craft\helpers\ArrayHelper;
+use wabisoft\bonsaitwig\enums\TemplateType;
 
 /**
  * Service class for loading template paths based on Craft matrix blocks.
@@ -53,10 +54,10 @@ class MatrixLoader
         }
 
         // Extract optional configuration values with defaults
-        $path = ArrayHelper::getValue($variables, 'path') ?: 'matrix';
+        $path = (string) (ArrayHelper::getValue($variables, 'path') ?: 'matrix');
         $style = ArrayHelper::getValue($variables, 'style');
         $ctx = ArrayHelper::getValue($variables, 'ctx');
-        $ctxPath = ArrayHelper::getValue($variables, 'ctxPath') ?: 'ctx';
+        $ctxPath = (string) (ArrayHelper::getValue($variables, 'ctxPath') ?: 'ctx');
 
         // Get block properties for path building
         $type = $block?->type?->handle;
@@ -66,7 +67,7 @@ class MatrixLoader
         $checkTemplates = [];
 
         // Helper to add both baseSite and default versions of a path
-        $addPath = function($templatePath) use (&$checkTemplates, $path) {
+        $addPath = function(string $templatePath) use (&$checkTemplates, $path): void {
             // Add base path first
             $checkTemplates[] = $path . '/' . $templatePath;
         };
@@ -94,8 +95,8 @@ class MatrixLoader
             $checkTemplates,
             $variables,
             '',  // No base path needed since we include it in template paths
-            'matrix',
-            ['matrix', 'all']
+            TemplateType::MATRIX,
+            TemplateType::MATRIX->getAllowedDebugValues()
         );
     }
 }

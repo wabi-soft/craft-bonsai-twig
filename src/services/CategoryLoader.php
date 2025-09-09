@@ -4,6 +4,7 @@ namespace wabisoft\bonsaitwig\services;
 
 use craft\base\Element;
 use craft\helpers\ArrayHelper;
+use wabisoft\bonsaitwig\enums\TemplateType;
 
 /**
  * Service class for loading template paths based on Craft categories.
@@ -48,7 +49,7 @@ class CategoryLoader
     {
         // Extract and validate the required category element
         $category = ArrayHelper::getValue($variables, 'entry');
-        $path = ArrayHelper::getValue($variables, 'path') ?: 'category';
+        $path = (string) (ArrayHelper::getValue($variables, 'path') ?: 'category');
         $baseSite = ArrayHelper::getValue($variables, 'baseSite') ?: false;
 
         if (!$category instanceof Element) {
@@ -64,7 +65,7 @@ class CategoryLoader
         $checkTemplates = [];
 
         // Helper to add both baseSite and default versions of a path
-        $addPath = function($templatePath) use (&$checkTemplates, $baseSite, $path) {
+        $addPath = function(string $templatePath) use (&$checkTemplates, $baseSite, $path): void {
             $pathsToAdd = [];
             
             // Add base path first
@@ -94,8 +95,8 @@ class CategoryLoader
             $checkTemplates,
             $variables,
             '',  // No base path needed since we include it in template paths
-            'category',
-            ['category', 'all']
+            TemplateType::CATEGORY,
+            TemplateType::CATEGORY->getAllowedDebugValues()
         );
     }
 }
