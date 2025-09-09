@@ -102,10 +102,11 @@ New caching options are available in plugin settings:
 ```php
 // In your plugin configuration
 return [
-    'cacheInDevMode' => true,  // Enable caching in development mode
-    'cacheTimeout' => 3600,    // Cache timeout in seconds
+    'cacheInDevMode'          => true,         // Enable caching in development mode
+    'templateCacheDuration'   => 3600,         // Template resolution cache (sec)
+    'elementCacheDuration'    => 1800,         // Element property cache (sec)
+    'existenceCacheDuration'  => 7200,         // Existence check cache (sec)
 ];
-```
 
 ## New Debug Features
 
