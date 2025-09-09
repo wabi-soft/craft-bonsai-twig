@@ -261,9 +261,13 @@ class BonsaiTwig extends Plugin
      */
     private function attachEventHandlers(): void
     {
-        $isDev = App::env('CRAFT_DEV_MODE') ?? Craft::$app->getConfig()->general->devMode;
-        
-        if ($isDev) {
+         // Normalize CRAFT_DEV_MODE to a boolean if set, otherwise fall back to config
+         $envDev = App::env('CRAFT_DEV_MODE');
+         $isDev = $envDev !== null
+             ? filter_var((string)$envDev, FILTER_VALIDATE_BOOLEAN)
+             : Craft::$app->getConfig()->general->devMode;
+         
+         if ($isDev) {
             Event::on(
                 View::class,
                 View::EVENT_REGISTER_SITE_TEMPLATE_ROOTS,
