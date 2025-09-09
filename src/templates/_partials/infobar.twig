@@ -504,67 +504,38 @@
             <div class="bonsai-info__cache-stats">
                 <div class="bonsai-info__cache-title">Cache Performance</div>
                 
-                {% set plugin = craft.app.plugins.getPlugin('_bonsai-twig') %}
-                {% set pluginSettings = plugin ? plugin.getSettings() : null %}
-                {% set isDevMode = craft.app.config.general.devMode %}
-                {% set cacheOverrideEnabled = pluginSettings and pluginSettings.cacheInDevMode %}
-                {% set cachingEnabled = not isDevMode or cacheOverrideEnabled %}
+                <div class="bonsai-info__cache-overview">
+                    <div class="bonsai-info__cache-metric">
+                        <div class="bonsai-info__cache-metric-label">Hit Rate</div>
+                        <div class="bonsai-info__cache-metric-value">{{ data.cache_stats.hit_rate }}%</div>
+                    </div>
+                    <div class="bonsai-info__cache-metric">
+                        <div class="bonsai-info__cache-metric-label">Hits</div>
+                        <div class="bonsai-info__cache-metric-value">{{ data.cache_stats.hits }}</div>
+                    </div>
+                    <div class="bonsai-info__cache-metric">
+                        <div class="bonsai-info__cache-metric-label">Total</div>
+                        <div class="bonsai-info__cache-metric-value">{{ data.cache_stats.total_requests }}</div>
+                    </div>
+                </div>
                 
-                {# Debug info to help troubleshoot #}
-                {% if craft.app.config.general.devMode %}
-                    <div class="bonsai-info__note" style="margin-bottom: 8px; font-size: 9px; opacity: 0.7;">
-                        Debug: DevMode={{ isDevMode ? 'true' : 'false' }}, 
-                        Plugin={{ plugin ? 'found' : 'not found' }}, 
-                        Settings={{ pluginSettings ? 'loaded' : 'not loaded' }}, 
-                        CacheOverride={{ cacheOverrideEnabled ? 'true' : 'false' }},
-                        CachingEnabled={{ cachingEnabled ? 'true' : 'false' }}
+                {% if data.cache_stats.by_type is defined and data.cache_stats.by_type|length > 0 %}
+                    <div class="bonsai-info__cache-details">
+                        {% for cacheType, typeStats in data.cache_stats.by_type %}
+                            <div class="bonsai-info__cache-type">
+                                <span class="bonsai-info__cache-type-name">{{ cacheType|title }}</span>
+                                <span class="bonsai-info__cache-type-stats">
+                                    {{ typeStats.hit_rate }}% ({{ typeStats.hits }}/{{ typeStats.total }})
+                                </span>
+                            </div>
+                        {% endfor %}
                     </div>
                 {% endif %}
                 
-                {% if not cachingEnabled %}
+                {% if craft.app.config.general.devMode %}
                     <div class="bonsai-info__note">
-                        <strong>Caching is disabled.</strong><br>
-                        {% if isDevMode %}
-                            {% if pluginSettings %}
-                                Development mode is enabled and <code>cacheInDevMode</code> is disabled in plugin settings.<br>
-                                To test caching in dev mode, enable <code>cacheInDevMode</code> in the Bonsai Twig plugin settings.
-                            {% else %}
-                                Development mode is enabled and plugin settings are not available.<br>
-                                To test caching, set <code>devMode = false</code> in your config or configure plugin settings.
-                            {% endif %}
-                        {% else %}
-                            Cache statistics are only available when caching is enabled.<br>
-                            Check your cache configuration.
-                        {% endif %}
+                        Caching is enabled in production mode only
                     </div>
-                {% else %}
-                    <div class="bonsai-info__cache-overview">
-                        <div class="bonsai-info__cache-metric">
-                            <div class="bonsai-info__cache-metric-label">Hit Rate</div>
-                            <div class="bonsai-info__cache-metric-value">{{ data.cache_stats.hit_rate }}%</div>
-                        </div>
-                        <div class="bonsai-info__cache-metric">
-                            <div class="bonsai-info__cache-metric-label">Hits</div>
-                            <div class="bonsai-info__cache-metric-value">{{ data.cache_stats.hits }}</div>
-                        </div>
-                        <div class="bonsai-info__cache-metric">
-                            <div class="bonsai-info__cache-metric-label">Total</div>
-                            <div class="bonsai-info__cache-metric-value">{{ data.cache_stats.total_requests }}</div>
-                        </div>
-                    </div>
-                    
-                    {% if data.cache_stats.by_type is defined and data.cache_stats.by_type|length > 0 %}
-                        <div class="bonsai-info__cache-details">
-                            {% for cacheType, typeStats in data.cache_stats.by_type %}
-                                <div class="bonsai-info__cache-type">
-                                    <span class="bonsai-info__cache-type-name">{{ cacheType|title }}</span>
-                                    <span class="bonsai-info__cache-type-stats">
-                                        {{ typeStats.hit_rate }}% ({{ typeStats.hits }}/{{ typeStats.total }})
-                                    </span>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
                 {% endif %}
             </div>
         {% endif %}
