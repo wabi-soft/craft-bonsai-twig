@@ -18,6 +18,7 @@ use wabisoft\bonsaitwig\services\CacheService;
 use wabisoft\bonsaitwig\services\PerformanceMonitor;
 use wabisoft\bonsaitwig\services\ErrorReportingService;
 use wabisoft\bonsaitwig\web\twig\Templates;
+use wabisoft\bonsaitwig\models\Settings;
 use wabisoft\bonsaitwig\exceptions\BonsaiTwigException;
 use yii\base\Event;
 use yii\base\InvalidConfigException;
@@ -56,7 +57,31 @@ class BonsaiTwig extends Plugin
     /**
      * @var bool Whether the plugin has a CP settings page
      */
-    public bool $hasCpSettings = false;
+    public bool $hasCpSettings = true;
+
+    /**
+     * Creates and returns the model used to store the plugin's settings.
+     *
+     * @return Settings The plugin settings model
+     */
+    protected function createSettingsModel(): Settings
+    {
+        return new Settings();
+    }
+
+    /**
+     * Returns the rendered settings HTML, which will be inserted into the content
+     * block on the settings page.
+     *
+     * @return string The rendered settings HTML
+     */
+    protected function settingsHtml(): string
+    {
+        return Craft::$app->view->renderTemplate('_bonsai-twig/settings', [
+            'plugin' => $this,
+            'settings' => $this->getSettings(),
+        ]);
+    }
 
     /**
      * Returns the plugin's configuration array for service registration.

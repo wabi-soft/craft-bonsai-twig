@@ -7,6 +7,7 @@ use craft\base\Element;
 use wabisoft\bonsaitwig\enums\TemplateType;
 use wabisoft\bonsaitwig\utilities\SecurityUtils;
 use wabisoft\bonsaitwig\valueobjects\TemplateContext;
+use wabisoft\bonsaitwig\BonsaiTwig;
 use yii\base\Component;
 use yii\caching\TagDependency;
 
@@ -84,8 +85,8 @@ class CacheService extends Component
         ?string $resolvedPath,
         array $metadata = []
     ): void {
-        // Skip caching in development mode
-        if (Craft::$app->getConfig()->general->devMode) {
+        // Skip caching in development mode unless plugin setting overrides it
+        if ($this->shouldSkipCaching()) {
             return;
         }
 
@@ -122,8 +123,8 @@ class CacheService extends Component
         TemplateContext $context,
         array $attemptedPaths
     ): ?array {
-        // Skip cache in development mode
-        if (Craft::$app->getConfig()->general->devMode) {
+        // Skip cache in development mode unless plugin setting overrides it
+        if ($this->shouldSkipCaching()) {
             return null;
         }
 
@@ -155,8 +156,8 @@ class CacheService extends Component
      */
     public function cacheElementProperty(Element $element, string $property, mixed $value): void
     {
-        // Skip caching in development mode
-        if (Craft::$app->getConfig()->general->devMode) {
+        // Skip caching in development mode unless plugin setting overrides it
+        if ($this->shouldSkipCaching()) {
             return;
         }
 
@@ -194,8 +195,8 @@ class CacheService extends Component
      */
     public function getCachedElementProperty(Element $element, string $property): mixed
     {
-        // Skip cache in development mode
-        if (Craft::$app->getConfig()->general->devMode) {
+        // Skip cache in development mode unless plugin setting overrides it
+        if ($this->shouldSkipCaching()) {
             return null;
         }
 
@@ -226,8 +227,8 @@ class CacheService extends Component
      */
     public function cacheTemplateExistence(string $templatePath, bool $exists): void
     {
-        // Skip caching in development mode
-        if (Craft::$app->getConfig()->general->devMode) {
+        // Skip caching in development mode unless plugin setting overrides it
+        if ($this->shouldSkipCaching()) {
             return;
         }
 
@@ -251,8 +252,8 @@ class CacheService extends Component
      */
     public function getCachedTemplateExistence(string $templatePath): ?bool
     {
-        // Skip cache in development mode
-        if (Craft::$app->getConfig()->general->devMode) {
+        // Skip cache in development mode unless plugin setting overrides it
+        if ($this->shouldSkipCaching()) {
             return null;
         }
 
@@ -397,8 +398,8 @@ class CacheService extends Component
         ?string $fallbackSite = null,
         array $metadata = []
     ): void {
-        // Skip caching in development mode
-        if (Craft::$app->getConfig()->general->devMode) {
+        // Skip caching in development mode unless plugin setting overrides it
+        if ($this->shouldSkipCaching()) {
             return;
         }
 
@@ -438,8 +439,8 @@ class CacheService extends Component
         TemplateContext $context,
         array $attemptedPaths
     ): ?array {
-        // Skip cache in development mode
-        if (Craft::$app->getConfig()->general->devMode) {
+        // Skip cache in development mode unless plugin setting overrides it
+        if ($this->shouldSkipCaching()) {
             return null;
         }
 
@@ -570,5 +571,29 @@ class CacheService extends Component
             'site_template_resolution',
             $keyData
         );
+    }
+
+    /**
+     * Determines whether caching should be skipped based on development mode and plugin settings.
+     *
+     * @return bool True if caching should be skipped, false otherwise
+     */
+    private function shouldSkipCaching(): bool
+    {
+        $isDev = Craft::$app->getConfig()->general->devMode;
+        
+        if (!$isDev) {
+            // Always cache in production mode
+            return false;
+        }
+        
+        // In development mode, check plugin setting
+        $plugin = BonsaiTwig::getInstance();
+        if ($plugin && $plugin->getSettings()) {
+            return !$plugin->getSettings()->cacheInDevMode;
+        }
+        
+        // Default: skip caching in dev mode if no plugin settings
+        return true;
     }
 }

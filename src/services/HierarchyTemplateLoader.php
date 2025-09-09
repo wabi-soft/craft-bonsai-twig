@@ -438,9 +438,14 @@ class HierarchyTemplateLoader extends Component
      */
     private static function getCached(string $key): string|false
     {
-        if (Craft::$app->getConfig()->general->devMode) {
+        // Check plugin setting for caching in dev mode
+        $plugin = BonsaiTwig::getInstance();
+        $isDev = Craft::$app->getConfig()->general->devMode;
+        
+        if ($isDev && (!$plugin || !$plugin->getSettings() || !$plugin->getSettings()->cacheInDevMode)) {
             return false;
         }
+        
         return Craft::$app->cache->get($key);
     }
 
