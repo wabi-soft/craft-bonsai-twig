@@ -31,6 +31,7 @@ The plugin provides four main Twig functions for hierarchical template loading:
 **Description**: Loads templates for entry elements with intelligent hierarchy resolution.
 
 **Parameters**:
+
 - `entry` (Entry): The entry element to render
 - `path` (string, optional): Custom template path override
 - `style` (string, optional): Style variant for the template
@@ -39,19 +40,20 @@ The plugin provides four main Twig functions for hierarchical template loading:
 - `variables` (array, optional): Additional variables to pass to the template
 
 **Example**:
+
 ```twig
 {# Basic usage #}
 {{ entryTemplates({ entry }) }}
 
 {# With custom path and style #}
-{{ entryTemplates({ 
-    entry: entry, 
+{{ entryTemplates({
+    entry: entry,
     path: 'custom/path',
     style: 'featured'
 }) }}
 
 {# With additional context #}
-{{ entryTemplates({ 
+{{ entryTemplates({
     entry: entry,
     context: parentEntry,
     variables: { customVar: 'value' }
@@ -69,12 +71,13 @@ The plugin provides four main Twig functions for hierarchical template loading:
 **Parameters**: Same as `entryTemplates`
 
 **Example**:
+
 ```twig
 {# Basic category rendering #}
 {{ categoryTemplates({ entry: category }) }}
 
 {# Category with style variant #}
-{{ categoryTemplates({ 
+{{ categoryTemplates({
     entry: category,
     style: 'card'
 }) }}
@@ -91,6 +94,7 @@ The plugin provides four main Twig functions for hierarchical template loading:
 **Parameters**: Same as `entryTemplates`
 
 **Example**:
+
 ```twig
 {# Render related items #}
 {% for item in entry.relatedItems.all() %}
@@ -98,7 +102,7 @@ The plugin provides four main Twig functions for hierarchical template loading:
 {% endfor %}
 
 {# Item with context awareness #}
-{{ itemTemplates({ 
+{{ itemTemplates({
     entry: item,
     context: parentEntry,
     style: 'compact'
@@ -114,6 +118,7 @@ The plugin provides four main Twig functions for hierarchical template loading:
 **Description**: Advanced template loading for Matrix blocks with style and context awareness.
 
 **Parameters**:
+
 - `block` (MatrixBlock): The matrix block to render
 - `style` (string, optional): Style variant for the block
 - `ctx` or `context` (Element, optional): Parent context element
@@ -124,6 +129,7 @@ The plugin provides four main Twig functions for hierarchical template loading:
 - `variables` (array, optional): Additional template variables
 
 **Basic Example**:
+
 ```twig
 {# Simple matrix block rendering #}
 {% for block in entry.matrixField.all() %}
@@ -132,6 +138,7 @@ The plugin provides four main Twig functions for hierarchical template loading:
 ```
 
 **Advanced Example**:
+
 ```twig
 {# Advanced matrix with full context #}
 {% if entry.matrixField|length %}
@@ -146,7 +153,7 @@ The plugin provides four main Twig functions for hierarchical template loading:
             isFirst: loop.first,
             context: context|default('basic'),
             entry: entry,
-            variables: { 
+            variables: {
                 customData: customValue,
                 sectionHandle: entry.section.handle
             }
@@ -180,7 +187,7 @@ You can specify different levels of debug information:
 ?beastmode=path
 
 # Show template hierarchy
-?beastmode=hierarchy  
+?beastmode=hierarchy
 
 # Show full debug info with performance metrics
 ?beastmode=full
@@ -197,7 +204,7 @@ Target specific template types for debugging:
 # Debug only entry templates
 ?beastmode=entry
 
-# Debug only matrix templates  
+# Debug only matrix templates
 ?beastmode=matrix
 
 # Debug only category templates
@@ -212,24 +219,28 @@ Target specific template types for debugging:
 When debug mode is active, you'll see a hover overlay with detailed information:
 
 #### Template Resolution Hierarchy
+
 - **Template Paths**: All attempted template paths in priority order
 - **Current Template**: The template that was successfully loaded (highlighted in green)
 - **Missing Templates**: Templates that were checked but not found (crossed out)
 - **Site-Specific Templates**: Templates with site context (highlighted in blue)
 
 #### Site Context Information
+
 - **Current Site**: The site context for the current request
 - **Element Site**: The site associated with the element being rendered
 - **Base Site**: The base site for fallback resolution
 - **Fallback Site**: Alternative site for template resolution
 
 #### Performance Metrics
+
 - **Resolution Time**: How long it took to resolve the template
 - **Memory Delta**: Memory usage change during template resolution
 - **Paths Saved**: Number of paths eliminated through optimization
 - **Resolution Checkpoints**: Detailed timing for each resolution step
 
 #### Cache Performance
+
 - **Hit Rate**: Percentage of cache hits vs total requests
 - **Cache Statistics**: Detailed breakdown by cache type
 - **Cache Status**: Whether caching is enabled and why
@@ -237,13 +248,14 @@ When debug mode is active, you'll see a hover overlay with detailed information:
 ### Debug Examples
 
 #### Entry Debug Example
+
 ```twig
 {# Entry template with debug capability #}
-{# 
+{#
 Entry Handler
 Add URL parameters to render debug info in devMode:
 - Show paths: ?beastmode=path
-- Show hierarchy: ?beastmode=hierarchy  
+- Show hierarchy: ?beastmode=hierarchy
 - Show all entry debug: ?beastmode=entry
 - Show everything: ?beastmode=all
 #}
@@ -251,10 +263,11 @@ Add URL parameters to render debug info in devMode:
 ```
 
 #### Category Debug Example
+
 ```twig
 {# Category template with debug capability #}
 {#
-Category Handler  
+Category Handler
 Add URL parameters to render debug info in devMode:
 - Show paths: ?beastmode=path
 - Show hierarchy: ?beastmode=hierarchy
@@ -265,6 +278,7 @@ Add URL parameters to render debug info in devMode:
 ```
 
 #### Item Debug Example
+
 ```twig
 {# Item template with debug capability #}
 {#
@@ -272,13 +286,14 @@ Item Handler
 Add URL parameters to render debug info in devMode:
 - Show paths: ?beastmode=path
 - Show hierarchy: ?beastmode=hierarchy
-- Show all item debug: ?beastmode=item  
+- Show all item debug: ?beastmode=item
 - Show everything: ?beastmode=all
 #}
 {{ itemTemplates({ entry: item }) }}
 ```
 
 #### Matrix Debug Example
+
 ```twig
 {# Matrix template with debug capability #}
 {#
@@ -292,8 +307,59 @@ Add URL parameters to render debug info in devMode:
 {% for block in entry.matrixField.all() %}
     {{ matrixTemplates({ block: block }) }}
 {% endfor %}
-```##
- Template Resolution
+```
+
+### Suggested Minimum Usage
+
+For the most common use cases, here are the recommended minimal implementations:
+
+#### Basic Matrix Templates (Craft 4→5 Migration)
+
+```twig
+{# Replaces the old matrix include pattern #}
+{% for block in matrix.all() %}
+    {{ matrixTemplates({
+        block: block,
+        handle: handle ?? null,
+        style: style ?? null
+    }) }}
+{% endfor %}
+```
+
+This automatically resolves templates in this order:
+
+1. `matrix/handle/{handle}/{blockType}.twig` (if handle provided)
+2. `matrix/style/{style}/{blockType}.twig` (if style provided)
+3. `matrix/{blockType}.twig` (main template)
+4. `matrix/default.twig` (fallback)
+
+#### Simple Entry Templates
+
+```twig
+{# Basic entry rendering #}
+{{ entryTemplates({ entry: entry }) }}
+
+{# Entry with style variant #}
+{{ entryTemplates({ entry: entry, style: 'featured' }) }}
+```
+
+#### Basic Category Templates
+
+```twig
+{# Simple category rendering #}
+{{ categoryTemplates({ entry: category }) }}
+```
+
+#### Basic Item Templates
+
+```twig
+{# For related entries or nested content #}
+{% for item in entry.relatedItems.all() %}
+    {{ itemTemplates({ entry: item }) }}
+{% endfor %}
+```
+
+Template Resolution
 
 ### How Template Resolution Works
 
@@ -309,13 +375,16 @@ The plugin uses intelligent hierarchical template resolution that checks multipl
 For an entry with section handle `blog` and type handle `article`:
 
 ```
+
 # Checked in this order:
-templates/_site1/entry/blog/article.twig
+
+templates/\_site1/entry/blog/article.twig
 templates/entry/blog/article.twig
-templates/_site1/entry/blog/default.twig
+templates/\_site1/entry/blog/default.twig
 templates/entry/blog/default.twig
-templates/_site1/entry/default.twig
+templates/\_site1/entry/default.twig
 templates/entry/default.twig
+
 ```
 
 With a style parameter:
@@ -360,11 +429,13 @@ In Craft CMS 5, categories are now entries, which simplifies template handling. 
 The plugin works alongside Craft 5's built-in `render()` method. While `render()` looks for templates in `_partials/{elementType}/{elementName}.twig`, Bonsai Twig provides more sophisticated hierarchical resolution.
 
 **Craft 5 render():**
+
 ```twig
 {{ entry.render() }}  {# Looks for _partials/entry/blog.twig #}
 ```
 
 **Bonsai Twig:**
+
 ```twig
 {{ entryTemplates({ entry }) }}  {# Checks multiple hierarchical paths #}
 ```
@@ -376,6 +447,7 @@ You can use both approaches as needed - `render()` for simple cases and Bonsai T
 ### Caching
 
 The plugin includes intelligent caching that:
+
 - Caches template path resolution results
 - Invalidates cache when templates change
 - Provides cache statistics in debug mode
@@ -404,11 +476,13 @@ The plugin maintains full backward compatibility, but you can take advantage of 
 #### Enhanced Debug Parameters
 
 **Old way:**
+
 ```
 ?showEntryPath=true&showEntryHierarchy=true
 ```
 
 **New way (recommended):**
+
 ```
 ?beastmode=entry
 ?beastmode=full
@@ -432,7 +506,7 @@ You can now use additional parameters for enhanced functionality:
 
 ```twig
 {# New optional parameters #}
-{{ entryTemplates({ 
+{{ entryTemplates({
     entry: entry,
     style: 'featured',        # New: style variants
     context: parentEntry,     # New: context awareness
@@ -497,6 +571,7 @@ For issues, feature requests, or questions:
 ## Changelog
 
 ### Version 6.4.0
+
 - Full Craft CMS 5 compatibility
 - PHP 8.2 feature utilization
 - Enhanced debug tools with performance metrics

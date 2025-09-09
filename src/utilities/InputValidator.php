@@ -37,6 +37,90 @@ class InputValidator
     private const HANDLE_PATTERN = '/^[a-zA-Z0-9_-]*$/';
 
     /**
+     * Validates a Craft MatrixBlock parameter.
+     *
+     * @param mixed $element The element to validate
+     * @param string $parameterName Name of the parameter for error messages
+     * @param bool $required Whether the element is required
+     * @return \craft\elements\MatrixBlock|null The validated MatrixBlock or null if not required and empty
+     * @throws InvalidElementException If validation fails
+     */
+    public static function validateMatrixBlock(mixed $element, string $parameterName = 'block', bool $required = true): ?\craft\elements\MatrixBlock
+    {
+        if ($element === null || $element === '') {
+            if ($required) {
+                throw new InvalidElementException(
+                    expectedType: 'craft\elements\MatrixBlock',
+                    actualValue: $element,
+                    message: sprintf('Parameter "%s" is required and must be a valid MatrixBlock', $parameterName)
+                );
+            }
+            return null;
+        }
+
+        if (!$element instanceof \craft\elements\MatrixBlock) {
+            // Provide helpful migration guidance for common Craft 4 to 5 scenarios
+            $actualType = get_debug_type($element);
+            $migrationHint = '';
+            
+            if ($element instanceof \craft\elements\Entry) {
+                $migrationHint = "\n\nMigration Tip: If this field was converted from Matrix to Related Entries in Craft 5, use entryTemplates() instead:\n" .
+                    "{{ entryTemplates({ entry: block }) }}";
+            } elseif ($element instanceof \craft\base\Element) {
+                $migrationHint = "\n\nMigration Tip: For non-Matrix elements, consider using:\n" .
+                    "- entryTemplates() for Entry elements\n" .
+                    "- categoryTemplates() for Category elements\n" .
+                    "- itemTemplates() for other element types";
+            }
+            
+            throw new InvalidElementException(
+                expectedType: 'craft\elements\MatrixBlock',
+                actualValue: $element,
+                message: sprintf('Parameter "%s" must be a valid MatrixBlock, %s given%s', $parameterName, $actualType, $migrationHint)
+            );
+        }
+
+        return $element;
+    }
+
+    /**
+     * Validates a MatrixBlock or Entry parameter for backward compatibility.
+     * 
+     * This method supports Craft 4 to 5 migration scenarios where Matrix fields
+     * have been converted to Related Entries fields but templates still use
+     * the matrix template structure.
+     *
+     * @param mixed $element The element to validate
+     * @param string $parameterName Name of the parameter for error messages
+     * @param bool $required Whether the element is required
+     * @return \craft\elements\MatrixBlock|\craft\elements\Entry|null The validated element
+     * @throws InvalidElementException If validation fails
+     */
+    public static function validateMatrixBlockOrEntry(mixed $element, string $parameterName = 'block', bool $required = true): \craft\elements\MatrixBlock|\craft\elements\Entry|null
+    {
+        if ($element === null || $element === '') {
+            if ($required) {
+                throw new InvalidElementException(
+                    expectedType: 'craft\elements\MatrixBlock or craft\elements\Entry',
+                    actualValue: $element,
+                    message: sprintf('Parameter "%s" is required and must be a valid MatrixBlock or Entry', $parameterName)
+                );
+            }
+            return null;
+        }
+
+        if ($element instanceof \craft\elements\MatrixBlock || $element instanceof \craft\elements\Entry) {
+            return $element;
+        }
+
+        throw new InvalidElementException(
+            expectedType: 'craft\elements\MatrixBlock or craft\elements\Entry',
+            actualValue: $element,
+            message: sprintf('Parameter "%s" must be a valid MatrixBlock or Entry, %s given', $parameterName, get_debug_type($element))
+        );
+    }
+
+    /**
      * Validates a Craft Element parameter.
      *
      * @param mixed $element The element to validate
@@ -355,15 +439,18 @@ class InputValidator
 
         $debugValue = self::validateString($value, 'debug mode', false, 20);
         
-        // For template-specific filtering, allow cross-template debugging
-        if (!DebugMode::isValidForTemplateType($debugValue, $templateType)) {
-            // If it's a template-specific value (entry, category, item, matrix) but doesn't match current type,
-            // still allow debug but use ALL mode to show template resolution info
-            if (in_array($debugValue, ['entry', 'category', 'item', 'matrix'])) {
-                return DebugMode::ALL; // Allow cross-template debugging
+        // Handle template-specific debug values first
+        if (in_array($debugValue, ['entry', 'category', 'item', 'matrix'])) {
+            // Only show debug if the debug value matches the current template type
+            if ($debugValue === $templateType->value) {
+                return DebugMode::ALL; // Show debug for matching template type
+            } else {
+                return DebugMode::DISABLED; // Hide debug for non-matching template types
             }
-            
-            // For invalid general debug modes, still throw exception
+        }
+
+        // Handle general debug modes (path, hierarchy, full, all)
+        if (!DebugMode::isValidForTemplateType($debugValue, $templateType)) {
             throw new \InvalidArgumentException(
                 sprintf('Invalid debug mode "%s". Allowed values: %s', 
                     $debugValue, 
@@ -373,16 +460,6 @@ class InputValidator
                     ))
                 )
             );
-        }
-
-        // Handle template-specific debug values
-        if (in_array($debugValue, ['entry', 'category', 'item', 'matrix'])) {
-            // Only show debug if the debug value matches the current template type
-            if ($debugValue === $templateType->value) {
-                return DebugMode::ALL; // Show debug for matching template type
-            } else {
-                return DebugMode::DISABLED; // Hide debug for non-matching template types
-            }
         }
 
         // Try to convert to DebugMode enum for general debug modes
@@ -454,7 +531,12 @@ class InputValidator
         }
 
         if (isset($variables['block'])) {
-            $validated['block'] = self::validateElement($variables['block'], 'block', true);
+            if ($templateType === TemplateType::MATRIX) {
+                // Allow Entry elements for backward compatibility with Craft 4->5 migrations
+                $validated['block'] = self::validateMatrixBlockOrEntry($variables['block'], 'block', true);
+            } else {
+                $validated['block'] = self::validateElement($variables['block'], 'block', true);
+            }
         }
 
         if (isset($variables['ctx'])) {

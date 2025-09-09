@@ -3,6 +3,7 @@
 namespace wabisoft\bonsaitwig\services;
 
 use craft\base\Element;
+use craft\elements\Entry;
 use craft\elements\MatrixBlock;
 use craft\helpers\ArrayHelper;
 use wabisoft\bonsaitwig\enums\TemplateType;
@@ -32,7 +33,7 @@ class MatrixLoader
      * context-aware rendering, style variations, and hierarchical fallback patterns.
      *
      * @param array<string, mixed> $variables Configuration array containing:
-     *        - block: Required. Craft Matrix Block element to base template paths on
+     *        - block: Required. Craft Matrix Block or Entry element to base template paths on
      *        - path: Optional. Base path prefix (defaults to 'matrix')
      *        - style: Optional. Style variation name for block customization
      *        - ctx: Optional. Context Element for parent-aware rendering
@@ -63,39 +64,57 @@ class MatrixLoader
         $parentBlock = $validatedVars['parentBlock'] ?? null;
         $blockIndex = $validatedVars['blockIndex'] ?? null;
 
-        // Validate that block is actually a MatrixBlock
-        if (!($block instanceof MatrixBlock)) {
-            throw new InvalidElementException(
-                expectedType: 'MatrixBlock',
-                actualValue: $block,
-                message: 'Matrix template loading requires a valid MatrixBlock element'
-            );
-        }
+        // Block is already validated as MatrixBlock or Entry by InputValidator
 
-        // Get block properties for path building
-        $type = $block?->type?->handle;
+        // Get element properties for path building
+        // Handle both MatrixBlock and Entry elements for Craft 4->5 migration compatibility
+        if ($block instanceof MatrixBlock) {
+            $type = $block?->type?->handle;
+        } elseif ($block instanceof \craft\elements\Entry) {
+            $type = $block?->type?->handle;
+        } else {
+            $type = 'default';
+        }
+        
         $default = 'default';
 
-        // Build array of possible template paths
+        // Build array of possible template paths exactly like the original include statement
         $checkTemplates = [];
 
-        // Helper to add template paths
-        $addPath = function(string $templatePath) use (&$checkTemplates, $path): void {
-            $checkTemplates[] = $path . '/' . $templatePath;
-        };
+        // Get handle and style from variables (can be null)
+        $handle = $validatedVars['handle'] ?? null;
+        $style = $validatedVars['style'] ?? null;
 
+        // Build paths in exact same order as original include statement:
+        // 'matrix/handle/' ~ handle ?? null ~ '/' ~ block.type,
+        if ($handle) {
+            $checkTemplates[] = "{$path}/handle/{$handle}/{$type}";
+        }
+
+        // 'matrix/style/' ~ style ?? null ~ '/' ~ block.type,
+        if ($style) {
+            $checkTemplates[] = "{$path}/style/{$style}/{$type}";
+        }
+
+        // 'matrix/' ~ block.type,
+        $checkTemplates[] = "{$path}/{$type}";
+        
+        // 'matrix/default'
+        $checkTemplates[] = "{$path}/{$default}";
+
+        // Add enhanced paths for additional features (after the core paths)
+        
         // Add context-aware paths if context element exists
         if ($ctx) {
             $contextSection = $ctx?->section?->handle;
             $contextType = $ctx?->type?->handle;
             
             if ($contextSection && $contextType) {
-                // Context-specific paths with style support
-                if ($style && $style !== 'none') {
-                    $addPath("{$ctxPath}/{$contextSection}/{$contextType}/style/{$style}/{$type}");
+                if ($style) {
+                    $checkTemplates[] = "{$path}/{$ctxPath}/{$contextSection}/{$contextType}/style/{$style}/{$type}";
                 }
-                $addPath("{$ctxPath}/{$contextSection}/{$contextType}/{$type}");
-                $addPath("{$ctxPath}/{$contextSection}/{$type}");
+                $checkTemplates[] = "{$path}/{$ctxPath}/{$contextSection}/{$contextType}/{$type}";
+                $checkTemplates[] = "{$path}/{$ctxPath}/{$contextSection}/{$type}";
             }
         }
 
@@ -105,24 +124,24 @@ class MatrixLoader
             $isLast = $nextBlock === null;
             
             if ($isFirst) {
-                if ($style && $style !== 'none') {
-                    $addPath("position/first/style/{$style}/{$type}");
+                if ($style) {
+                    $checkTemplates[] = "{$path}/position/first/style/{$style}/{$type}";
                 }
-                $addPath("position/first/{$type}");
+                $checkTemplates[] = "{$path}/position/first/{$type}";
             }
             
             if ($isLast) {
-                if ($style && $style !== 'none') {
-                    $addPath("position/last/style/{$style}/{$type}");
+                if ($style) {
+                    $checkTemplates[] = "{$path}/position/last/style/{$style}/{$type}";
                 }
-                $addPath("position/last/{$type}");
+                $checkTemplates[] = "{$path}/position/last/{$type}";
             }
             
             if (!$isFirst && !$isLast) {
-                if ($style && $style !== 'none') {
-                    $addPath("position/middle/style/{$style}/{$type}");
+                if ($style) {
+                    $checkTemplates[] = "{$path}/position/middle/style/{$style}/{$type}";
                 }
-                $addPath("position/middle/{$type}");
+                $checkTemplates[] = "{$path}/position/middle/{$type}";
             }
         }
 
@@ -132,22 +151,19 @@ class MatrixLoader
             $parentField = $parentBlock?->field?->handle;
             
             if ($parentField && $parentType) {
-                if ($style && $style !== 'none') {
-                    $addPath("nested/{$parentField}/{$parentType}/style/{$style}/{$type}");
+                if ($style) {
+                    $checkTemplates[] = "{$path}/nested/{$parentField}/{$parentType}/style/{$style}/{$type}";
                 }
-                $addPath("nested/{$parentField}/{$parentType}/{$type}");
-                $addPath("nested/{$parentField}/{$type}");
+                $checkTemplates[] = "{$path}/nested/{$parentField}/{$parentType}/{$type}";
+                $checkTemplates[] = "{$path}/nested/{$parentField}/{$type}";
             }
         }
 
-        // Add style-specific paths
-        if ($style && $style !== 'none') {
-            $addPath("style/{$style}/{$type}");
+        // Debug: Log template paths being checked (only in dev mode)
+        if (\Craft::$app->getConfig()->general->devMode) {
+            \Craft::info('MatrixLoader checking templates: ' . implode(', ', $checkTemplates), __METHOD__);
+            \Craft::info('Element type: ' . get_class($block) . ', Type handle: ' . $type, __METHOD__);
         }
-
-        // Add basic template paths as fallbacks
-        $addPath($type);
-        $addPath($default);
 
         // Create template context
         $templateContext = new TemplateContext(
@@ -163,9 +179,18 @@ class MatrixLoader
             ])
         );
 
+        // Ensure the block variable is available in templates
+        $templateVariables = array_merge($validatedVars, [
+            'block' => $block,
+            'nextBlock' => $nextBlock,
+            'prevBlock' => $prevBlock,
+            'parentBlock' => $parentBlock,
+            'blockIndex' => $blockIndex,
+        ]);
+
         return HierarchyTemplateLoader::load(
             $checkTemplates,
-            $validatedVars,
+            $templateVariables,
             '',
             TemplateType::MATRIX,
             TemplateType::MATRIX->getAllowedDebugValues()
