@@ -6,6 +6,7 @@ use craft\base\Element;
 use craft\helpers\ArrayHelper;
 use wabisoft\bonsaitwig\enums\TemplateType;
 use wabisoft\bonsaitwig\exceptions\InvalidElementException;
+use wabisoft\bonsaitwig\utilities\InputValidator;
 
 /**
  * Service class for loading template paths based on Craft matrix blocks.
@@ -48,21 +49,15 @@ class MatrixLoader
      */
     public static function load(array $variables = []): string
     {
-        // Extract and validate the required block element
-        $block = ArrayHelper::getValue($variables, 'block');
-        if (!$block instanceof Element) {
-            throw new InvalidElementException(
-                expectedType: 'craft\base\Element',
-                actualValue: $block,
-                message: 'MatrixLoader::load() expects "block" to be a valid Craft Element.'
-            );
-        }
-
-        // Extract optional configuration values with defaults
-        $path = (string) (ArrayHelper::getValue($variables, 'path') ?: 'matrix');
-        $style = ArrayHelper::getValue($variables, 'style');
-        $ctx = ArrayHelper::getValue($variables, 'ctx');
-        $ctxPath = (string) (ArrayHelper::getValue($variables, 'ctxPath') ?: 'ctx');
+        // Validate and sanitize all input parameters
+        $validatedVars = InputValidator::validateServiceParameters($variables, TemplateType::MATRIX);
+        
+        // Extract validated parameters with defaults
+        $block = $validatedVars['block'];
+        $path = $validatedVars['path'] ?? 'matrix';
+        $style = $validatedVars['style'] ?? null;
+        $ctx = $validatedVars['ctx'] ?? null;
+        $ctxPath = $validatedVars['ctxPath'] ?? 'ctx';
 
         // Get block properties for path building
         $type = $block?->type?->handle;
@@ -98,7 +93,7 @@ class MatrixLoader
 
         return HierarchyTemplateLoader::load(
             $checkTemplates,
-            $variables,
+            $validatedVars,
             '',  // No base path needed since we include it in template paths
             TemplateType::MATRIX,
             TemplateType::MATRIX->getAllowedDebugValues()

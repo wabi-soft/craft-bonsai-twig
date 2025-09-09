@@ -6,6 +6,7 @@ use craft\base\Element;
 use craft\helpers\ArrayHelper;
 use wabisoft\bonsaitwig\enums\TemplateType;
 use wabisoft\bonsaitwig\exceptions\InvalidElementException;
+use wabisoft\bonsaitwig\utilities\InputValidator;
 
 /**
  * Service class for loading template paths based on Craft categories.
@@ -48,18 +49,13 @@ class CategoryLoader
      */
     public static function load(array $variables = []): string
     {
-        // Extract and validate the required category element
-        $category = ArrayHelper::getValue($variables, 'entry');
-        $path = (string) (ArrayHelper::getValue($variables, 'path') ?: 'category');
-        $baseSite = ArrayHelper::getValue($variables, 'baseSite') ?: false;
-
-        if (!$category instanceof Element) {
-            throw new InvalidElementException(
-                expectedType: 'craft\base\Element',
-                actualValue: $category,
-                message: 'CategoryLoader::load() expects "entry" to be a valid Craft Element.'
-            );
-        }
+        // Validate and sanitize all input parameters
+        $validatedVars = InputValidator::validateServiceParameters($variables, TemplateType::CATEGORY);
+        
+        // Extract validated parameters with defaults
+        $category = $validatedVars['entry'];
+        $path = $validatedVars['path'] ?? 'category';
+        $baseSite = $validatedVars['baseSite'] ?? false;
 
         // Get category properties for path building
         $group = $category->group?->handle ?? '';
@@ -98,7 +94,7 @@ class CategoryLoader
 
         return HierarchyTemplateLoader::load(
             $checkTemplates,
-            $variables,
+            $validatedVars,
             '',  // No base path needed since we include it in template paths
             TemplateType::CATEGORY,
             TemplateType::CATEGORY->getAllowedDebugValues()

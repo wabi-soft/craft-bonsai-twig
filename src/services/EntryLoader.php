@@ -6,6 +6,7 @@ use craft\base\Element;
 use craft\helpers\ArrayHelper;
 use wabisoft\bonsaitwig\enums\TemplateType;
 use wabisoft\bonsaitwig\exceptions\InvalidElementException;
+use wabisoft\bonsaitwig\utilities\InputValidator;
 
 /**
  * Service class for loading template paths based on Craft entries.
@@ -54,18 +55,13 @@ class EntryLoader
      */
     public static function load(array $variables = []): string
     {
-        // Extract and validate the required entry element
-        $entry = ArrayHelper::getValue($variables, 'entry');
-        $path = (string) (ArrayHelper::getValue($variables, 'path') ?: 'entry');
-        $baseSite = ArrayHelper::getValue($variables, 'baseSite') ?: false;
-
-        if (!$entry instanceof Element) {
-            throw new InvalidElementException(
-                expectedType: 'craft\base\Element',
-                actualValue: $entry,
-                message: 'EntryLoader::load() expects "entry" to be a valid Craft Element.'
-            );
-        }
+        // Validate and sanitize all input parameters
+        $validatedVars = InputValidator::validateServiceParameters($variables, TemplateType::ENTRY);
+        
+        // Extract validated parameters with defaults
+        $entry = $validatedVars['entry'];
+        $path = $validatedVars['path'] ?? 'entry';
+        $baseSite = $validatedVars['baseSite'] ?? false;
 
         // Get entry properties for path building
         $section = $entry->section?->handle ?? '';
@@ -107,7 +103,7 @@ class EntryLoader
 
         return HierarchyTemplateLoader::load(
             $checkTemplates,
-            $variables,
+            $validatedVars,
             '',  // basePath is no longer used
             TemplateType::ENTRY,
             TemplateType::ENTRY->getAllowedDebugValues()

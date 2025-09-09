@@ -7,6 +7,7 @@ use craft\helpers\ArrayHelper;
 use craft\helpers\StringHelper;
 use wabisoft\bonsaitwig\enums\TemplateType;
 use wabisoft\bonsaitwig\exceptions\InvalidElementException;
+use wabisoft\bonsaitwig\utilities\InputValidator;
 
 /**
  * Service class for loading template paths based on Craft elements and context.
@@ -52,23 +53,17 @@ class ItemLoader
      */
     public static function load(array $variables = []): string
     {
-        // Extract and validate the required entry element
-        $entry = ArrayHelper::getValue($variables, 'entry');
-        if (!$entry instanceof Element) {
-            throw new InvalidElementException(
-                expectedType: 'craft\base\Element',
-                actualValue: $entry,
-                message: 'ItemLoader::load() expects "entry" to be a valid Craft Element.'
-            );
-        }
-
-        // Extract optional configuration values with defaults
-        $path = (string) ($variables['path'] ?? 'item');
-        $style = $variables['style'] ?? null;
-        $ctx = $variables['ctx'] ?? null;
-        $default = (string) ($variables['default'] ?? 'default');
-        $ctxPath = StringHelper::trim((string) ($variables['ctxPath'] ?? 'ctx'), '/');
-        $baseSite = ArrayHelper::getValue($variables, 'baseSite') ?: false;
+        // Validate and sanitize all input parameters
+        $validatedVars = InputValidator::validateServiceParameters($variables, TemplateType::ITEM);
+        
+        // Extract validated parameters with defaults
+        $entry = $validatedVars['entry'];
+        $path = $validatedVars['path'] ?? 'item';
+        $style = $validatedVars['style'] ?? null;
+        $ctx = $validatedVars['ctx'] ?? null;
+        $default = $validatedVars['default'] ?? 'default';
+        $ctxPath = StringHelper::trim($validatedVars['ctxPath'] ?? 'ctx', '/');
+        $baseSite = $validatedVars['baseSite'] ?? false;
 
         // Get entry properties for path building
         $section = $entry->section?->handle ?? $entry->group?->handle ?? '';
@@ -140,7 +135,7 @@ class ItemLoader
         // Use HierarchyTemplateLoader to find first matching template
         return HierarchyTemplateLoader::load(
             $checkTemplates,
-            $variables,
+            $validatedVars,
             '',  // basePath is no longer used
             TemplateType::ITEM,
             TemplateType::ITEM->getAllowedDebugValues()

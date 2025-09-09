@@ -12,6 +12,8 @@ use wabisoft\bonsaitwig\enums\DebugMode;
 use wabisoft\bonsaitwig\enums\TemplateType;
 use wabisoft\bonsaitwig\exceptions\InvalidTemplatePathException;
 use wabisoft\bonsaitwig\exceptions\TemplateNotFoundException;
+use wabisoft\bonsaitwig\utilities\SecurityUtils;
+use wabisoft\bonsaitwig\utilities\InputValidator;
 use yii\base\Component;
 use yii\base\Exception;
 use yii\base\InvalidArgumentException;
@@ -63,29 +65,29 @@ class HierarchyTemplateLoader extends Component
      */
     public static function load(array $templates, array $variables, string $basePath, TemplateType|string $type = 'entry', array $allowedBeastmodeValues = []): string
     {
-        // Validate input parameters
-        if (!is_array($templates)) {
-            throw new InvalidArgumentException("Templates must be an array");
-        }
-
-        if (empty($templates)) {
+        // Convert string type to enum if needed
+        $templateType = $type instanceof TemplateType ? $type : TemplateType::fromString((string) $type);
+        
+        // Validate and sanitize input parameters
+        $validatedTemplates = InputValidator::validateTemplatePaths($templates);
+        $validatedVariables = InputValidator::validateTemplateVariables($variables);
+        $validatedBasePath = InputValidator::validateString($basePath, 'basePath', false, 255);
+        
+        if (empty($validatedTemplates)) {
             throw new TemplateNotFoundException(
                 attemptedPaths: [],
                 templateType: $templateType,
                 message: 'No template paths provided for resolution'
             );
         }
-
-        // Convert string type to enum if needed
-        $templateType = $type instanceof TemplateType ? $type : TemplateType::fromString((string) $type);
         
         $isDev = Craft::$app->getConfig()->general->devMode;
 
         // Get the directory from variables or type
-        $directory = (string) ($variables['path'] ?? $templateType->getDefaultPath());
+        $directory = (string) ($validatedVariables['path'] ?? $templateType->getDefaultPath());
 
-        // Generate cache key based on template info
-        $cacheKey = 'load:' . implode(',', $templates) . ':' . $templateType->value;
+        // Generate secure cache key based on template info
+        $cacheKey = SecurityUtils::generateSecureCacheKey($validatedTemplates, $templateType->value, ['directory' => $directory]);
         
         // Try to get cached version first
         $result = self::getCached($cacheKey);
@@ -97,26 +99,27 @@ class HierarchyTemplateLoader extends Component
         if ($result === false) {
             $attemptedPaths = [];
             
-            foreach ($templates as $template) {
-                // Sanitize template path for security
-                $sanitizedTemplate = self::sanitizeTemplatePath($template);
-                
+            foreach ($validatedTemplates as $template) {
+                // Templates are already sanitized by InputValidator::validateTemplatePaths
                 // Use template path as is, since it's already properly formatted
-                $fullPath = $basePath ? StringHelper::trim($basePath . '/' . $sanitizedTemplate, '/') : StringHelper::trim($sanitizedTemplate, '/');
+                $fullPath = $validatedBasePath ? StringHelper::trim($validatedBasePath . '/' . $template, '/') : StringHelper::trim($template, '/');
+                
+                // Validate the full path before using it
+                SecurityUtils::validateTemplatePath($fullPath);
                 $attemptedPaths[] = $fullPath;
                 
                 // Check if template exists before trying to render
                 if (Craft::$app->view->doesTemplateExist($fullPath)) {
-                    $content = Craft::$app->view->renderTemplate($fullPath, $variables);
+                    $content = Craft::$app->view->renderTemplate($fullPath, $validatedVariables);
                     
                     // In production, return content directly
                     if (!$isDev) {
                         return $content;
                     }
 
-                    // Dev mode: Check beastmode parameter
+                    // Dev mode: Check beastmode parameter with validation
                     $beastmodeValue = Craft::$app->request->getParam('beastmode');
-                    $debugMode = DebugMode::fromString($beastmodeValue);
+                    $debugMode = InputValidator::validateDebugMode($beastmodeValue, $templateType);
                     
                     $shouldShowDebug = $debugMode->isEnabled() && (
                         $beastmodeValue === '' || // Empty value means show all
@@ -129,7 +132,7 @@ class HierarchyTemplateLoader extends Component
                         $displayTemplates = array_map(function(string $path) use ($directory): string {
                             // Don't modify paths that already have the directory prefix
                             return $path;
-                        }, $templates);
+                        }, $validatedTemplates);
 
                         $info = [
                             'directory' => $directory,
@@ -151,7 +154,7 @@ class HierarchyTemplateLoader extends Component
 
         // No template was found - create detailed exception
         $templateNotFoundException = new TemplateNotFoundException(
-            attemptedPaths: $attemptedPaths ?? $templates,
+            attemptedPaths: $attemptedPaths ?? $validatedTemplates,
             templateType: $templateType
         );
         
@@ -211,51 +214,7 @@ class HierarchyTemplateLoader extends Component
         );
     }
 
-    /**
-     * Sanitizes a template path to prevent security issues.
-     *
-     * This method removes path traversal attempts and normalizes the path
-     * to ensure it's safe for template loading. Throws an exception if
-     * the path contains dangerous patterns.
-     *
-     * @param string $path Template path to sanitize
-     * @return string Sanitized template path
-     * @throws InvalidTemplatePathException If path contains dangerous patterns
-     */
-    private static function sanitizeTemplatePath(string $path): string
-    {
-        // Check for path traversal attempts
-        if (str_contains($path, '../') || str_contains($path, '..\\')) {
-            throw new InvalidTemplatePathException(
-                path: $path,
-                reason: 'Path traversal attempt detected'
-            );
-        }
 
-        // Check for absolute paths (security risk)
-        if (str_starts_with($path, '/') || (PHP_OS_FAMILY === 'Windows' && preg_match('/^[A-Za-z]:/', $path))) {
-            throw new InvalidTemplatePathException(
-                path: $path,
-                reason: 'Absolute paths are not allowed'
-            );
-        }
-
-        // Normalize path separators
-        $path = str_replace('\\', '/', $path);
-        
-        // Remove leading/trailing slashes and spaces
-        $path = trim($path, '/ ');
-
-        // Validate that path is not empty after sanitization
-        if (empty($path)) {
-            throw new InvalidTemplatePathException(
-                path: $path,
-                reason: 'Path is empty after sanitization'
-            );
-        }
-
-        return $path;
-    }
 
     /**
      * Validates if a string contains valid JSON data.
