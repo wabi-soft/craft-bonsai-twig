@@ -402,13 +402,14 @@ class PerformanceMonitor extends Component
         ?string $resolvedPath,
         array $performanceData = []
     ): DebugInfo {
-        $templateType = TemplateType::ENTRY; // Default, should be determined from context
-        
+        $templateType = TemplateType::ENTRY; // TODO: derive from $context
+
         // Create base debug info
+        $currentTemplate = $resolvedPath ?? ($attemptedPaths[0] ?? $context->getSanitizedPath());
         $debugInfo = new DebugInfo(
             directory: $context->path,
             templates: $attemptedPaths,
-            currentTemplate: $resolvedPath ?? '',
+            currentTemplate: $currentTemplate,
             type: $templateType,
             resolutionTime: $performanceData['total_time'] ?? 0.0
         );
