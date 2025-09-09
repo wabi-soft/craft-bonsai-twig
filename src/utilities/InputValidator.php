@@ -189,6 +189,64 @@ class InputValidator
     }
 
     /**
+     * Validates an integer parameter with optional range constraints.
+     *
+     * @param mixed $value The value to validate
+     * @param string $parameterName Name of the parameter for error messages
+     * @param bool $required Whether the parameter is required
+     * @param int|null $min Minimum allowed value
+     * @param int|null $max Maximum allowed value
+     * @return int|null The validated integer value or null if not required and empty
+     * @throws \InvalidArgumentException If validation fails
+     */
+    public static function validateInteger(
+        mixed $value,
+        string $parameterName = 'integer',
+        bool $required = false,
+        ?int $min = null,
+        ?int $max = null
+    ): ?int {
+        if ($value === null || $value === '') {
+            if ($required) {
+                throw new \InvalidArgumentException(
+                    sprintf('Parameter "%s" is required', $parameterName)
+                );
+            }
+            return null;
+        }
+
+        if (!is_numeric($value)) {
+            throw new \InvalidArgumentException(
+                sprintf('Parameter "%s" must be a numeric value, %s given', $parameterName, get_debug_type($value))
+            );
+        }
+
+        $intValue = (int) $value;
+
+        // Check if the conversion was lossy (i.e., it was a float)
+        if ((string) $intValue !== (string) $value && (float) $value != $intValue) {
+            throw new \InvalidArgumentException(
+                sprintf('Parameter "%s" must be an integer, float given', $parameterName)
+            );
+        }
+
+        // Check range constraints
+        if ($min !== null && $intValue < $min) {
+            throw new \InvalidArgumentException(
+                sprintf('Parameter "%s" must be at least %d, %d given', $parameterName, $min, $intValue)
+            );
+        }
+
+        if ($max !== null && $intValue > $max) {
+            throw new \InvalidArgumentException(
+                sprintf('Parameter "%s" must be at most %d, %d given', $parameterName, $max, $intValue)
+            );
+        }
+
+        return $intValue;
+    }
+
+    /**
      * Validates a boolean parameter.
      *
      * @param mixed $value The value to validate
@@ -349,6 +407,25 @@ class InputValidator
 
         if (isset($variables['baseSite'])) {
             $validated['baseSite'] = self::validateHandle($variables['baseSite'], 'baseSite', false);
+        }
+
+        // Validate matrix-specific parameters for enhanced context awareness
+        if ($templateType === TemplateType::MATRIX) {
+            if (isset($variables['nextBlock'])) {
+                $validated['nextBlock'] = self::validateElement($variables['nextBlock'], 'nextBlock', false);
+            }
+
+            if (isset($variables['prevBlock'])) {
+                $validated['prevBlock'] = self::validateElement($variables['prevBlock'], 'prevBlock', false);
+            }
+
+            if (isset($variables['parentBlock'])) {
+                $validated['parentBlock'] = self::validateElement($variables['parentBlock'], 'parentBlock', false);
+            }
+
+            if (isset($variables['blockIndex'])) {
+                $validated['blockIndex'] = self::validateInteger($variables['blockIndex'], 'blockIndex', false, 0);
+            }
         }
 
         // Copy over any other variables that passed initial validation
