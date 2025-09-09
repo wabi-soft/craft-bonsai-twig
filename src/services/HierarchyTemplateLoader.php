@@ -78,11 +78,33 @@ class HierarchyTemplateLoader extends Component
         $validatedBasePath = InputValidator::validateString($basePath, 'basePath', false, 255);
         
         if (empty($validatedTemplates)) {
-            throw new TemplateNotFoundException(
+            $templateNotFoundException = new TemplateNotFoundException(
                 attemptedPaths: [],
                 templateType: $templateType,
                 message: 'No template paths provided for resolution'
             );
+            
+            // Generate comprehensive error report
+            $errorReport = $errorReportingService->generateTemplateNotFoundReport(
+                $templateNotFoundException,
+                null,
+                ['input_templates' => $templates, 'base_path' => $basePath]
+            );
+            
+            // Log error with detailed context
+            $errorReportingService->logErrorReport($errorReport, 'error');
+            
+            // In dev mode, provide detailed error information
+            if ($isDev) {
+                $detailedMessage = $errorReportingService->formatErrorForDisplay($errorReport);
+                throw new TemplateNotFoundException(
+                    attemptedPaths: [],
+                    templateType: $templateType,
+                    message: $detailedMessage
+                );
+            }
+            
+            throw $templateNotFoundException;
         }
         
         $isDev = Craft::$app->getConfig()->general->devMode;
@@ -91,6 +113,7 @@ class HierarchyTemplateLoader extends Component
         $plugin = BonsaiTwig::getInstance();
         $cacheService = $plugin->cacheService;
         $performanceMonitor = $plugin->performanceMonitor;
+        $errorReportingService = $plugin->errorReportingService;
 
         // Start performance monitoring
         $sessionId = 'template_resolution_' . uniqid();
@@ -179,13 +202,32 @@ class HierarchyTemplateLoader extends Component
                 $performanceMonitor->recordTemplateResolution(false, $performanceData['total_time'] ?? 0.0, 0);
                 
                 $templateNotFoundException = new TemplateNotFoundException(
-                    attemptedPaths: [],
+                    attemptedPaths: $validatedTemplates,
                     templateType: $templateType,
                     message: 'No valid template paths after optimization'
                 );
                 
+                // Generate comprehensive error report
+                $errorReport = $errorReportingService->generateTemplateNotFoundReport(
+                    $templateNotFoundException,
+                    $templateContext ?? null,
+                    [
+                        'original_templates' => $validatedTemplates,
+                        'optimization_failed' => true,
+                        'performance_data' => $performanceData
+                    ]
+                );
+                
+                // Log error with detailed context
+                $errorReportingService->logErrorReport($errorReport, 'warning');
+                
                 if ($isDev) {
-                    throw $templateNotFoundException;
+                    $detailedMessage = $errorReportingService->formatErrorForDisplay($errorReport);
+                    throw new TemplateNotFoundException(
+                        attemptedPaths: $validatedTemplates,
+                        templateType: $templateType,
+                        message: $detailedMessage
+                    );
                 }
                 return '';
             }
@@ -329,8 +371,25 @@ class HierarchyTemplateLoader extends Component
             templateType: $templateType
         );
         
-        // Log error with context
-        Craft::error($templateNotFoundException->getMessage(), __METHOD__);
+        // Generate comprehensive error report
+        $errorReport = $errorReportingService->generateTemplateNotFoundReport(
+            $templateNotFoundException,
+            $templateContext ?? null,
+            [
+                'original_templates' => $validatedTemplates,
+                'optimized_templates' => $optimizedPaths ?? [],
+                'performance_data' => $performanceData,
+                'fallback_site' => $fallbackSite ?? null,
+                'cache_attempts' => [
+                    'enhanced_cache' => isset($templateContext),
+                    'legacy_cache' => true,
+                    'site_specific_cache' => isset($templateContext) && isset($fallbackSite)
+                ]
+            ]
+        );
+        
+        // Log error with comprehensive context
+        $errorReportingService->logErrorReport($errorReport, 'error');
 
         // Cache negative result to avoid repeated failed lookups
         if (isset($templateContext)) {
@@ -341,21 +400,26 @@ class HierarchyTemplateLoader extends Component
                     $finalAttemptedPaths,
                     null,
                     $fallbackSite,
-                    ['failed_at' => time(), 'error' => $templateNotFoundException->getMessage()]
+                    ['failed_at' => time(), 'error' => $templateNotFoundException->getMessage(), 'error_report' => $errorReport]
                 );
             } else {
                 $cacheService->cacheTemplateResolution(
                     $templateContext,
                     $finalAttemptedPaths,
                     null,
-                    ['failed_at' => time(), 'error' => $templateNotFoundException->getMessage()]
+                    ['failed_at' => time(), 'error' => $templateNotFoundException->getMessage(), 'error_report' => $errorReport]
                 );
             }
         }
 
         // In dev mode, throw exception with detailed info
         if ($isDev) {
-            throw $templateNotFoundException;
+            $detailedMessage = $errorReportingService->formatErrorForDisplay($errorReport);
+            throw new TemplateNotFoundException(
+                attemptedPaths: $finalAttemptedPaths,
+                templateType: $templateType,
+                message: $detailedMessage
+            );
         }
 
         // In production, return empty string

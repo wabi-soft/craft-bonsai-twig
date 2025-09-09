@@ -2,10 +2,12 @@
 
 namespace wabisoft\bonsaitwig\utilities;
 
+use Craft;
 use craft\base\Element;
 use wabisoft\bonsaitwig\enums\DebugMode;
 use wabisoft\bonsaitwig\enums\TemplateType;
 use wabisoft\bonsaitwig\exceptions\InvalidElementException;
+use wabisoft\bonsaitwig\BonsaiTwig;
 
 /**
  * Input validation utility class for service method parameters.
@@ -47,21 +49,63 @@ class InputValidator
     {
         if ($element === null || $element === '') {
             if ($required) {
-                throw new InvalidElementException(
+                $exception = new InvalidElementException(
                     expectedType: 'craft\base\Element',
                     actualValue: $element,
                     message: sprintf('Parameter "%s" is required and must be a valid Craft Element', $parameterName)
                 );
+                
+                // In development mode, provide enhanced error reporting
+                if (Craft::$app->getConfig()->general->devMode) {
+                    $plugin = BonsaiTwig::getInstance();
+                    if ($plugin && isset($plugin->errorReportingService)) {
+                        $errorReport = $plugin->errorReportingService->generateInvalidElementReport(
+                            $exception,
+                            $element,
+                            ['parameter_name' => $parameterName, 'required' => $required]
+                        );
+                        
+                        $detailedMessage = $plugin->errorReportingService->formatErrorForDisplay($errorReport);
+                        throw new InvalidElementException(
+                            expectedType: 'craft\base\Element',
+                            actualValue: $element,
+                            message: $detailedMessage
+                        );
+                    }
+                }
+                
+                throw $exception;
             }
             return null;
         }
 
         if (!$element instanceof Element) {
-            throw new InvalidElementException(
+            $exception = new InvalidElementException(
                 expectedType: 'craft\base\Element',
                 actualValue: $element,
                 message: sprintf('Parameter "%s" must be a valid Craft Element, %s given', $parameterName, get_debug_type($element))
             );
+            
+            // In development mode, provide enhanced error reporting
+            if (Craft::$app->getConfig()->general->devMode) {
+                $plugin = BonsaiTwig::getInstance();
+                if ($plugin && isset($plugin->errorReportingService)) {
+                    $errorReport = $plugin->errorReportingService->generateInvalidElementReport(
+                        $exception,
+                        $element,
+                        ['parameter_name' => $parameterName, 'required' => $required]
+                    );
+                    
+                    $detailedMessage = $plugin->errorReportingService->formatErrorForDisplay($errorReport);
+                    throw new InvalidElementException(
+                        expectedType: 'craft\base\Element',
+                        actualValue: $element,
+                        message: $detailedMessage
+                    );
+                }
+            }
+            
+            throw $exception;
         }
 
         return $element;

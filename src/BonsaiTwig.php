@@ -15,6 +15,7 @@ use wabisoft\bonsaitwig\services\ItemLoader;
 use wabisoft\bonsaitwig\services\MatrixLoader;
 use wabisoft\bonsaitwig\services\CacheService;
 use wabisoft\bonsaitwig\services\PerformanceMonitor;
+use wabisoft\bonsaitwig\services\ErrorReportingService;
 use wabisoft\bonsaitwig\web\twig\Templates;
 use yii\base\Event;
 
@@ -35,6 +36,7 @@ use yii\base\Event;
  * @property-read HierarchyTemplateLoader $hierarchyTemplateLoader Core template resolution service
  * @property-read CacheService $cacheService Enhanced caching service for performance optimization
  * @property-read PerformanceMonitor $performanceMonitor Performance monitoring service for development mode
+ * @property-read ErrorReportingService $errorReportingService Comprehensive error reporting and debugging service
  */
 class BonsaiTwig extends Plugin
 {
@@ -62,6 +64,7 @@ class BonsaiTwig extends Plugin
                 'hierarchyTemplateLoader' => HierarchyTemplateLoader::class,
                 'cacheService' => CacheService::class,
                 'performanceMonitor' => PerformanceMonitor::class,
+                'errorReportingService' => ErrorReportingService::class,
             ],
         ];
     }
