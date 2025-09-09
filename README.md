@@ -34,11 +34,10 @@ The plugin provides four main Twig functions for hierarchical template loading:
 
 - `entry` (Entry): The entry element to render
 - `path` (string, optional): Custom template path override
-- `style` (string, optional): Style variant for the template
+- `style` (string, optional): Style variant (forwarded to the template; does not alter Entry path resolution)
 - `context` (Element, optional): Additional context element
 - `baseSite` (string, optional): Base site handle for multi-site setups
 - `variables` (array, optional): Additional variables to pass to the template
-
 **Example**:
 
 ```twig
