@@ -51,7 +51,7 @@ class HierarchyTemplateLoaderTest extends TestCase
             path: 'entry'
         );
         
-        $templatePaths = ['entry/test/_entry'];
+        $templatePaths = ['entry/testSection/testType/_entry'];
         $expectedOutput = '<div>Template content</div>';
         
         // Mock cache miss
