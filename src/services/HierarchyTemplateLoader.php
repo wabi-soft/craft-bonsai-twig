@@ -3,41 +3,58 @@
 namespace wabisoft\bonsaitwig\services;
 
 use Craft;
+use craft\helpers\Json;
+use craft\helpers\StringHelper;
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
 use yii\base\Component;
-use craft\helpers\Json;
-use craft\helpers\StringHelper;
 use yii\base\Exception;
 use yii\base\InvalidArgumentException;
 
 /**
  * HierarchyTemplateLoader Component
- * 
- * This component handles the loading and rendering of templates based on a hierarchical structure.
- * It supports development mode features like showing template paths and hierarchy information.
  *
+ * This component handles the core template loading and rendering logic based on hierarchical
+ * template resolution. It supports development mode features like debug information display,
+ * template path visualization, and performance monitoring.
+ *
+ * The loader implements intelligent caching, template existence checking, and comprehensive
+ * error handling for production and development environments.
+ *
+ * @author Wabisoft
  * @package wabisoft\bonsaitwig\services
- * @since 1.0.0
+ * @since 6.4.0
  */
 class HierarchyTemplateLoader extends Component
 {
     /**
      * Loads and renders a template from a hierarchical list of possible templates.
      *
-     * @param array  $templates         Array of template paths to try loading
-     * @param array  $variables         Variables to pass to the template
-     * @param string $basePath         Base path to prepend to template paths
-     * @param string $type             Type of template being loaded (default: 'entry')
-     * @param array  $allowedBeastmodeValues Array of allowed beastmode values
-     * 
-     * @return string The rendered template content
-     * 
+     * This is the core method that handles template resolution, caching, and rendering.
+     * It iterates through the provided template paths until it finds an existing template,
+     * then renders it with the provided variables. In development mode, it can display
+     * debug information about the template resolution process.
+     *
+     * Features:
+     * - Hierarchical template resolution with fallback patterns
+     * - Intelligent caching for production performance
+     * - Development mode debug information display
+     * - Comprehensive error handling and logging
+     * - Template existence validation before rendering
+     *
+     * @param array<string> $templates Array of template paths to try loading in priority order
+     * @param array<string, mixed> $variables Variables to pass to the template for rendering
+     * @param string $basePath Base path to prepend to template paths (legacy parameter)
+     * @param string $type Type of template being loaded (entry, category, item, matrix)
+     * @param array<string> $allowedBeastmodeValues Array of allowed beastmode debug values
+     *
+     * @return string The rendered template content or empty string if no template found
+     *
      * @throws SyntaxError If template syntax is invalid
-     * @throws Exception If template cannot be found or other Craft errors
-     * @throws RuntimeError If template runtime error occurs
-     * @throws LoaderError If template cannot be loaded
+     * @throws Exception If template cannot be found or other Craft errors occur
+     * @throws RuntimeError If template runtime error occurs during rendering
+     * @throws LoaderError If template cannot be loaded by Twig
      * @throws InvalidArgumentException If invalid parameters are provided
      */
     public static function load($templates, $variables, $basePath, $type = 'entry', $allowedBeastmodeValues = []): string
@@ -57,7 +74,7 @@ class HierarchyTemplateLoader extends Component
         
         // Try to get cached version first
         $result = self::getCached($cacheKey);
-        if($result) {
+        if ($result) {
             return $result;
         }
 
@@ -68,11 +85,11 @@ class HierarchyTemplateLoader extends Component
                 $fullPath = $basePath ? StringHelper::trim($basePath . '/' . $template, '/') : StringHelper::trim($template, '/');
                 
                 // Check if template exists before trying to render
-                if(Craft::$app->view->doesTemplateExist($fullPath)) {
+                if (Craft::$app->view->doesTemplateExist($fullPath)) {
                     $content = Craft::$app->view->renderTemplate($fullPath, $variables);
                     
                     // In production, return content directly
-                    if(!$isDev) {
+                    if (!$isDev) {
                         return $content;
                     }
 
@@ -95,7 +112,7 @@ class HierarchyTemplateLoader extends Component
                             'directory' => $directory,
                             'templates' => $displayTemplates,
                             'currentTemplate' => $fullPath,
-                            'type' => $type
+                            'type' => $type,
                         ];
                         
                         // Wrap content with debug info
@@ -118,7 +135,7 @@ class HierarchyTemplateLoader extends Component
         Craft::error($errorMessage, __METHOD__);
 
         // In dev mode, throw exception with detailed info
-        if($isDev) {
+        if ($isDev) {
             throw new \RuntimeException($errorMessage);
         }
 
@@ -129,8 +146,12 @@ class HierarchyTemplateLoader extends Component
     /**
      * Attempts to retrieve cached template content.
      *
-     * @param string $key Cache key to lookup
-     * @return string|false Cached content or false if not found/dev mode
+     * In production mode, this method checks the cache for previously rendered
+     * template content to improve performance. In development mode, caching is
+     * disabled to ensure template changes are immediately visible.
+     *
+     * @param string $key Cache key to lookup in the application cache
+     * @return string|false Cached template content or false if not found/dev mode
      */
     private static function getCached(string $key): string|false
     {
@@ -141,13 +162,17 @@ class HierarchyTemplateLoader extends Component
     }
 
     /**
-     * Renders debug information around template content.
+     * Renders debug information around template content in development mode.
      *
-     * @param string $content Template content to wrap
-     * @param string $info JSON encoded debug information
-     * @param string $type Template type identifier
-     * 
-     * @return string Content wrapped with debug information
+     * This method wraps the rendered template content with debug information
+     * including the template resolution hierarchy, current template path, and
+     * performance metrics. Only used when beastmode debugging is enabled.
+     *
+     * @param string $content Template content to wrap with debug information
+     * @param string $info JSON encoded debug information containing paths and metadata
+     * @param string $type Template type identifier (entry, category, item, matrix)
+     *
+     * @return string Content wrapped with debug information template
      */
     private static function renderInfo($content, $info, $type = 'entry'): string
     {
@@ -155,18 +180,22 @@ class HierarchyTemplateLoader extends Component
         return Craft::$app->view->renderTemplate(
             template: '_bonsai-twig/_partials/infobar',
             variables: [
-                'info' => $info, 
+                'info' => $info,
                 'content' => $content,
-                'type' => $type
+                'type' => $type,
             ]
         );
     }
 
     /**
-     * Validates if a string is valid JSON.
+     * Validates if a string contains valid JSON data.
      *
-     * @param mixed $string String to validate
-     * @return bool True if valid JSON
+     * This utility method checks if the provided string is valid JSON by attempting
+     * to decode it and checking for JSON parsing errors. Used for validating debug
+     * information before processing.
+     *
+     * @param mixed $string String to validate for JSON format
+     * @return bool True if the string contains valid JSON, false otherwise
      */
     private static function isJson(mixed $string): bool
     {
