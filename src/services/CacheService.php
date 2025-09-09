@@ -469,12 +469,21 @@ class CacheService extends Component
      */
     public function invalidateSiteCache(int|string $siteId): void
     {
+        $sites = Craft::$app->sites;
+        if (is_numeric($siteId)) {
+            $site = $sites->getSiteById((int)$siteId);
+            $id = (int)($site->id ?? $siteId);
+            $handle = (string)($site->handle ?? $siteId);
+        } else {
+            $site = $sites->getSiteByHandle((string)$siteId);
+            $id = (int)($site->id ?? 0);
+            $handle = (string)$siteId;
+        }
         $tags = [
-            'site:' . $siteId,
-            'currentSite:' . $siteId,
-            'fallbackSite:' . $siteId,
+            'currentSite:' . $id,   // matches generation
+            'fallbackSite:' . $handle,
+            'site:' . $handle,
         ];
-
         TagDependency::invalidate(Craft::$app->cache, $tags);
     }
 
