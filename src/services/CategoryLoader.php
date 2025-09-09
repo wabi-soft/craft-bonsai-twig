@@ -5,6 +5,7 @@ namespace wabisoft\bonsaitwig\services;
 use craft\base\Element;
 use craft\helpers\ArrayHelper;
 use wabisoft\bonsaitwig\enums\TemplateType;
+use wabisoft\bonsaitwig\exceptions\InvalidElementException;
 
 /**
  * Service class for loading template paths based on Craft categories.
@@ -53,7 +54,11 @@ class CategoryLoader
         $baseSite = ArrayHelper::getValue($variables, 'baseSite') ?: false;
 
         if (!$category instanceof Element) {
-            throw new \InvalidArgumentException('CategoryLoader::load() expects "entry" to be a valid Craft Element.');
+            throw new InvalidElementException(
+                expectedType: 'craft\base\Element',
+                actualValue: $category,
+                message: 'CategoryLoader::load() expects "entry" to be a valid Craft Element.'
+            );
         }
 
         // Get category properties for path building

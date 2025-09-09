@@ -5,6 +5,7 @@ namespace wabisoft\bonsaitwig\services;
 use craft\base\Element;
 use craft\helpers\ArrayHelper;
 use wabisoft\bonsaitwig\enums\TemplateType;
+use wabisoft\bonsaitwig\exceptions\InvalidElementException;
 
 /**
  * Service class for loading template paths based on Craft matrix blocks.
@@ -50,7 +51,11 @@ class MatrixLoader
         // Extract and validate the required block element
         $block = ArrayHelper::getValue($variables, 'block');
         if (!$block instanceof Element) {
-            throw new \InvalidArgumentException('MatrixLoader::load() expects "block" to be a valid Craft Element.');
+            throw new InvalidElementException(
+                expectedType: 'craft\base\Element',
+                actualValue: $block,
+                message: 'MatrixLoader::load() expects "block" to be a valid Craft Element.'
+            );
         }
 
         // Extract optional configuration values with defaults

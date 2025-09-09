@@ -10,6 +10,8 @@ use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
 use wabisoft\bonsaitwig\enums\DebugMode;
 use wabisoft\bonsaitwig\enums\TemplateType;
+use wabisoft\bonsaitwig\exceptions\InvalidTemplatePathException;
+use wabisoft\bonsaitwig\exceptions\TemplateNotFoundException;
 use yii\base\Component;
 use yii\base\Exception;
 use yii\base\InvalidArgumentException;
@@ -66,6 +68,14 @@ class HierarchyTemplateLoader extends Component
             throw new InvalidArgumentException("Templates must be an array");
         }
 
+        if (empty($templates)) {
+            throw new TemplateNotFoundException(
+                attemptedPaths: [],
+                templateType: $templateType,
+                message: 'No template paths provided for resolution'
+            );
+        }
+
         // Convert string type to enum if needed
         $templateType = $type instanceof TemplateType ? $type : TemplateType::fromString((string) $type);
         
@@ -85,9 +95,15 @@ class HierarchyTemplateLoader extends Component
 
         // If no cache or dev mode, process templates
         if ($result === false) {
+            $attemptedPaths = [];
+            
             foreach ($templates as $template) {
+                // Sanitize template path for security
+                $sanitizedTemplate = self::sanitizeTemplatePath($template);
+                
                 // Use template path as is, since it's already properly formatted
-                $fullPath = $basePath ? StringHelper::trim($basePath . '/' . $template, '/') : StringHelper::trim($template, '/');
+                $fullPath = $basePath ? StringHelper::trim($basePath . '/' . $sanitizedTemplate, '/') : StringHelper::trim($sanitizedTemplate, '/');
+                $attemptedPaths[] = $fullPath;
                 
                 // Check if template exists before trying to render
                 if (Craft::$app->view->doesTemplateExist($fullPath)) {
@@ -133,17 +149,18 @@ class HierarchyTemplateLoader extends Component
             }
         }
 
-        // Log error if no template was found
-        $errorMessage = sprintf(
-            "Unable to find any matching templates. Tried:\n%s",
-            implode("\n", array_map(fn(string $t): string => "- $t", $templates))
+        // No template was found - create detailed exception
+        $templateNotFoundException = new TemplateNotFoundException(
+            attemptedPaths: $attemptedPaths ?? $templates,
+            templateType: $templateType
         );
         
-        Craft::error($errorMessage, __METHOD__);
+        // Log error with context
+        Craft::error($templateNotFoundException->getMessage(), __METHOD__);
 
         // In dev mode, throw exception with detailed info
         if ($isDev) {
-            throw new \RuntimeException($errorMessage);
+            throw $templateNotFoundException;
         }
 
         // In production, return empty string
@@ -192,6 +209,52 @@ class HierarchyTemplateLoader extends Component
                 'type' => $type,
             ]
         );
+    }
+
+    /**
+     * Sanitizes a template path to prevent security issues.
+     *
+     * This method removes path traversal attempts and normalizes the path
+     * to ensure it's safe for template loading. Throws an exception if
+     * the path contains dangerous patterns.
+     *
+     * @param string $path Template path to sanitize
+     * @return string Sanitized template path
+     * @throws InvalidTemplatePathException If path contains dangerous patterns
+     */
+    private static function sanitizeTemplatePath(string $path): string
+    {
+        // Check for path traversal attempts
+        if (str_contains($path, '../') || str_contains($path, '..\\')) {
+            throw new InvalidTemplatePathException(
+                path: $path,
+                reason: 'Path traversal attempt detected'
+            );
+        }
+
+        // Check for absolute paths (security risk)
+        if (str_starts_with($path, '/') || (PHP_OS_FAMILY === 'Windows' && preg_match('/^[A-Za-z]:/', $path))) {
+            throw new InvalidTemplatePathException(
+                path: $path,
+                reason: 'Absolute paths are not allowed'
+            );
+        }
+
+        // Normalize path separators
+        $path = str_replace('\\', '/', $path);
+        
+        // Remove leading/trailing slashes and spaces
+        $path = trim($path, '/ ');
+
+        // Validate that path is not empty after sanitization
+        if (empty($path)) {
+            throw new InvalidTemplatePathException(
+                path: $path,
+                reason: 'Path is empty after sanitization'
+            );
+        }
+
+        return $path;
     }
 
     /**

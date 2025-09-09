@@ -6,6 +6,7 @@ use craft\base\Element;
 use craft\helpers\ArrayHelper;
 use craft\helpers\StringHelper;
 use wabisoft\bonsaitwig\enums\TemplateType;
+use wabisoft\bonsaitwig\exceptions\InvalidElementException;
 
 /**
  * Service class for loading template paths based on Craft elements and context.
@@ -54,7 +55,11 @@ class ItemLoader
         // Extract and validate the required entry element
         $entry = ArrayHelper::getValue($variables, 'entry');
         if (!$entry instanceof Element) {
-            throw new \InvalidArgumentException('ItemLoader::load() expects "entry" to be a valid Craft Element.');
+            throw new InvalidElementException(
+                expectedType: 'craft\base\Element',
+                actualValue: $entry,
+                message: 'ItemLoader::load() expects "entry" to be a valid Craft Element.'
+            );
         }
 
         // Extract optional configuration values with defaults
