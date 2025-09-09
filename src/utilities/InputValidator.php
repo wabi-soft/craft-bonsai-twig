@@ -375,16 +375,20 @@ class InputValidator
             );
         }
 
-        // Try to convert to DebugMode enum, but handle template-specific values
+        // Handle template-specific debug values
+        if (in_array($debugValue, ['entry', 'category', 'item', 'matrix'])) {
+            // Only show debug if the debug value matches the current template type
+            if ($debugValue === $templateType->value) {
+                return DebugMode::ALL; // Show debug for matching template type
+            } else {
+                return DebugMode::DISABLED; // Hide debug for non-matching template types
+            }
+        }
+
+        // Try to convert to DebugMode enum for general debug modes
         try {
             $debugMode = DebugMode::fromString($debugValue);
         } catch (\ValueError $e) {
-            // If it's not a general debug mode, but it's valid for the template type,
-            // treat it as a template-specific filter (return ALL mode)
-            if (in_array($debugValue, ['entry', 'category', 'item', 'matrix'])) {
-                return DebugMode::ALL; // Template-specific filtering uses ALL mode
-            }
-            
             throw new \InvalidArgumentException(
                 sprintf('Invalid debug mode "%s". Allowed values: %s', 
                     $debugValue, 

@@ -130,12 +130,8 @@ enum DebugMode: string
             return true;
         }
 
-        // Allow cross-template debugging - any template-specific debug value is valid
-        // This enables using beastmode=entry to debug matrix templates and vice versa
-        $templateSpecificModes = ['entry', 'category', 'item', 'matrix'];
-        if (in_array($debugValue, $templateSpecificModes)) {
-            return true;
-        }
+        // Check if it matches the template type (entry, category, item, matrix)
+        return $debugValue === $templateType->value;
 
         return false;
     }
