@@ -504,18 +504,37 @@
             <div class="bonsai-info__cache-stats">
                 <div class="bonsai-info__cache-title">Cache Performance</div>
                 
-                {% set plugin = craft.plugins.getPlugin('_bonsai-twig') %}
+                {% set plugin = craft.app.plugins.getPlugin('_bonsai-twig') %}
                 {% set pluginSettings = plugin ? plugin.getSettings() : null %}
-                {% set cachingEnabled = not craft.app.config.general.devMode or (pluginSettings and pluginSettings.cacheInDevMode) %}
+                {% set isDevMode = craft.app.config.general.devMode %}
+                {% set cacheOverrideEnabled = pluginSettings and pluginSettings.cacheInDevMode %}
+                {% set cachingEnabled = not isDevMode or cacheOverrideEnabled %}
+                
+                {# Debug info to help troubleshoot #}
+                {% if craft.app.config.general.devMode %}
+                    <div class="bonsai-info__note" style="margin-bottom: 8px; font-size: 9px; opacity: 0.7;">
+                        Debug: DevMode={{ isDevMode ? 'true' : 'false' }}, 
+                        Plugin={{ plugin ? 'found' : 'not found' }}, 
+                        Settings={{ pluginSettings ? 'loaded' : 'not loaded' }}, 
+                        CacheOverride={{ cacheOverrideEnabled ? 'true' : 'false' }},
+                        CachingEnabled={{ cachingEnabled ? 'true' : 'false' }}
+                    </div>
+                {% endif %}
                 
                 {% if not cachingEnabled %}
                     <div class="bonsai-info__note">
-                        <strong>Caching is disabled in development mode.</strong><br>
-                        Cache statistics are only available when caching is enabled.
-                        {% if craft.app.config.general.devMode %}
-                            To test caching in dev mode, enable <code>cacheInDevMode</code> in plugin settings.
+                        <strong>Caching is disabled.</strong><br>
+                        {% if isDevMode %}
+                            {% if pluginSettings %}
+                                Development mode is enabled and <code>cacheInDevMode</code> is disabled in plugin settings.<br>
+                                To test caching in dev mode, enable <code>cacheInDevMode</code> in the Bonsai Twig plugin settings.
+                            {% else %}
+                                Development mode is enabled and plugin settings are not available.<br>
+                                To test caching, set <code>devMode = false</code> in your config or configure plugin settings.
+                            {% endif %}
                         {% else %}
-                            To test caching, set <code>devMode = false</code> in your config.
+                            Cache statistics are only available when caching is enabled.<br>
+                            Check your cache configuration.
                         {% endif %}
                     </div>
                 {% else %}

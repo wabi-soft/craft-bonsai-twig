@@ -111,7 +111,7 @@
             </li>
             <li>
                 <strong>{{ "Cache Driver:"|t('bonsai-twig') }}</strong>
-                {{ craft.app.cache.class|split('\\')|last }}
+                {{ className(craft.app.cache)|split('\\')|last }}
             </li>
         </ul>
     </div>
