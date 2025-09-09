@@ -503,38 +503,9 @@
         {% if data.cache_stats is defined %}
             <div class="bonsai-info__cache-stats">
                 <div class="bonsai-info__cache-title">Cache Performance</div>
-                
-                <div class="bonsai-info__cache-overview">
-                    <div class="bonsai-info__cache-metric">
-                        <div class="bonsai-info__cache-metric-label">Hit Rate</div>
-                        <div class="bonsai-info__cache-metric-value">{{ data.cache_stats.hit_rate }}%</div>
-                    </div>
-                    <div class="bonsai-info__cache-metric">
-                        <div class="bonsai-info__cache-metric-label">Hits</div>
-                        <div class="bonsai-info__cache-metric-value">{{ data.cache_stats.hits }}</div>
-                    </div>
-                    <div class="bonsai-info__cache-metric">
-                        <div class="bonsai-info__cache-metric-label">Total</div>
-                        <div class="bonsai-info__cache-metric-value">{{ data.cache_stats.total_requests }}</div>
-                    </div>
-                </div>
-                
-                {% if data.cache_stats.by_type is defined and data.cache_stats.by_type|length > 0 %}
-                    <div class="bonsai-info__cache-details">
-                        {% for cacheType, typeStats in data.cache_stats.by_type %}
-                            <div class="bonsai-info__cache-type">
-                                <span class="bonsai-info__cache-type-name">{{ cacheType|title }}</span>
-                                <span class="bonsai-info__cache-type-stats">
-                                    {{ typeStats.hit_rate }}% ({{ typeStats.hits }}/{{ typeStats.total }})
-                                </span>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-                
                 {% if craft.app.config.general.devMode %}
                     <div class="bonsai-info__note">
-                        Caching is enabled in production mode only
+                        Caching is enabled in production mode only or if Enable Caching in Development Mode is true.
                     </div>
                 {% endif %}
             </div>
