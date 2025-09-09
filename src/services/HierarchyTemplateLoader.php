@@ -77,6 +77,18 @@ class HierarchyTemplateLoader extends Component
         $validatedVariables = InputValidator::validateTemplateVariables($variables);
         $validatedBasePath = InputValidator::validateString($basePath, 'basePath', false, 255);
         
+        // Validate and sanitize input parameters
+        $validatedTemplates = InputValidator::validateTemplatePaths($templates);
+        $validatedVariables = InputValidator::validateTemplateVariables($variables);
+        $validatedBasePath = InputValidator::validateString($basePath, 'basePath', false, 255);
+
+        // Initialize env flags and services before any early exit
+        $isDev = Craft::$app->getConfig()->general->devMode;
+        $plugin = BonsaiTwig::getInstance();
+        $cacheService = $plugin->cacheService;
+        $performanceMonitor = $plugin->performanceMonitor;
+        $errorReportingService = $plugin->errorReportingService;
+
         if (empty($validatedTemplates)) {
             $templateNotFoundException = new TemplateNotFoundException(
                 attemptedPaths: [],
@@ -106,6 +118,8 @@ class HierarchyTemplateLoader extends Component
             
             throw $templateNotFoundException;
         }
+
+        // ...rest of method remains unchanged (with no duplicate initialization)
         
         $isDev = Craft::$app->getConfig()->general->devMode;
 
