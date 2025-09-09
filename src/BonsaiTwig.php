@@ -6,11 +6,15 @@ use Craft;
 use craft\base\Plugin;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\web\View;
+use craft\events\ModelEvent;
+use craft\base\Element;
 use wabisoft\bonsaitwig\services\CategoryLoader;
 use wabisoft\bonsaitwig\services\EntryLoader;
 use wabisoft\bonsaitwig\services\HierarchyTemplateLoader;
 use wabisoft\bonsaitwig\services\ItemLoader;
 use wabisoft\bonsaitwig\services\MatrixLoader;
+use wabisoft\bonsaitwig\services\CacheService;
+use wabisoft\bonsaitwig\services\PerformanceMonitor;
 use wabisoft\bonsaitwig\web\twig\Templates;
 use yii\base\Event;
 
@@ -29,6 +33,8 @@ use yii\base\Event;
  * @property-read ItemLoader $itemLoader Service for loading item-based templates
  * @property-read MatrixLoader $matrixLoader Service for loading matrix block templates
  * @property-read HierarchyTemplateLoader $hierarchyTemplateLoader Core template resolution service
+ * @property-read CacheService $cacheService Enhanced caching service for performance optimization
+ * @property-read PerformanceMonitor $performanceMonitor Performance monitoring service for development mode
  */
 class BonsaiTwig extends Plugin
 {
@@ -54,6 +60,8 @@ class BonsaiTwig extends Plugin
                 'itemLoader' => ItemLoader::class,
                 'matrixLoader' => MatrixLoader::class,
                 'hierarchyTemplateLoader' => HierarchyTemplateLoader::class,
+                'cacheService' => CacheService::class,
+                'performanceMonitor' => PerformanceMonitor::class,
             ],
         ];
     }
@@ -96,5 +104,26 @@ class BonsaiTwig extends Plugin
                 }
             );
         }
+
+        // Cache invalidation event handlers
+        Event::on(
+            Element::class,
+            Element::EVENT_AFTER_SAVE,
+            function(ModelEvent $event): void {
+                /** @var Element $element */
+                $element = $event->sender;
+                $this->cacheService->invalidateElementCache($element);
+            }
+        );
+
+        Event::on(
+            Element::class,
+            Element::EVENT_AFTER_DELETE,
+            function(ModelEvent $event): void {
+                /** @var Element $element */
+                $element = $event->sender;
+                $this->cacheService->invalidateElementCache($element);
+            }
+        );
     }
 }

@@ -14,6 +14,8 @@ use wabisoft\bonsaitwig\exceptions\InvalidTemplatePathException;
 use wabisoft\bonsaitwig\exceptions\TemplateNotFoundException;
 use wabisoft\bonsaitwig\utilities\SecurityUtils;
 use wabisoft\bonsaitwig\utilities\InputValidator;
+use wabisoft\bonsaitwig\valueobjects\TemplateContext;
+use wabisoft\bonsaitwig\BonsaiTwig;
 use yii\base\Component;
 use yii\base\Exception;
 use yii\base\InvalidArgumentException;
@@ -83,21 +85,64 @@ class HierarchyTemplateLoader extends Component
         
         $isDev = Craft::$app->getConfig()->general->devMode;
 
+        // Get services for enhanced caching and performance monitoring
+        $plugin = BonsaiTwig::getInstance();
+        $cacheService = $plugin->cacheService;
+        $performanceMonitor = $plugin->performanceMonitor;
+
+        // Start performance monitoring
+        $sessionId = 'template_resolution_' . uniqid();
+        $performanceMonitor->startTiming($sessionId, 'Template Resolution', [
+            'template_type' => $templateType->value,
+            'template_count' => count($validatedTemplates),
+            'base_path' => $validatedBasePath,
+        ]);
+
         // Get the directory from variables or type
         $directory = (string) ($validatedVariables['path'] ?? $templateType->getDefaultPath());
 
-        // Generate secure cache key based on template info
+        // Create template context for enhanced caching
+        $element = $validatedVariables['element'] ?? null;
+        if ($element) {
+            $templateContext = new TemplateContext(
+                element: $element,
+                path: $directory,
+                style: $validatedVariables['style'] ?? null,
+                context: $validatedVariables['context'] ?? null,
+                baseSite: $validatedVariables['baseSite'] ?? null,
+                variables: $validatedVariables,
+                showDebug: $isDev
+            );
+
+            // Try enhanced cache first
+            $cachedResult = $cacheService->getCachedTemplateResolution($templateContext, $validatedTemplates);
+            if ($cachedResult !== null) {
+                $performanceMonitor->recordCacheAccess(true, 'template');
+                $performanceMonitor->endTiming($sessionId);
+                return $cachedResult['resolvedPath'] ? 
+                    Craft::$app->view->renderTemplate($cachedResult['resolvedPath'], $validatedVariables) : '';
+            }
+            $performanceMonitor->recordCacheAccess(false, 'template');
+        }
+
+        // Fallback to legacy cache key for backward compatibility
         $cacheKey = SecurityUtils::generateSecureCacheKey($validatedTemplates, $templateType->value, ['directory' => $directory]);
         
         // Try to get cached version first
         $result = self::getCached($cacheKey);
         if ($result) {
+            $performanceMonitor->recordCacheAccess(true, 'legacy');
+            $performanceMonitor->endTiming($sessionId);
             return $result;
         }
+        $performanceMonitor->recordCacheAccess(false, 'legacy');
 
         // If no cache or dev mode, process templates
         if ($result === false) {
             $attemptedPaths = [];
+            $resolvedPath = null;
+            
+            $performanceMonitor->addCheckpoint($sessionId, 'start_resolution');
             
             foreach ($validatedTemplates as $template) {
                 // Templates are already sanitized by InputValidator::validateTemplatePaths
@@ -108,12 +153,45 @@ class HierarchyTemplateLoader extends Component
                 SecurityUtils::validateTemplatePath($fullPath);
                 $attemptedPaths[] = $fullPath;
                 
+                // Check cached template existence first
+                $templateExists = $cacheService->getCachedTemplateExistence($fullPath);
+                if ($templateExists === null) {
+                    // Not cached, check and cache the result
+                    $templateExists = Craft::$app->view->doesTemplateExist($fullPath);
+                    $cacheService->cacheTemplateExistence($fullPath, $templateExists);
+                    $performanceMonitor->recordCacheAccess(false, 'existence');
+                } else {
+                    $performanceMonitor->recordCacheAccess(true, 'existence');
+                }
+                
                 // Check if template exists before trying to render
-                if (Craft::$app->view->doesTemplateExist($fullPath)) {
+                if ($templateExists) {
+                    $performanceMonitor->addCheckpoint($sessionId, 'template_found', ['path' => $fullPath]);
+                    
+                    $resolvedPath = $fullPath;
                     $content = Craft::$app->view->renderTemplate($fullPath, $validatedVariables);
                     
-                    // In production, return content directly
+                    $performanceMonitor->addCheckpoint($sessionId, 'template_rendered');
+                    
+                    // In production, cache and return content directly
                     if (!$isDev) {
+                        // Cache using enhanced caching service
+                        if (isset($templateContext)) {
+                            $cacheService->cacheTemplateResolution(
+                                $templateContext,
+                                $attemptedPaths,
+                                $resolvedPath,
+                                ['cached_at' => time()]
+                            );
+                        }
+                        
+                        // Legacy cache for backward compatibility
+                        Craft::$app->cache->set($cacheKey, $content, 3600);
+                        
+                        // End performance monitoring
+                        $performanceData = $performanceMonitor->endTiming($sessionId);
+                        $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($attemptedPaths));
+                        
                         return $content;
                     }
 
@@ -126,8 +204,13 @@ class HierarchyTemplateLoader extends Component
                         DebugMode::isValidForTemplateType((string) $beastmodeValue, $templateType) // Check template-specific values
                     );
 
-                    // If debug is enabled, prepare debug info
+                    // If debug is enabled, prepare debug info with performance metrics
                     if ($shouldShowDebug) {
+                        $performanceMonitor->addCheckpoint($sessionId, 'debug_info_start');
+                        
+                        // Get performance data before ending timing
+                        $performanceData = $performanceMonitor->endTiming($sessionId);
+                        
                         // Process templates to remove directory prefix for display
                         $displayTemplates = array_map(function(string $path) use ($directory): string {
                             // Don't modify paths that already have the directory prefix
@@ -139,20 +222,47 @@ class HierarchyTemplateLoader extends Component
                             'templates' => $displayTemplates,
                             'currentTemplate' => $fullPath,
                             'type' => $templateType->value,
+                            'performance' => [
+                                'resolution_time' => $performanceData['total_time'] ?? 0.0,
+                                'memory_usage' => $performanceData['memory_usage'] ?? [],
+                                'checkpoints' => $performanceData['checkpoints'] ?? [],
+                            ],
+                            'cache_stats' => $performanceMonitor->getCacheStatistics(),
                         ];
                         
-                        // Wrap content with debug info
+                        // Wrap content with enhanced debug info
                         $content = self::renderInfo($content, Json::encode($info), $templateType->value);
+                        
+                        $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($attemptedPaths));
+                    } else {
+                        // End timing without debug info
+                        $performanceData = $performanceMonitor->endTiming($sessionId);
+                        $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($attemptedPaths));
                     }
 
-                    // Cache the result for an hour
+                    // Cache the result for an hour (legacy cache)
                     Craft::$app->cache->set($cacheKey, $content, 3600);
+                    
+                    // Enhanced caching
+                    if (isset($templateContext)) {
+                        $cacheService->cacheTemplateResolution(
+                            $templateContext,
+                            $attemptedPaths,
+                            $resolvedPath,
+                            ['cached_at' => time(), 'debug_enabled' => $shouldShowDebug ?? false]
+                        );
+                    }
+                    
                     return $content;
                 }
             }
         }
 
-        // No template was found - create detailed exception
+        // No template was found - end performance monitoring and handle error
+        $performanceData = $performanceMonitor->endTiming($sessionId);
+        $performanceMonitor->recordTemplateResolution(false, $performanceData['total_time'] ?? 0.0, count($attemptedPaths ?? $validatedTemplates));
+        
+        // Create detailed exception
         $templateNotFoundException = new TemplateNotFoundException(
             attemptedPaths: $attemptedPaths ?? $validatedTemplates,
             templateType: $templateType
@@ -160,6 +270,16 @@ class HierarchyTemplateLoader extends Component
         
         // Log error with context
         Craft::error($templateNotFoundException->getMessage(), __METHOD__);
+
+        // Cache negative result to avoid repeated failed lookups
+        if (isset($templateContext)) {
+            $cacheService->cacheTemplateResolution(
+                $templateContext,
+                $attemptedPaths ?? $validatedTemplates,
+                null,
+                ['failed_at' => time(), 'error' => $templateNotFoundException->getMessage()]
+            );
+        }
 
         // In dev mode, throw exception with detailed info
         if ($isDev) {

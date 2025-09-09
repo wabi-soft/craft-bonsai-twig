@@ -62,6 +62,37 @@
             font-style: italic;
             margin-top: 4px;
         }
+        .bonsai-info__performance {
+            border-top: 1px solid #454545;
+            padding-top: 8px;
+            margin-top: 8px;
+        }
+        .bonsai-info__performance-title {
+            color: #569cd6;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .bonsai-info__performance-item {
+            margin: 2px 0;
+            font-size: 11px;
+        }
+        .bonsai-info__performance-value {
+            color: #3ddab5;
+        }
+        .bonsai-info__cache-stats {
+            border-top: 1px solid #454545;
+            padding-top: 8px;
+            margin-top: 8px;
+        }
+        .bonsai-info__cache-title {
+            color: #569cd6;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .bonsai-info__cache-item {
+            margin: 2px 0;
+            font-size: 11px;
+        }
     </style>
 {% endapply %}
 <div class="bonsai-info__hover">
@@ -88,6 +119,78 @@
                         </span>
                     </div>
                 {% endfor %}
+            </div>
+        {% endif %}
+        
+        {% if data.performance is defined %}
+            <div class="bonsai-info__performance">
+                <div class="bonsai-info__performance-title">Performance Metrics:</div>
+                <div class="bonsai-info__performance-item">
+                    Resolution Time: <span class="bonsai-info__performance-value">
+                        {% if data.performance.resolution_time < 0.001 %}
+                            {{ (data.performance.resolution_time * 1000000)|round(2) }}μs
+                        {% elseif data.performance.resolution_time < 1 %}
+                            {{ (data.performance.resolution_time * 1000)|round(2) }}ms
+                        {% else %}
+                            {{ data.performance.resolution_time|round(3) }}s
+                        {% endif %}
+                    </span>
+                </div>
+                {% if data.performance.memory_usage is defined %}
+                    <div class="bonsai-info__performance-item">
+                        Memory Delta: <span class="bonsai-info__performance-value">
+                            {% set memDelta = data.performance.memory_usage.delta %}
+                            {% if memDelta < 1024 %}
+                                {{ memDelta }}B
+                            {% elseif memDelta < 1048576 %}
+                                {{ (memDelta / 1024)|round(2) }}KB
+                            {% else %}
+                                {{ (memDelta / 1048576)|round(2) }}MB
+                            {% endif %}
+                        </span>
+                    </div>
+                {% endif %}
+                {% if data.performance.checkpoints is defined and data.performance.checkpoints|length > 0 %}
+                    <div class="bonsai-info__performance-item">
+                        Checkpoints: 
+                        {% for checkpoint, checkpointData in data.performance.checkpoints %}
+                            <div style="margin-left: 12px; font-size: 10px;">
+                                {{ checkpoint }}: <span class="bonsai-info__performance-value">
+                                    {% if checkpointData.elapsed < 0.001 %}
+                                        {{ (checkpointData.elapsed * 1000000)|round(2) }}μs
+                                    {% elseif checkpointData.elapsed < 1 %}
+                                        {{ (checkpointData.elapsed * 1000)|round(2) }}ms
+                                    {% else %}
+                                        {{ checkpointData.elapsed|round(3) }}s
+                                    {% endif %}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        {% if data.cache_stats is defined %}
+            <div class="bonsai-info__cache-stats">
+                <div class="bonsai-info__cache-title">Cache Statistics:</div>
+                <div class="bonsai-info__cache-item">
+                    Hit Rate: <span class="bonsai-info__performance-value">{{ data.cache_stats.hit_rate }}%</span>
+                </div>
+                <div class="bonsai-info__cache-item">
+                    Total Requests: <span class="bonsai-info__performance-value">{{ data.cache_stats.total_requests }}</span>
+                </div>
+                {% if data.cache_stats.by_type is defined and data.cache_stats.by_type|length > 0 %}
+                    <div class="bonsai-info__cache-item">
+                        By Type:
+                        {% for cacheType, typeStats in data.cache_stats.by_type %}
+                            <div style="margin-left: 12px; font-size: 10px;">
+                                {{ cacheType }}: <span class="bonsai-info__performance-value">{{ typeStats.hit_rate }}%</span> 
+                                ({{ typeStats.hits }}/{{ typeStats.total }})
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
         {% endif %}
     </div>
