@@ -175,7 +175,6 @@ class MatrixLoader
             TemplateType::MATRIX->getAllowedDebugValues()
         );
     }
-}
 
     /**
      * Builds enhanced matrix context information for template resolution.
@@ -495,8 +494,8 @@ class MatrixLoader
 
         return $paths;
     }
-    /
-**
+
+    /**
      * Generates style-specific template paths with enhanced conditional logic.
      *
      * This method creates comprehensive style-specific template paths that support
@@ -916,3 +915,4 @@ class MatrixLoader
 
         return $conditions;
     }
+}

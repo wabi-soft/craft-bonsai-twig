@@ -10,11 +10,18 @@
     "require-dev": {
         "craftcms/ecs": "dev-main",
         "craftcms/phpstan": "dev-main",
-        "marcocesarato/php-conventional-changelog": "^1.16"
+        "marcocesarato/php-conventional-changelog": "^1.16",
+        "phpunit/phpunit": "^10.0",
+        "mockery/mockery": "^1.6"
     },
     "autoload": {
         "psr-4": {
             "wabisoft\\bonsaitwig\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "wabisoft\\bonsaitwig\\tests\\": "tests/"
         }
     },
     "extra": {
@@ -35,7 +42,12 @@
         "release:rc": "conventional-changelog --rc",
         "check-cs": "ecs check --ansi",
         "fix-cs": "ecs check --ansi --fix",
-        "phpstan": "phpstan --memory-limit=1G"
+        "phpstan": "phpstan --memory-limit=1G",
+        "test": "phpunit",
+        "test:unit": "phpunit --testsuite=unit",
+        "test:integration": "phpunit --testsuite=integration",
+        "test:performance": "phpunit --testsuite=performance",
+        "test:coverage": "phpunit --coverage-html coverage"
     },
     "config": {
         "sort-packages": true,
