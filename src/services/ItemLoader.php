@@ -2,55 +2,68 @@
 
 namespace wabisoft\bonsaitwig\services;
 
+use craft\base\Element;
 use craft\helpers\ArrayHelper;
 use craft\helpers\StringHelper;
-use craft\base\Element;
+use wabisoft\bonsaitwig\enums\TemplateType;
+use wabisoft\bonsaitwig\exceptions\InvalidElementException;
+use wabisoft\bonsaitwig\utilities\InputValidator;
 
 /**
  * Service class for loading template paths based on Craft elements and context.
- * 
+ *
  * This class provides hierarchical template path resolution by examining an element's
  * section, type, style and context to determine the most appropriate template to load.
  * It follows a fallback pattern from most specific to most general template paths.
+ *
+ * This is the most flexible loader, supporting context-aware template resolution,
+ * style variations, and complex hierarchical patterns. It can handle both entries
+ * and categories through their common Element interface.
+ *
+ * @author Wabisoft
+ * @since 6.4.0
  */
 class ItemLoader
 {
     /**
-     * Loads a template path based on the provided element and context parameters.
-     * 
-     * Generates a prioritized list of possible template paths based on:
-     * - Context (ctx) section/type if provided
-     * - Element's section and type
-     * - Style variations
-     * - Default fallbacks
+     * Loads and renders a template based on the provided element and context parameters.
      *
-     * @param array $variables Configuration array containing:
+     * This is the most sophisticated template loader, supporting context-aware resolution,
+     * style variations, and complex hierarchical patterns. It can work with any Craft
+     * element type and provides extensive customization options.
+     *
+     * Template path resolution includes:
+     * - Context-specific paths (when ctx parameter provided)
+     * - Style-specific variations (when style parameter provided)
+     * - Element section and type combinations
+     * - Slug-specific templates
+     * - Comprehensive fallback mechanisms
+     *
+     * @param array<string, mixed> $variables Configuration array containing:
      *        - entry: Required. Craft Element to base template paths on
      *        - path: Optional. Base path prefix (defaults to 'item')
-     *        - style: Optional. Style variation name
+     *        - style: Optional. Style variation name for template customization
      *        - ctx: Optional. Context Element for additional path variations
-     *        - default: Optional. Default template name (defaults to 'default') 
+     *        - default: Optional. Default template name (defaults to 'default')
      *        - ctxPath: Optional. Context path segment (defaults to 'ctx')
-     *        - baseSite: Optional. Base site handle (defaults to false)
-     * 
+     *        - baseSite: Optional. Base site handle for multi-site support (defaults to false)
+     *
      * @throws \InvalidArgumentException If entry is not a valid Craft Element
-     * @return string The resolved template path
+     * @return string The rendered template content
      */
     public static function load(array $variables = []): string
     {
-        // Extract and validate the required entry element
-        $entry = ArrayHelper::getValue($variables, 'entry');
-        if (!$entry instanceof Element) {
-            throw new \InvalidArgumentException('ItemLoader::load() expects "entry" to be a valid Craft Element.');
-        }
-
-        // Extract optional configuration values with defaults
-        $path = $variables['path'] ?? 'item';
-        $style = $variables['style'] ?? null;
-        $ctx = $variables['ctx'] ?? null;
-        $default = $variables['default'] ?? 'default';
-        $ctxPath = StringHelper::trim($variables['ctxPath'] ?? 'ctx', '/');
-        $baseSite = ArrayHelper::getValue($variables, 'baseSite') ?: false;
+        // Validate and sanitize all input parameters
+        $validatedVars = InputValidator::validateServiceParameters($variables, TemplateType::ITEM);
+        
+        // Extract validated parameters with defaults
+        $entry = $validatedVars['entry'];
+        $path = $validatedVars['path'] ?? 'item';
+        $style = $validatedVars['style'] ?? null;
+        $ctx = $validatedVars['ctx'] ?? null;
+        $default = $validatedVars['default'] ?? 'default';
+        $ctxPath = StringHelper::trim($validatedVars['ctxPath'] ?? 'ctx', '/');
+        $baseSite = $validatedVars['baseSite'] ?? false;
 
         // Get entry properties for path building
         $section = $entry->section?->handle ?? $entry->group?->handle ?? '';
@@ -61,17 +74,17 @@ class ItemLoader
         $checkTemplates = [];
 
         // Helper to add both baseSite and default versions of a path
-        $addPath = function($templatePath) use (&$checkTemplates, $baseSite, $path) {
+        $addPath = function(string $templatePath) use (&$checkTemplates, $baseSite, $path): void {
             $pathsToAdd = [];
             
-            // Add site-specific path if baseSite is set
+            // Add base path first
+            $pathsToAdd[] = $path . '/' . $templatePath;
+            
+            // Add site-specific path if baseSite is set (as fallback)
             if ($baseSite) {
                 $pathsToAdd[] = $baseSite . '/' . $path . '/' . $templatePath;
                 $pathsToAdd[] = 'default/' . $path . '/' . $templatePath;
             }
-            
-            // Add base path
-            $pathsToAdd[] = $path . '/' . $templatePath;
             
             // Add only unique paths
             foreach ($pathsToAdd as $p) {
@@ -84,26 +97,26 @@ class ItemLoader
         // Add context-specific paths
         if ($ctx) {
             if ($style) {
-                $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$style}");
+                $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$ctx->type?->handle}/{$style}");
             }
             if ($type) {
-                $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$type}");
-                $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$ctx->type->handle}/{$default}");
+                $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$ctx->type?->handle}/{$type}");
+                $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$ctx->type?->handle}/{$default}");
             }
             if ($style) {
-                $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$style}");
+                $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$style}");
             }
             if ($type) {
-                $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$type}");
+                $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$type}");
             }
             // Default context section fallbacks
-            $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}/{$default}");
-            $addPath("{$section}/{$ctxPath}/{$ctx->section->handle}");
+            $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$default}");
+            $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}");
         }
 
         // Add non-context template paths
-        if($style) {
-            if($type) {
+        if ($style) {
+            if ($type) {
                 $addPath("{$section}/{$type}/{$style}");
             }
             $addPath("{$section}/{$style}");
@@ -122,10 +135,10 @@ class ItemLoader
         // Use HierarchyTemplateLoader to find first matching template
         return HierarchyTemplateLoader::load(
             $checkTemplates,
-            $variables,
+            $validatedVars,
             '',  // basePath is no longer used
-            'item',
-            ['item', 'all']
+            TemplateType::ITEM,
+            TemplateType::ITEM->getAllowedDebugValues()
         );
     }
 }
