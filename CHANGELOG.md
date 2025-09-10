@@ -13,10 +13,11 @@ All notable changes to this project will be documented in this file.
 
 ### Features
 
-* **MatrixLoader**: Add loop variable support for Twig templates ([#xxx](https://github.com/wabi-soft/craft-bonsai-twig/pull/xxx))
+* **MatrixLoader**: Add loop variable support and enhanced variables handling ([#xxx](https://github.com/wabi-soft/craft-bonsai-twig/pull/xxx))
   - Matrix templates now receive a `loop` variable when `loopIndex` and `loopLength` parameters are provided
   - Supports all standard Twig loop properties: `index`, `index0`, `first`, `last`, `length`, `revindex`, `revindex0`
   - Enables use of `cycle()` function and position-based conditional logic in matrix block templates
+  - Added explicit `variables` parameter support for cleaner organization of custom template variables
   - Backward compatible - existing templates continue to work without changes
 
 ---

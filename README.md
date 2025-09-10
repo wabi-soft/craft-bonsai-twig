@@ -38,7 +38,7 @@ The plugin provides four main Twig functions for hierarchical template loading:
 - `context` (Element, optional): Additional context element
 - `baseSite` (string, optional): Base site handle for multi-site setups
 - `variables` (array, optional): Additional variables to pass to the template
-**Example**:
+  **Example**:
 
 ```twig
 {# Basic usage #}
@@ -123,6 +123,7 @@ The plugin provides four main Twig functions for hierarchical template loading:
 - `ctx` or `context` (Element, optional): Parent context element
 - `loopIndex` (int, optional): Current loop iteration (0-indexed) for Twig loop variable
 - `loopLength` (int, optional): Total number of items in loop for Twig loop variable
+- `variables` (array, optional): Additional variables to pass to the template
 - `next` (string, optional): Next block type for navigation
 - `prev` (string, optional): Previous block type for navigation
 - `isFirst` (bool, optional): Whether this is the first block
@@ -158,12 +159,41 @@ The plugin provides four main Twig functions for hierarchical template loading:
             entry: entry,
             variables: {
                 customData: customValue,
-                sectionHandle: entry.section.handle
+                sectionHandle: entry.section.handle,
+                blockPosition: loop.index,
+                totalBlocks: loop.length
             }
         }) }}
     {% endfor %}
 {% endif %}
 ```
+
+**Variables Parameter**:
+
+You can pass additional variables using either approach:
+
+```twig
+{# Approach 1: Direct parameters (backward compatible) #}
+{{ matrixTemplates({
+    block: block,
+    customData: 'some value',
+    sectionHandle: entry.section.handle
+}) }}
+
+{# Approach 2: Using variables parameter (recommended) #}
+{{ matrixTemplates({
+    block: block,
+    loopIndex: loop.index0,
+    loopLength: loop.length,
+    variables: {
+        customData: 'some value',
+        sectionHandle: entry.section.handle,
+        blockPosition: loop.index
+    }
+}) }}
+```
+
+Both approaches make the variables available in your matrix template. The `variables` parameter is useful for organizing custom data separately from system parameters.
 
 ## Debug Features
 

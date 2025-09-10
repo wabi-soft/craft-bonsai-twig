@@ -44,6 +44,7 @@ class MatrixLoader
      *        - blockIndex: Optional. Index of block within field for context
      *        - loopIndex: Optional. Current loop iteration (0-indexed) for Twig loop variable
      *        - loopLength: Optional. Total number of items in loop for Twig loop variable
+     *        - variables: Optional. Additional variables to pass to the template
      *
      * @throws \InvalidArgumentException If block is not a valid Craft Element
      * @return string The rendered template content
@@ -200,8 +201,14 @@ class MatrixLoader
             ])
         );
 
+        // Handle nested variables parameter (like ItemLoader)
+        $nestedVariables = [];
+        if (isset($validatedVars['variables']) && is_array($validatedVars['variables'])) {
+            $nestedVariables = $validatedVars['variables'];
+        }
+
         // Ensure the block variable is available in templates
-        $templateVariables = array_merge($validatedVars, [
+        $templateVariables = array_merge($validatedVars, $nestedVariables, [
             'block' => $block,
             'nextBlock' => $nextBlock,
             'prevBlock' => $prevBlock,
