@@ -42,6 +42,8 @@ class MatrixLoader
      *        - prevBlock: Optional. Previous matrix block for context awareness
      *        - parentBlock: Optional. Parent matrix block for nested hierarchies
      *        - blockIndex: Optional. Index of block within field for context
+     *        - loopIndex: Optional. Current loop iteration (0-indexed) for Twig loop variable
+     *        - loopLength: Optional. Total number of items in loop for Twig loop variable
      *
      * @throws \InvalidArgumentException If block is not a valid Craft Element
      * @return string The rendered template content
@@ -63,6 +65,10 @@ class MatrixLoader
         $prevBlock = $validatedVars['prevBlock'] ?? null;
         $parentBlock = $validatedVars['parentBlock'] ?? null;
         $blockIndex = $validatedVars['blockIndex'] ?? null;
+        
+        // Loop-related parameters for Twig loop variable support
+        $loopLength = $validatedVars['loopLength'] ?? null;
+        $loopIndex = $validatedVars['loopIndex'] ?? null;
 
         // Block is already validated as MatrixBlock or Entry by InputValidator
 
@@ -159,6 +165,20 @@ class MatrixLoader
             }
         }
 
+        // Build loop variable if we have the necessary information
+        $loopVariable = null;
+        if ($loopIndex !== null && $loopLength !== null) {
+            $loopVariable = [
+                'index' => $loopIndex + 1,        // 1-indexed
+                'index0' => $loopIndex,           // 0-indexed
+                'first' => $loopIndex === 0,
+                'last' => $loopIndex === ($loopLength - 1),
+                'length' => $loopLength,
+                'revindex' => $loopLength - $loopIndex,      // 1-indexed from end
+                'revindex0' => $loopLength - $loopIndex - 1, // 0-indexed from end
+            ];
+        }
+
         // Debug: Log template paths being checked (only in dev mode)
         if (\Craft::$app->getConfig()->general->devMode) {
             \Craft::info('MatrixLoader checking templates: ' . implode(', ', $checkTemplates), __METHOD__);
@@ -176,6 +196,7 @@ class MatrixLoader
                 'prevBlock' => $prevBlock,
                 'parentBlock' => $parentBlock,
                 'blockIndex' => $blockIndex,
+                'loop' => $loopVariable,
             ])
         );
 
@@ -186,6 +207,7 @@ class MatrixLoader
             'prevBlock' => $prevBlock,
             'parentBlock' => $parentBlock,
             'blockIndex' => $blockIndex,
+            'loop' => $loopVariable,
         ]);
 
         return HierarchyTemplateLoader::load(

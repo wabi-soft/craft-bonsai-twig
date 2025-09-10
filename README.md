@@ -121,6 +121,8 @@ The plugin provides four main Twig functions for hierarchical template loading:
 - `block` (MatrixBlock): The matrix block to render
 - `style` (string, optional): Style variant for the block
 - `ctx` or `context` (Element, optional): Parent context element
+- `loopIndex` (int, optional): Current loop iteration (0-indexed) for Twig loop variable
+- `loopLength` (int, optional): Total number of items in loop for Twig loop variable
 - `next` (string, optional): Next block type for navigation
 - `prev` (string, optional): Previous block type for navigation
 - `isFirst` (bool, optional): Whether this is the first block
@@ -139,13 +141,15 @@ The plugin provides four main Twig functions for hierarchical template loading:
 **Advanced Example**:
 
 ```twig
-{# Advanced matrix with full context #}
+{# Advanced matrix with full context and loop variables #}
 {% if entry.matrixField|length %}
     {% set style = style ?? null %}
     {% for block in entry.matrixField.all() %}
         {{ matrixTemplates({
             block: block,
             style: style,
+            loopIndex: loop.index0,    {# Pass current iteration (0-indexed) #}
+            loopLength: loop.length,   {# Pass total number of blocks #}
             ctx: entry,
             next: block.next.type ?? false,
             prev: block.prev.type ?? false,

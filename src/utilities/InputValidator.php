@@ -584,6 +584,15 @@ class InputValidator
             if (isset($variables['blockIndex'])) {
                 $validated['blockIndex'] = self::validateInteger($variables['blockIndex'], 'blockIndex', false, 0);
             }
+            
+            // Validate loop-related parameters for Twig loop variable support
+            if (isset($variables['loopIndex'])) {
+                $validated['loopIndex'] = self::validateInteger($variables['loopIndex'], 'loopIndex', false, 0);
+            }
+            
+            if (isset($variables['loopLength'])) {
+                $validated['loopLength'] = self::validateInteger($variables['loopLength'], 'loopLength', false, 1);
+            }
         }
 
         // Copy over any other variables that passed initial validation
