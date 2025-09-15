@@ -2,6 +2,7 @@
 
 namespace wabisoft\bonsaitwig\utilities;
 
+use craft\helpers\StringHelper;
 use wabisoft\bonsaitwig\exceptions\InvalidTemplatePathException;
 
 /**
@@ -89,18 +90,27 @@ class SecurityUtils
             );
         }
 
-        // Validate allowed characters
-        if (!preg_match(self::ALLOWED_PATH_CHARS, $path)) {
+        // Normalize path separators to forward slashes early
+        $normalized = str_replace('\\', '/', $path);
+        $normalized = trim($normalized);
+
+        // Normalize each path segment by transliterating and replacing invalid characters
+        $segments = array_filter(explode('/', $normalized), static fn($s) => $s !== '');
+        $normalizedSegments = [];
+        foreach ($segments as $seg) {
+            $normalizedSegments[] = self::normalizePathSegment($seg);
+        }
+        $sanitizedPath = implode('/', $normalizedSegments);
+
+        // Now validate allowed characters on the sanitized path
+        if ($sanitizedPath === '' || !preg_match(self::ALLOWED_PATH_CHARS, $sanitizedPath)) {
             throw new InvalidTemplatePathException(
                 path: $path,
                 reason: 'Template path contains invalid characters'
             );
         }
 
-        // Normalize path separators to forward slashes
-        $sanitizedPath = str_replace('\\', '/', $path);
-        
-        // Remove leading and trailing slashes/spaces
+        // Remove leading and trailing slashes/spaces just in case
         $sanitizedPath = trim($sanitizedPath, '/ ');
 
         // Remove double slashes
@@ -246,6 +256,55 @@ class SecurityUtils
         // Check with extensions (e.g., CON.txt)
         $nameWithoutExt = pathinfo($upperName, PATHINFO_FILENAME);
         return in_array($nameWithoutExt, $reservedNames, true);
+    }
+
+    /**
+     * Normalize a single path segment by transliterating to ASCII and replacing invalid characters.
+     */
+    private static function normalizePathSegment(string $segment): string
+    {
+        $segment = self::transliterateToAscii($segment);
+        // Replace any remaining invalid characters with a dash
+        $segment = preg_replace('/[^A-Za-z0-9\._-]+/', '-', $segment ?? '');
+        // Collapse multiple dashes
+        $segment = preg_replace('/-+/', '-', $segment ?? '-');
+        // Trim spaces, dashes
+        $segment = trim((string)$segment, " -");
+        // Avoid leading dots which would create hidden paths
+        $segment = ltrim($segment, '.');
+        if ($segment === '') {
+            $segment = '-';
+        }
+        return $segment;
+    }
+
+    /**
+     * Best-effort transliteration of a string to ASCII.
+     */
+    private static function transliterateToAscii(string $value): string
+    {
+        // Prefer Craft's built-in ASCII transliteration
+        try {
+            $ascii = StringHelper::toAscii($value);
+            if ($ascii !== '') {
+                return $ascii;
+            }
+        } catch (\Throwable $e) {
+            // fall through to other strategies
+        }
+        // Fallback to intl transliterator if available
+        if (function_exists('transliterator_transliterate')) {
+            $result = transliterator_transliterate('Any-Latin; Latin-ASCII', $value);
+            if ($result !== null) {
+                return $result;
+            }
+        }
+        // Final fallback to iconv
+        $result = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+        if ($result !== false) {
+            return (string)$result;
+        }
+        return $value;
     }
 
     /**
