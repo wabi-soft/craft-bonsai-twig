@@ -4,6 +4,15 @@
 All notable changes to this project will be documented in this file.
 <!--- END HEADER -->
 
+## [7.0.4](https://github.com/wabi-soft/craft-bonsai-twig/compare/v7.0.2...v7.0.4) (2025-09-15)
+
+### Maintenance
+
+- Bump package version to align with Craft 4 PHP 8.2 installs expecting ^7.0.4.
+- No code changes; compatibility stays: PHP >= 8.2, Craft CMS ^4.4 | ^5.0.
+
+---
+
 ## [7.0.2](https://github.com/wabi-soft/craft-bonsai-twig/compare/v7.0.1...v7.0.2) (2025-09-10)
 
 
