@@ -68,9 +68,10 @@ class ItemLoader
         $default = $validatedVars['default'] ?? 'default';
         $ctxPath = StringHelper::trim($validatedVars['ctxPath'] ?? 'ctx', '/');
         $baseSite = $validatedVars['baseSite'] ?? false;
-        $nestByElementType = (bool)($validatedVars['nestByElementType'] ?? false);
-        // Determine elementPaths from variables or settings; false bypasses logic
+        // Determine settings first to allow fallback
         $settings = BonsaiTwig::getInstance()?->getSettings();
+        $nestByElementType = (bool)($validatedVars['nestByElementType'] ?? ($settings->nestByElementType ?? false));
+        // Determine elementPaths from variables or settings; false bypasses logic
         $elementPaths = $validatedVars['elementPaths'] ?? ($settings->itemsTemplateElementPaths ?? false); // false or array
 
         // Determine effective base path, optionally nested by element type

@@ -19,6 +19,12 @@ class Settings extends Model
     public bool $cacheInDevMode = false;
 
     /**
+     * @var bool Whether to nest item template paths by element type when no explicit mapping is provided
+     *           This acts as a fallback when itemsTemplateElementPaths is false.
+     */
+    public bool $nestByElementType = false;
+
+    /**
      * @var bool Whether to enable performance monitoring
      */
     public bool $enablePerformanceMonitoring = true;
@@ -55,7 +61,7 @@ class Settings extends Model
     public function rules(): array
     {
         return [
-            [['cacheInDevMode', 'enablePerformanceMonitoring', 'enableErrorReporting'], 'boolean'],
+            [['cacheInDevMode', 'enablePerformanceMonitoring', 'enableErrorReporting', 'nestByElementType'], 'boolean'],
             [['templateCacheDuration', 'elementCacheDuration', 'existenceCacheDuration'], 'integer', 'min' => 0],
             [['templateCacheDuration', 'elementCacheDuration', 'existenceCacheDuration'], 'default', 'value' => 3600],
             // itemsTemplateElementPaths can be false or an associative array of strings
@@ -91,6 +97,7 @@ class Settings extends Model
             'elementCacheDuration' => 'Element Cache Duration (seconds)',
             'existenceCacheDuration' => 'Template Existence Cache Duration (seconds)',
             'itemsTemplateElementPaths' => 'Item Templates: Element Path Prefixes',
+                        'nestByElementType' => 'Item Templates: Nest Paths by Element Type (fallback)',
         ];
     }
 
@@ -107,6 +114,7 @@ class Settings extends Model
             'elementCacheDuration' => 'How long to cache element property values (in seconds). Set to 0 to disable caching.',
             'existenceCacheDuration' => 'How long to cache template existence check results (in seconds). Set to 0 to disable caching.',
             'itemsTemplateElementPaths' => 'Optional mapping used by the Item loader to nest paths by element type. Example: {"entry": "entry", "category": "category"}. Set to false to bypass. This replaces the older nestByElementType toggle.',
+            'nestByElementType' => 'When enabled, item templates will be nested under item/entry or item/category automatically. Only used when itemsTemplateElementPaths is false.',
         ];
     }
 }

@@ -69,8 +69,8 @@
         <strong>{{ settings.attributeLabels.itemsTemplateElementPaths }}</strong>
         <div style="margin-top:6px; font-family: monospace; white-space: pre;">{{ (settings.itemsTemplateElementPaths is iterable ? settings.itemsTemplateElementPaths|json_encode(constant('JSON_PRETTY_PRINT')) : 'false') }}</div>
         <div class="instructions">
-            <p>{{ "Configure via project config (config/bonsai-twig.php) by setting the plugin setting ‘itemsTemplateElementPaths’. Example:"|t('bonsai-twig') }}</p>
-            <pre style="background:#2b2b2b; padding:8px; border:1px solid #444; border-radius:4px; font-size: 10px;">return [
+            <p>{{ "Configure via project config (config/_bonsai-twig.php) by setting the plugin setting ‘itemsTemplateElementPaths’. Example:"|t('bonsai-twig') }}</p>
+            <pre style="background:#cccccc; padding:8px; border-radius:4px; font-size: 10px;">return [
     'itemsTemplateElementPaths' => [
         'entry' => 'entry',
         'category' => 'category',
@@ -79,6 +79,14 @@
         </div>
     </div>
 </div>
+
+{{ forms.lightswitchField({
+    label: settings.attributeLabels.nestByElementType,
+    instructions: settings.attributeHints.nestByElementType ~ ' ' ~ 'If a mapping is provided in “' ~ settings.attributeLabels.itemsTemplateElementPaths ~ '”, it will take precedence.' ,
+    id: 'nestByElementType',
+    name: 'nestByElementType',
+    on: settings.nestByElementType
+}) }}
 
 {{ forms.textField({
     label: settings.attributeLabels.templateCacheDuration,
