@@ -119,12 +119,20 @@ class ItemLoader
             if ($type) {
                 $addPath("{$section}/{$type}/{$style}");
             }
+            // Section-specific style
             $addPath("{$section}/{$style}");
+            // Global style fallback (e.g., item/none)
+            $addPath("{$style}");
         }
         if ($type) {
             $addPath("{$section}/{$type}/{$slug}");
             $addPath("{$section}/{$type}");
             $addPath("{$section}/{$type}/{$default}");
+        } else {
+            // Category (no type): include group/slug path
+            if (!empty($slug)) {
+                $addPath("{$section}/{$slug}");
+            }
         }
         
         // Add most general fallback paths

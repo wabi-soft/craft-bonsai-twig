@@ -314,12 +314,23 @@ class HierarchyTemplateLoader extends Component
                         return $path;
                     }, $validatedTemplates);
 
+                    // Determine element kind for debug (entry vs category) when available
+                    $elementKind = null;
+                    if (isset($templateContext) && $templateContext->element) {
+                        $el = $templateContext->element;
+                        $elementKind = ($el instanceof \craft\elements\Category) ? 'category' : (($el instanceof \craft\elements\Entry) ? 'entry' : null);
+                    } elseif (isset($validatedVariables['entry']) && $validatedVariables['entry'] instanceof \craft\base\Element) {
+                        $el = $validatedVariables['entry'];
+                        $elementKind = ($el instanceof \craft\elements\Category) ? 'category' : (($el instanceof \craft\elements\Entry) ? 'entry' : null);
+                    }
+
                     $info = [
                         'directory' => $directory,
                         'templates' => $displayTemplates,
                         'optimized_templates' => $optimizedPaths,
                         'currentTemplate' => $resolvedPath,
                         'type' => $templateType->value,
+                        'element_kind' => $elementKind,
                         'site_info' => [
                             'current_site' => Craft::$app->sites->currentSite->handle,
                             'element_site' => isset($templateContext) ? ($templateContext->element->site->handle ?? null) : null,
@@ -336,7 +347,8 @@ class HierarchyTemplateLoader extends Component
                     ];
                     
                     // Wrap content with enhanced debug info
-                    $content = self::renderInfo($content, Json::encode($info), $templateType->value);
+                    $displayType = $templateType->value . ($elementKind ? (' (' . $elementKind . ')') : '');
+                    $content = self::renderInfo($content, Json::encode($info), $displayType);
                     
                     $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($optimizedPaths));
                 } else {
