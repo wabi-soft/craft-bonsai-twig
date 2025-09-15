@@ -41,60 +41,31 @@ class SecurityUtils
     ];
 
     /**
-     * Sanitizes a template path to prevent security vulnerabilities.
-     *
-     * This method performs comprehensive path sanitization including:
-     * - Path traversal attack prevention
-     * - Absolute path blocking
-     * - Character validation
-     * - Length validation
-     * - Normalization of path separators
-     *
-     * @param string $path The template path to sanitize
-     * @return string The sanitized template path
-     * @throws InvalidTemplatePathException If the path contains dangerous patterns or is invalid
+     * Sanitize a template path and enforce safety rules.
      */
     public static function sanitizeTemplatePath(string $path): string
     {
-        // Check for empty path
         if (empty(trim($path))) {
-            throw new InvalidTemplatePathException(
-                path: $path,
-                reason: 'Template path cannot be empty'
-            );
+            throw new InvalidTemplatePathException(path: $path, reason: 'Template path cannot be empty');
         }
 
-        // Check path length
         if (strlen($path) > self::MAX_PATH_LENGTH) {
-            throw new InvalidTemplatePathException(
-                path: $path,
-                reason: sprintf('Template path exceeds maximum length of %d characters', self::MAX_PATH_LENGTH)
-            );
+            throw new InvalidTemplatePathException(path: $path, reason: sprintf('Template path exceeds maximum length of %d characters', self::MAX_PATH_LENGTH));
         }
 
-        // Check for dangerous patterns
         foreach (self::DANGEROUS_PATTERNS as $pattern) {
             if (str_contains($path, $pattern)) {
-                throw new InvalidTemplatePathException(
-                    path: $path,
-                    reason: sprintf('Path contains dangerous pattern: %s', $pattern)
-                );
+                throw new InvalidTemplatePathException(path: $path, reason: sprintf('Path contains dangerous pattern: %s', $pattern));
             }
         }
 
-        // Check for absolute paths (security risk)
         if (self::isAbsolutePath($path)) {
-            throw new InvalidTemplatePathException(
-                path: $path,
-                reason: 'Absolute paths are not allowed in template paths'
-            );
+            throw new InvalidTemplatePathException(path: $path, reason: 'Absolute paths are not allowed in template paths');
         }
 
-        // Normalize path separators to forward slashes early
         $normalized = str_replace('\\', '/', $path);
         $normalized = trim($normalized);
 
-        // Normalize each path segment by transliterating and replacing invalid characters
         $segments = array_filter(explode('/', $normalized), static fn($s) => $s !== '');
         $normalizedSegments = [];
         foreach ($segments as $seg) {
@@ -102,78 +73,41 @@ class SecurityUtils
         }
         $sanitizedPath = implode('/', $normalizedSegments);
 
-        // Now validate allowed characters on the sanitized path
         if ($sanitizedPath === '' || !preg_match(self::ALLOWED_PATH_CHARS, $sanitizedPath)) {
-            throw new InvalidTemplatePathException(
-                path: $path,
-                reason: 'Template path contains invalid characters'
-            );
+            throw new InvalidTemplatePathException(path: $path, reason: 'Template path contains invalid characters');
         }
 
-        // Remove leading and trailing slashes/spaces just in case
         $sanitizedPath = trim($sanitizedPath, '/ ');
-
-        // Remove double slashes
         $sanitizedPath = preg_replace('/\/+/', '/', $sanitizedPath);
 
-        // Final validation - ensure path is not empty after sanitization
         if (empty($sanitizedPath)) {
-            throw new InvalidTemplatePathException(
-                path: $path,
-                reason: 'Path is empty after sanitization'
-            );
+            throw new InvalidTemplatePathException(path: $path, reason: 'Path is empty after sanitization');
         }
 
         return $sanitizedPath;
     }
 
-    /**
-     * Validates that a template path is safe for file system access.
-     *
-     * Performs additional validation beyond basic sanitization to ensure
-     * the path is safe for actual file system operations.
-     *
-     * @param string $path The template path to validate
-     * @return bool True if the path is valid and safe
-     * @throws InvalidTemplatePathException If the path is invalid or unsafe
-     */
+    /** Validate a template path is safe for use. */
     public static function validateTemplatePath(string $path): bool
     {
-        // First sanitize the path (this will throw if invalid)
         $sanitizedPath = self::sanitizeTemplatePath($path);
 
-        // Check for null bytes (can cause issues in some systems)
         if (str_contains($sanitizedPath, "\0")) {
-            throw new InvalidTemplatePathException(
-                path: $path,
-                reason: 'Path contains null bytes'
-            );
+            throw new InvalidTemplatePathException(path: $path, reason: 'Path contains null bytes');
         }
 
-        // Check for consecutive dots (potential traversal)
         if (str_contains($sanitizedPath, '..')) {
-            throw new InvalidTemplatePathException(
-                path: $path,
-                reason: 'Path contains consecutive dots'
-            );
+            throw new InvalidTemplatePathException(path: $path, reason: 'Path contains consecutive dots');
         }
 
-        // Ensure path doesn't start with a dot (hidden files)
         if (str_starts_with($sanitizedPath, '.')) {
-            throw new InvalidTemplatePathException(
-                path: $path,
-                reason: 'Path cannot start with a dot'
-            );
+            throw new InvalidTemplatePathException(path: $path, reason: 'Path cannot start with a dot');
         }
 
-        // Check for reserved names (Windows specific but good practice)
         $pathParts = explode('/', $sanitizedPath);
         foreach ($pathParts as $part) {
             if (self::isReservedName($part)) {
-                throw new InvalidTemplatePathException(
-                    path: $path,
-                    reason: sprintf('Path contains reserved name: %s', $part)
-                );
+                throw new InvalidTemplatePathException(path: $path, reason: sprintf('Path contains reserved name: %s', $part));
             }
         }
 
