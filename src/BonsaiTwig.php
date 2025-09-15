@@ -288,16 +288,17 @@ class BonsaiTwig extends Plugin
         Event::on(
             Element::class,
             Element::EVENT_AFTER_SAVE,
-            function(ModelEvent $event): void {
+            function(Event $event): void {
                 try {
-                    /** @var Element $element */
-                    $element = $event->sender;
-                    $this->cacheService->invalidateElementCache($element);
+                    $sender = $event->sender;
+                    if ($sender instanceof Element) {
+                        $this->cacheService->invalidateElementCache($sender);
+                    }
                 } catch (\Throwable $e) {
                     $this->errorReportingService->logError(
                         'Cache invalidation failed after element save',
                         $e,
-                        ['elementId' => $element->id ?? 'unknown']
+                        []
                     );
                 }
             }
@@ -306,16 +307,17 @@ class BonsaiTwig extends Plugin
         Event::on(
             Element::class,
             Element::EVENT_AFTER_DELETE,
-            function(ModelEvent $event): void {
+            function(Event $event): void {
                 try {
-                    /** @var Element $element */
-                    $element = $event->sender;
-                    $this->cacheService->invalidateElementCache($element);
+                    $sender = $event->sender;
+                    if ($sender instanceof Element) {
+                        $this->cacheService->invalidateElementCache($sender);
+                    }
                 } catch (\Throwable $e) {
                     $this->errorReportingService->logError(
                         'Cache invalidation failed after element delete',
                         $e,
-                        ['elementId' => $element->id ?? 'unknown']
+                        []
                     );
                 }
             }
