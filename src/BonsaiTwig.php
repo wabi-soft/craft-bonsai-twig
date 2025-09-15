@@ -147,10 +147,16 @@ class BonsaiTwig extends Plugin
             $this->initializeServices();
 
             // Register Twig extension after services are ready
-            Craft::$app->onInit(function(): void {
+            if (method_exists(Craft::$app, 'onInit')) {
+                Craft::$app->onInit(function(): void {
+                    $this->registerTwigExtension();
+                    $this->attachEventHandlers();
+                });
+            } else {
+                // Fallback for Craft 4: register immediately during plugin init
                 $this->registerTwigExtension();
                 $this->attachEventHandlers();
-            });
+            }
 
         } catch (\Throwable $e) {
             throw new BonsaiTwigException(
@@ -172,12 +178,13 @@ class BonsaiTwig extends Plugin
      */
     private function validateConfiguration(): void
     {
-        // Validate Craft CMS version compatibility
-        if (!version_compare(Craft::$app->getVersion(), '5.0.0', '>=')) {
-            throw new InvalidConfigException('Bonsai Twig requires Craft CMS 5.0.0 or higher');
+        // Validate Craft CMS version compatibility (support Craft 4.4+ and 5+)
+        $craftVersion = Craft::$app->getVersion();
+        if (!version_compare($craftVersion, '4.4.0', '>=')) {
+            throw new InvalidConfigException('Bonsai Twig requires Craft CMS 4.4.0 or higher');
         }
 
-        // Validate PHP version compatibility
+        // Validate PHP version compatibility (we rely on PHP 8.2 features like readonly classes)
         if (!version_compare(PHP_VERSION, '8.2.0', '>=')) {
             throw new InvalidConfigException('Bonsai Twig requires PHP 8.2.0 or higher');
         }
