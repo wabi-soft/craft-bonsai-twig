@@ -6,7 +6,6 @@ use Craft;
 use craft\base\Plugin;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\web\View;
-use craft\events\ModelEvent;
 use craft\base\Element;
 use craft\helpers\App;
 use wabisoft\bonsaitwig\services\CategoryLoader;
