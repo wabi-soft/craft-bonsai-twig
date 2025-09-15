@@ -44,6 +44,12 @@ class Settings extends Model
     public int $existenceCacheDuration = 7200;
 
     /**
+     * @var array<string,string>|false Mapping for Item templates to nest paths by element kind.
+     * Example: {"entry": "entry", "category": "category"}. Set to false to disable.
+     */
+    public array|false $itemsTemplateElementPaths = false;
+
+    /**
      * @inheritdoc
      */
     public function rules(): array
@@ -52,6 +58,23 @@ class Settings extends Model
             [['cacheInDevMode', 'enablePerformanceMonitoring', 'enableErrorReporting'], 'boolean'],
             [['templateCacheDuration', 'elementCacheDuration', 'existenceCacheDuration'], 'integer', 'min' => 0],
             [['templateCacheDuration', 'elementCacheDuration', 'existenceCacheDuration'], 'default', 'value' => 3600],
+            // itemsTemplateElementPaths can be false or an associative array of strings
+            [['itemsTemplateElementPaths'], function($attribute): void {
+                $value = $this->$attribute;
+                if ($value === false) {
+                    return; // allowed
+                }
+                if (!is_array($value)) {
+                    $this->addError($attribute, 'Must be an associative array or false.');
+                    return;
+                }
+                foreach ($value as $k => $v) {
+                    if (!is_string($k) || !is_string($v)) {
+                        $this->addError($attribute, 'Keys and values must be strings when provided as an array.');
+                        break;
+                    }
+                }
+            }],
         ];
     }
 
@@ -67,6 +90,7 @@ class Settings extends Model
             'templateCacheDuration' => 'Template Cache Duration (seconds)',
             'elementCacheDuration' => 'Element Cache Duration (seconds)',
             'existenceCacheDuration' => 'Template Existence Cache Duration (seconds)',
+            'itemsTemplateElementPaths' => 'Item Templates: Element Path Prefixes',
         ];
     }
 
@@ -82,6 +106,7 @@ class Settings extends Model
             'templateCacheDuration' => 'How long to cache template resolution results (in seconds). Set to 0 to disable caching.',
             'elementCacheDuration' => 'How long to cache element property values (in seconds). Set to 0 to disable caching.',
             'existenceCacheDuration' => 'How long to cache template existence check results (in seconds). Set to 0 to disable caching.',
+            'itemsTemplateElementPaths' => 'Optional mapping used by the Item loader to nest paths by element type. Example: {"entry": "entry", "category": "category"}. Set to false to bypass. This replaces the older nestByElementType toggle.',
         ];
     }
 }

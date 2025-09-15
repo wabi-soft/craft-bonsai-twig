@@ -56,6 +56,30 @@
     </div>
 </div>
 
+<hr>
+
+<div class="field">
+    <div class="heading">
+        <label>{{ "Item Templates Settings"|t('bonsai-twig') }}</label>
+        <div class="instructions">
+            <p>{{ settings.attributeHints.itemsTemplateElementPaths }}</p>
+        </div>
+    </div>
+    <div class="readable">
+        <strong>{{ settings.attributeLabels.itemsTemplateElementPaths }}</strong>
+        <div style="margin-top:6px; font-family: monospace; white-space: pre;">{{ (settings.itemsTemplateElementPaths is iterable ? settings.itemsTemplateElementPaths|json_encode(constant('JSON_PRETTY_PRINT')) : 'false') }}</div>
+        <div class="instructions">
+            <p>{{ "Configure via project config (config/bonsai-twig.php) by setting the plugin setting ‘itemsTemplateElementPaths’. Example:"|t('bonsai-twig') }}</p>
+            <pre style="background:#2b2b2b; padding:8px; border:1px solid #444; border-radius:4px; font-size: 10px;">return [
+    'itemsTemplateElementPaths' => [
+        'entry' => 'entry',
+        'category' => 'category',
+    ],
+];</pre>
+        </div>
+    </div>
+</div>
+
 {{ forms.textField({
     label: settings.attributeLabels.templateCacheDuration,
     instructions: settings.attributeHints.templateCacheDuration,

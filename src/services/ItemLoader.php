@@ -8,6 +8,7 @@ use craft\helpers\StringHelper;
 use wabisoft\bonsaitwig\enums\TemplateType;
 use wabisoft\bonsaitwig\exceptions\InvalidElementException;
 use wabisoft\bonsaitwig\utilities\InputValidator;
+use wabisoft\bonsaitwig\BonsaiTwig;
 
 /**
  * Service class for loading template paths based on Craft elements and context.
@@ -47,6 +48,9 @@ class ItemLoader
      *        - default: Optional. Default template name (defaults to 'default')
      *        - ctxPath: Optional. Context path segment (defaults to 'ctx')
      *        - baseSite: Optional. Base site handle for multi-site support (defaults to false)
+     *        - nestByElementType: Optional. When true, nests under element type directory (e.g., item/entry or item/category). Default false.
+     *        - elementPaths: Optional. False or an array mapping element types to subdirectories. Example: ['entry' => 'entry', 'category' => 'category'].
+     *                         If provided as an array, this overrides nestByElementType and prefixes the base path with the mapped segment for the element kind.
      *
      * @throws \InvalidArgumentException If entry is not a valid Craft Element
      * @return string The rendered template content
@@ -64,6 +68,41 @@ class ItemLoader
         $default = $validatedVars['default'] ?? 'default';
         $ctxPath = StringHelper::trim($validatedVars['ctxPath'] ?? 'ctx', '/');
         $baseSite = $validatedVars['baseSite'] ?? false;
+        $nestByElementType = (bool)($validatedVars['nestByElementType'] ?? false);
+        // Determine elementPaths from variables or settings; false bypasses logic
+        $settings = BonsaiTwig::getInstance()?->getSettings();
+        $elementPaths = $validatedVars['elementPaths'] ?? ($settings->itemsTemplateElementPaths ?? false); // false or array
+
+        // Determine effective base path, optionally nested by element type
+        $effectivePath = $path;
+
+        // Prefer explicit elementPaths mapping when provided
+        if (is_array($elementPaths)) {
+            $elementKind = null;
+            if ($entry instanceof \craft\elements\Category) {
+                $elementKind = 'category';
+            } elseif ($entry instanceof \craft\elements\Entry) {
+                $elementKind = 'entry';
+            }
+
+            if ($elementKind) {
+                // Support both short kind keys and FQCN keys
+                $mapped = $elementPaths[$elementKind]
+                    ?? ($elementKind === 'entry' ? ($elementPaths[\craft\elements\Entry::class] ?? null) : null)
+                    ?? ($elementKind === 'category' ? ($elementPaths[\craft\elements\Category::class] ?? null) : null);
+
+                if (is_string($mapped) && $mapped !== '') {
+                    $effectivePath = rtrim($path, '/') . '/' . ltrim($mapped, '/');
+                }
+            }
+        } elseif ($nestByElementType) {
+            // Backward-compatible boolean flag
+            if ($entry instanceof \craft\elements\Category) {
+                $effectivePath = $path . '/category';
+            } elseif ($entry instanceof \craft\elements\Entry) {
+                $effectivePath = $path . '/entry';
+            }
+        }
 
         // Get entry properties for path building
         $section = $entry->section?->handle ?? $entry->group?->handle ?? '';
@@ -74,16 +113,16 @@ class ItemLoader
         $checkTemplates = [];
 
         // Helper to add both baseSite and default versions of a path
-        $addPath = function(string $templatePath) use (&$checkTemplates, $baseSite, $path): void {
+        $addPath = function(string $templatePath) use (&$checkTemplates, $baseSite, $effectivePath): void {
             $pathsToAdd = [];
             
             // Add base path first
-            $pathsToAdd[] = $path . '/' . $templatePath;
+            $pathsToAdd[] = $effectivePath . '/' . $templatePath;
             
             // Add site-specific path if baseSite is set (as fallback)
             if ($baseSite) {
-                $pathsToAdd[] = $baseSite . '/' . $path . '/' . $templatePath;
-                $pathsToAdd[] = 'default/' . $path . '/' . $templatePath;
+                $pathsToAdd[] = $baseSite . '/' . $effectivePath . '/' . $templatePath;
+                $pathsToAdd[] = 'default/' . $effectivePath . '/' . $templatePath;
             }
             
             // Add only unique paths
