@@ -18,6 +18,22 @@
     warning: settings.cacheInDevMode ? "Enabling caching in development mode may hide template changes until cache expires."|t('bonsai-twig') : null
 }) }}
 
+{{ forms.lightswitchField({
+    label: settings.attributeLabels.disableMatrixTemplateCaching,
+    instructions: settings.attributeHints.disableMatrixTemplateCaching,
+    id: 'disableMatrixTemplateCaching',
+    name: 'disableMatrixTemplateCaching',
+    on: settings.disableMatrixTemplateCaching
+}) }}
+
+{{ forms.lightswitchField({
+    label: settings.attributeLabels.disableItemTemplateCaching,
+    instructions: settings.attributeHints.disableItemTemplateCaching,
+    id: 'disableItemTemplateCaching',
+    name: 'disableItemTemplateCaching',
+    on: settings.disableItemTemplateCaching
+}) }}
+
 <hr>
 
 <div class="field">
