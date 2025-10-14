@@ -311,6 +311,7 @@ class HierarchyTemplateLoader extends Component
                                     $templateContext,
                                     $optimizedPaths,
                                     $resolvedPath,
+                                    $fallbackSite,
                                     ['cached_at' => time()]
                                 );
                             } else {
