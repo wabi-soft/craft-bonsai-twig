@@ -51,14 +51,15 @@ readonly class TemplateContext
      */
     private function validateElement(Element $element): void
     {
-        if (!$element instanceof Element) {
-            throw new \InvalidArgumentException(
-                sprintf('Expected Craft Element, got %s', get_debug_type($element))
-            );
+        // Type is enforced by PHP type hint, no need for instanceof check
+
+        if ($element->id === null) {
+            throw new \InvalidArgumentException('Element must have a valid ID');
         }
 
-        if (!$element->id) {
-            throw new \InvalidArgumentException('Element must have a valid ID');
+        // Validate element state for template resolution
+        if ($element->siteId === null) {
+            throw new \InvalidArgumentException('Element must have a valid site ID');
         }
     }
 

@@ -71,12 +71,7 @@ class HierarchyTemplateLoader extends Component
     {
         // Convert string type to enum if needed
         $templateType = $type instanceof TemplateType ? $type : TemplateType::fromString((string) $type);
-        
-        // Validate and sanitize input parameters
-        $validatedTemplates = InputValidator::validateTemplatePaths($templates);
-        $validatedVariables = InputValidator::validateTemplateVariables($variables);
-        $validatedBasePath = InputValidator::validateString($basePath, 'basePath', false, 255);
-        
+
         // Validate and sanitize input parameters
         $validatedTemplates = InputValidator::validateTemplatePaths($templates);
         $validatedVariables = InputValidator::validateTemplateVariables($variables);
@@ -119,15 +114,7 @@ class HierarchyTemplateLoader extends Component
             throw $templateNotFoundException;
         }
 
-        // ...rest of method remains unchanged (with no duplicate initialization)
-        
-        $isDev = Craft::$app->getConfig()->general->devMode;
-
-        // Get services for enhanced caching and performance monitoring
-        $plugin = BonsaiTwig::getInstance();
-        $cacheService = $plugin->cacheService;
-        $performanceMonitor = $plugin->performanceMonitor;
-        $errorReportingService = $plugin->errorReportingService;
+        // Get additional plugin settings
         $settings = $plugin->getSettings();
         $disableTypeCaching = false;
         if ($templateType instanceof TemplateType) {
@@ -194,12 +181,23 @@ class HierarchyTemplateLoader extends Component
         }
 
         // Fallback to legacy cache key for backward compatibility
-        $legacyKeyContext = ['directory' => $directory];
+        $legacyKeyContext = [
+            'directory' => $directory,
+            'style' => $validatedVariables['style'] ?? null,
+            'baseSite' => $validatedVariables['baseSite'] ?? null,
+        ];
+
         if ($element instanceof \craft\base\ElementInterface) {
             // Add element identifiers to avoid collisions across elements (e.g., matrix blocks)
             $legacyKeyContext['elementId'] = (int)($element->id ?? 0);
             $legacyKeyContext['siteId'] = (int)($element->siteId ?? 0);
         }
+
+        // Include context element ID if present to avoid cache collisions
+        if (isset($validatedVariables['context']) && $validatedVariables['context'] instanceof \craft\base\ElementInterface) {
+            $legacyKeyContext['contextElementId'] = (int)($validatedVariables['context']->id ?? 0);
+        }
+
         $cacheKey = SecurityUtils::generateSecureCacheKey($validatedTemplates, $templateType->value, $legacyKeyContext);
         
         // Try to get cached version first (skip when disabled for this type)
@@ -695,8 +693,13 @@ class HierarchyTemplateLoader extends Component
     ): array {
         $sitesService = Craft::$app->sites;
         $currentSite = $sitesService->currentSite;
+
+        if (!$currentSite) {
+            throw new \RuntimeException('Current site could not be determined for multi-site template resolution');
+        }
+
         $fallbackSite = null;
-        
+
         // Get element's site or current site
         $elementSiteId = $context->element->siteId ?? $currentSite->id;
         $elementSite = $sitesService->getSiteById($elementSiteId);

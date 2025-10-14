@@ -470,17 +470,29 @@ class CacheService extends Component
     public function invalidateSiteCache(int|string $siteId): void
     {
         $sites = Craft::$app->sites;
+
         if (is_numeric($siteId)) {
             $site = $sites->getSiteById((int)$siteId);
-            $id = (int)($site->id ?? $siteId);
-            $handle = (string)($site->handle ?? $siteId);
+            if ($site === null) {
+                // Site not found, log warning and return early
+                Craft::warning("Site with ID {$siteId} not found for cache invalidation", __METHOD__);
+                return;
+            }
+            $id = $site->id;
+            $handle = $site->handle;
         } else {
             $site = $sites->getSiteByHandle((string)$siteId);
-            $id = (int)($site->id ?? 0);
+            if ($site === null) {
+                // Site not found, log warning and return early
+                Craft::warning("Site with handle '{$siteId}' not found for cache invalidation", __METHOD__);
+                return;
+            }
+            $id = $site->id;
             $handle = (string)$siteId;
         }
+
         $tags = [
-            'currentSite:' . $id,   // matches generation
+            'currentSite:' . $id,
             'fallbackSite:' . $handle,
             'site:' . $handle,
         ];

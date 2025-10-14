@@ -361,38 +361,54 @@ class ErrorReportingService extends Component
      */
     private function extractSiteInfo(?TemplateContext $context): array
     {
-        $sitesService = Craft::$app->getSites();
-        $currentSite = $sitesService->getCurrentSite();
-        
-        $info = [
-            'current_site_handle' => $currentSite->handle,
-            'current_site_name' => $currentSite->name,
-            'is_primary_site' => $currentSite->primary,
-            'total_sites' => count($sitesService->getAllSites()),
-        ];
+        try {
+            $sitesService = Craft::$app->getSites();
+            $currentSite = $sitesService->getCurrentSite();
 
-        if ($context && $context->element) {
-            $elementSite = $sitesService->getSiteById($context->element->siteId);
-            if ($elementSite) {
-                $info['element_site_handle'] = $elementSite->handle;
-                $info['element_site_name'] = $elementSite->name;
-                $info['element_site_matches_current'] = $elementSite->id === $currentSite->id;
+            if (!$currentSite) {
+                return ['error' => 'Could not determine current site'];
             }
-        }
 
-        if ($context && $context->baseSite) {
-            $baseSite = $sitesService->getSiteByHandle($context->baseSite);
-            if ($baseSite) {
-                $info['base_site_handle'] = $baseSite->handle;
-                $info['base_site_name'] = $baseSite->name;
-                $info['base_site_exists'] = true;
-            } else {
-                $info['base_site_handle'] = $context->baseSite;
-                $info['base_site_exists'] = false;
+            $info = [
+                'current_site_handle' => $currentSite->handle,
+                'current_site_name' => $currentSite->name,
+                'is_primary_site' => $currentSite->primary,
+                'total_sites' => count($sitesService->getAllSites()),
+            ];
+
+            if ($context && $context->element) {
+                try {
+                    $elementSite = $sitesService->getSiteById($context->element->siteId);
+                    if ($elementSite) {
+                        $info['element_site_handle'] = $elementSite->handle;
+                        $info['element_site_name'] = $elementSite->name;
+                        $info['element_site_matches_current'] = $elementSite->id === $currentSite->id;
+                    }
+                } catch (\Throwable $e) {
+                    $info['element_site_error'] = $e->getMessage();
+                }
             }
-        }
 
-        return $info;
+            if ($context && $context->baseSite) {
+                try {
+                    $baseSite = $sitesService->getSiteByHandle($context->baseSite);
+                    if ($baseSite) {
+                        $info['base_site_handle'] = $baseSite->handle;
+                        $info['base_site_name'] = $baseSite->name;
+                        $info['base_site_exists'] = true;
+                    } else {
+                        $info['base_site_handle'] = $context->baseSite;
+                        $info['base_site_exists'] = false;
+                    }
+                } catch (\Throwable $e) {
+                    $info['base_site_error'] = $e->getMessage();
+                }
+            }
+
+            return $info;
+        } catch (\Throwable $e) {
+            return ['error' => 'Failed to extract site info: ' . $e->getMessage()];
+        }
     }
 
     /**
