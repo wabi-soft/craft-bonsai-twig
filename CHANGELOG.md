@@ -4,6 +4,15 @@
 All notable changes to this project will be documented in this file.
 <!--- END HEADER -->
 
+## [7.0.9](https://github.com/wabi-soft/craft-bonsai-twig/compare/v7.0.8...v7.0.9) (2025-10-14)
+
+### Bug Fixes
+
+* Fallback template issue for multi-site ([125a5b](https://github.com/wabi-soft/craft-bonsai-twig/commit/125a5b6127ec572574e6712f852c2e609784fa27))
+
+
+---
+
 ## [7.0.8](https://github.com/wabi-soft/craft-bonsai-twig/compare/v7.0.7...v7.0.8) (2025-09-25)
 
 
