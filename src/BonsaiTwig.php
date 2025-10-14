@@ -5,6 +5,8 @@ namespace wabisoft\bonsaitwig;
 use Craft;
 use craft\base\Plugin;
 use craft\events\RegisterTemplateRootsEvent;
+use craft\events\RegisterCacheOptionsEvent;
+use craft\utilities\ClearCaches;
 use craft\web\View;
 use craft\base\Element;
 use craft\helpers\App;
@@ -272,7 +274,7 @@ class BonsaiTwig extends Plugin
          $isDev = $envDev !== null
              ? filter_var((string)$envDev, FILTER_VALIDATE_BOOLEAN)
              : Craft::$app->getConfig()->general->devMode;
-         
+
          if ($isDev) {
             Event::on(
                 View::class,
@@ -282,6 +284,29 @@ class BonsaiTwig extends Plugin
                 }
             );
         }
+
+        // Register cache clearing option in Craft CP
+        Event::on(
+            ClearCaches::class,
+            ClearCaches::EVENT_REGISTER_CACHE_OPTIONS,
+            function(RegisterCacheOptionsEvent $event): void {
+                $plugin = BonsaiTwig::getInstance();
+                $event->options[] = [
+                    'key' => 'bonsai-twig-caches',
+                    'label' => Craft::t('_bonsai-twig', 'Bonsai Twig caches'),
+                    'info' => Craft::t('_bonsai-twig', 'Template resolution, element properties, and template existence caches'),
+                    'action' => function() use ($plugin): void {
+                        try {
+                            $plugin->cacheService->clearAllCache();
+                            Craft::info('Bonsai Twig caches cleared successfully', __METHOD__);
+                        } catch (\Throwable $e) {
+                            Craft::error('Failed to clear Bonsai Twig caches: ' . $e->getMessage(), __METHOD__);
+                            throw $e;
+                        }
+                    },
+                ];
+            }
+        );
 
         // Cache invalidation event handlers with error handling
         Event::on(
