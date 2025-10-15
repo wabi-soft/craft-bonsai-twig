@@ -244,92 +244,6 @@
         .bonsai-info__performance-value--error {
             color: #f44747;
         }
-        .bonsai-info__checkpoints {
-            margin-top: 8px;
-        }
-        .bonsai-info__checkpoints-title {
-            color: #dcdcaa;
-            font-size: 10px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .bonsai-info__checkpoint {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 2px 0;
-            font-size: 10px;
-            border-bottom: 1px solid rgba(68, 68, 68, 0.3);
-        }
-        .bonsai-info__checkpoint:last-child {
-            border-bottom: none;
-        }
-        .bonsai-info__checkpoint-name {
-            color: #d4d4d4;
-        }
-        .bonsai-info__checkpoint-time {
-            color: #4ec9b0;
-            font-weight: 500;
-        }
-        .bonsai-info__cache-stats {
-            border-top: 1px solid #454545;
-            padding-top: 12px;
-            margin-top: 12px;
-        }
-        .bonsai-info__cache-title {
-            color: #569cd6;
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .bonsai-info__cache-overview {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 6px;
-            margin-bottom: 8px;
-        }
-        .bonsai-info__cache-metric {
-            background: rgba(78, 201, 176, 0.1);
-            padding: 6px 8px;
-            border-radius: 4px;
-            text-align: center;
-        }
-        .bonsai-info__cache-metric-label {
-            color: #9cdcfe;
-            font-size: 9px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
-        }
-        .bonsai-info__cache-metric-value {
-            color: #4ec9b0;
-            font-weight: bold;
-            font-size: 11px;
-        }
-        .bonsai-info__cache-details {
-            font-size: 10px;
-        }
-        .bonsai-info__cache-type {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 2px 0;
-            border-bottom: 1px solid rgba(68, 68, 68, 0.3);
-        }
-        .bonsai-info__cache-type:last-child {
-            border-bottom: none;
-        }
-        .bonsai-info__cache-type-name {
-            color: #d4d4d4;
-        }
-        .bonsai-info__cache-type-stats {
-            color: #4ec9b0;
-            font-weight: 500;
-        }
     </style>
 {% endapply %}
 <div class="bonsai-info__hover">
@@ -436,8 +350,8 @@
         
         {% if data.performance is defined %}
             <div class="bonsai-info__performance">
-                <div class="bonsai-info__performance-title">Performance Metrics</div>
-                
+                <div class="bonsai-info__performance-title">Resource Usage</div>
+
                 <div class="bonsai-info__performance-grid">
                     <div class="bonsai-info__performance-item">
                         <div class="bonsai-info__performance-label">Resolution Time</div>
@@ -451,7 +365,7 @@
                             {% endif %}
                         </div>
                     </div>
-                    
+
                     {% if data.performance.memory_usage is defined and data.performance.memory_usage.delta is defined %}
                         <div class="bonsai-info__performance-item">
                             <div class="bonsai-info__performance-label">Memory Delta</div>
@@ -467,47 +381,7 @@
                             </div>
                         </div>
                     {% endif %}
-                    
-                    {% if data.performance.optimization_savings is defined %}
-                        <div class="bonsai-info__performance-item">
-                            <div class="bonsai-info__performance-label">Paths Saved</div>
-                            <div class="bonsai-info__performance-value">
-                                {{ data.performance.optimization_savings }}
-                            </div>
-                        </div>
-                    {% endif %}
                 </div>
-                
-                {% if data.performance.checkpoints is defined and data.performance.checkpoints|length > 0 %}
-                    <div class="bonsai-info__checkpoints">
-                        <div class="bonsai-info__checkpoints-title">Resolution Checkpoints</div>
-                        {% for checkpoint, checkpointData in data.performance.checkpoints %}
-                            <div class="bonsai-info__checkpoint">
-                                <span class="bonsai-info__checkpoint-name">{{ checkpoint|replace('_', ' ')|title }}</span>
-                                <span class="bonsai-info__checkpoint-time">
-                                    {% if checkpointData.elapsed < 0.001 %}
-                                        {{ (checkpointData.elapsed * 1000000)|round(2) }}μs
-                                    {% elseif checkpointData.elapsed < 1 %}
-                                        {{ (checkpointData.elapsed * 1000)|round(2) }}ms
-                                    {% else %}
-                                        {{ checkpointData.elapsed|round(3) }}s
-                                    {% endif %}
-                                </span>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-        {% endif %}
-        
-        {% if data.cache_stats is defined %}
-            <div class="bonsai-info__cache-stats">
-                <div class="bonsai-info__cache-title">Cache Performance</div>
-                {% if craft.app.config.general.devMode %}
-                    <div class="bonsai-info__note">
-                        Caching is enabled in production mode only or if Enable Caching in Development Mode is true.
-                    </div>
-                {% endif %}
             </div>
         {% endif %}
     </div>
