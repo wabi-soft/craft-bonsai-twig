@@ -114,17 +114,6 @@ class HierarchyTemplateLoader extends Component
             throw $templateNotFoundException;
         }
 
-        // Get additional plugin settings
-        $settings = $plugin->getSettings();
-        $disableTypeCaching = false;
-        if ($templateType instanceof TemplateType) {
-            if ($templateType === TemplateType::MATRIX) {
-                $disableTypeCaching = ($settings->disableMatrixTemplateCaching ?? false) === true;
-            } elseif ($templateType === TemplateType::ITEM) {
-                $disableTypeCaching = ($settings->disableItemTemplateCaching ?? false) === true;
-            }
-        }
-
         // Start performance monitoring
         $sessionId = 'template_resolution_' . uniqid();
         $performanceMonitor->startTiming($sessionId, 'Template Resolution', [
@@ -167,17 +156,7 @@ class HierarchyTemplateLoader extends Component
                 showDebug: $isDev
             );
 
-            // Try enhanced cache first (skip when disabled for this type)
-            if (!$disableTypeCaching) {
-                $cachedResult = $cacheService->getCachedTemplateResolution($templateContext, $validatedTemplates);
-                if ($cachedResult !== null) {
-                    $performanceMonitor->recordCacheAccess(true, 'template');
-                    $performanceMonitor->endTiming($sessionId);
-                    return $cachedResult['resolvedPath'] ? 
-                        Craft::$app->view->renderTemplate($cachedResult['resolvedPath'], $validatedVariables) : '';
-                }
-                $performanceMonitor->recordCacheAccess(false, 'template');
-            }
+            // Enhanced cache disabled
         }
 
         // Fallback to legacy cache key for backward compatibility
@@ -199,21 +178,11 @@ class HierarchyTemplateLoader extends Component
         }
 
         $cacheKey = SecurityUtils::generateSecureCacheKey($validatedTemplates, $templateType->value, $legacyKeyContext);
-        
-        // Try to get cached version first (skip when disabled for this type)
-        $result = false;
-        if (!$disableTypeCaching) {
-            $result = self::getCached($cacheKey);
-            if ($result) {
-                $performanceMonitor->recordCacheAccess(true, 'legacy');
-                $performanceMonitor->endTiming($sessionId);
-                return $result;
-            }
-            $performanceMonitor->recordCacheAccess(false, 'legacy');
-        }
 
-        // If no cache or dev mode, process templates with optimized resolution
-        if ($result === false) {
+        // Legacy cache disabled
+
+        // Process templates with optimized resolution
+        {
             $performanceMonitor->addCheckpoint($sessionId, 'start_resolution');
             
             // Optimize path generation and deduplication
@@ -234,18 +203,8 @@ class HierarchyTemplateLoader extends Component
                     'fallback_site' => $fallbackSite,
                     'enhanced_count' => count($optimizedPaths)
                 ]);
-                
-                // Try site-specific cache first (skip when disabled for this type)
-                if (!$disableTypeCaching) {
-                    $siteSpecificCache = $cacheService->getCachedSiteSpecificTemplateResolution($templateContext, $optimizedPaths);
-                    if ($siteSpecificCache !== null) {
-                        $performanceMonitor->recordCacheAccess(true, 'site_template');
-                        $performanceMonitor->endTiming($sessionId);
-                        return $siteSpecificCache['resolvedPath'] ? 
-                            Craft::$app->view->renderTemplate($siteSpecificCache['resolvedPath'], $validatedVariables) : '';
-                    }
-                    $performanceMonitor->recordCacheAccess(false, 'site_template');
-                }
+
+                // Site-specific cache disabled
             }
             
             // Early exit: Check if we have any paths to process
@@ -298,38 +257,12 @@ class HierarchyTemplateLoader extends Component
                 $content = Craft::$app->view->renderTemplate($resolvedPath, $validatedVariables);
                 $performanceMonitor->addCheckpoint($sessionId, 'template_rendered');
                 
-                // In production, cache and return content directly
+                // In production, return content directly (caching disabled)
                 if (!$isDev) {
-                    if (!$disableTypeCaching) {
-                        // Cache using enhanced caching service
-                        if (isset($templateContext)) {
-                            // Use site-specific caching if fallback site was used
-                            if ($fallbackSite !== null) {
-                                $cacheService->cacheSiteSpecificTemplateResolution(
-                                    $templateContext,
-                                    $optimizedPaths,
-                                    $resolvedPath,
-                                    $fallbackSite,
-                                    ['cached_at' => time()]
-                                );
-                            } else {
-                                $cacheService->cacheTemplateResolution(
-                                    $templateContext,
-                                    $optimizedPaths,
-                                    $resolvedPath,
-                                    ['cached_at' => time()]
-                                );
-                            }
-                        }
-                        
-                        // Legacy cache for backward compatibility
-                        Craft::$app->cache->set($cacheKey, $content, 3600);
-                    }
-                    
                     // End performance monitoring
                     $performanceData = $performanceMonitor->endTiming($sessionId);
                     $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($optimizedPaths));
-                    
+
                     return $content;
                 }
 
@@ -397,9 +330,9 @@ class HierarchyTemplateLoader extends Component
                     $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($optimizedPaths));
                 }
 
-                // Cache the result for an hour (legacy cache)
-                Craft::$app->cache->set($cacheKey, $content, 3600);
-                
+                // Cache the result for an hour (legacy cache) (DISABLED)
+                // Craft::$app->cache->set($cacheKey, $content, 3600);
+
                 // Enhanced caching
                 if (isset($templateContext)) {
                     // Use site-specific caching if fallback site was used
@@ -503,15 +436,19 @@ class HierarchyTemplateLoader extends Component
      */
     private static function getCached(string $key): string|false
     {
-        // Check plugin setting for caching in dev mode
-        $plugin = BonsaiTwig::getInstance();
-        $isDev = Craft::$app->getConfig()->general->devMode;
-        
-        if ($isDev && (!$plugin || !$plugin->getSettings() || !$plugin->getSettings()->cacheInDevMode)) {
-            return false;
-        }
-        
-        return Craft::$app->cache->get($key);
+        // DISABLED: Always return false to disable legacy caching
+        return false;
+
+        // Original logic (commented out):
+        // // Check plugin setting for caching in dev mode
+        // $plugin = BonsaiTwig::getInstance();
+        // $isDev = Craft::$app->getConfig()->general->devMode;
+        //
+        // if ($isDev && (!$plugin || !$plugin->getSettings() || !$plugin->getSettings()->cacheInDevMode)) {
+        //     return false;
+        // }
+        //
+        // return Craft::$app->cache->get($key);
     }
 
     /**

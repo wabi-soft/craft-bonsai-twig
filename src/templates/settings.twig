@@ -2,42 +2,6 @@
 
 <div class="field">
     <div class="heading">
-        <label>{{ "Cache Settings"|t('bonsai-twig') }}</label>
-        <div class="instructions">
-            <p>{{ "Configure caching behavior for template resolution and performance optimization."|t('bonsai-twig') }}</p>
-        </div>
-    </div>
-</div>
-
-{{ forms.lightswitchField({
-    label: settings.attributeLabels.cacheInDevMode,
-    instructions: settings.attributeHints.cacheInDevMode,
-    id: 'cacheInDevMode',
-    name: 'cacheInDevMode',
-    on: settings.cacheInDevMode,
-    warning: settings.cacheInDevMode ? "Enabling caching in development mode may hide template changes until cache expires."|t('bonsai-twig') : null
-}) }}
-
-{{ forms.lightswitchField({
-    label: settings.attributeLabels.disableMatrixTemplateCaching,
-    instructions: settings.attributeHints.disableMatrixTemplateCaching,
-    id: 'disableMatrixTemplateCaching',
-    name: 'disableMatrixTemplateCaching',
-    on: settings.disableMatrixTemplateCaching
-}) }}
-
-{{ forms.lightswitchField({
-    label: settings.attributeLabels.disableItemTemplateCaching,
-    instructions: settings.attributeHints.disableItemTemplateCaching,
-    id: 'disableItemTemplateCaching',
-    name: 'disableItemTemplateCaching',
-    on: settings.disableItemTemplateCaching
-}) }}
-
-<hr>
-
-<div class="field">
-    <div class="heading">
         <label>{{ "Performance Settings"|t('bonsai-twig') }}</label>
         <div class="instructions">
             <p>{{ "Configure performance monitoring and debugging features."|t('bonsai-twig') }}</p>
@@ -65,17 +29,6 @@
 
 <div class="field">
     <div class="heading">
-        <label>{{ "Cache Duration Settings"|t('bonsai-twig') }}</label>
-        <div class="instructions">
-            <p>{{ "Configure how long different types of data are cached. Set to 0 to disable specific cache types."|t('bonsai-twig') }}</p>
-        </div>
-    </div>
-</div>
-
-<hr>
-
-<div class="field">
-    <div class="heading">
         <label>{{ "Item Templates Settings"|t('bonsai-twig') }}</label>
         <div class="instructions">
             <p>{{ settings.attributeHints.itemsTemplateElementPaths }}</p>
@@ -98,69 +51,8 @@
 
 {{ forms.lightswitchField({
     label: settings.attributeLabels.nestByElementType,
-    instructions: settings.attributeHints.nestByElementType ~ ' ' ~ 'If a mapping is provided in “' ~ settings.attributeLabels.itemsTemplateElementPaths ~ '”, it will take precedence.' ,
+    instructions: settings.attributeHints.nestByElementType ~ ' ' ~ 'If a mapping is provided in "' ~ settings.attributeLabels.itemsTemplateElementPaths ~ '", it will take precedence.' ,
     id: 'nestByElementType',
     name: 'nestByElementType',
     on: settings.nestByElementType
 }) }}
-
-{{ forms.textField({
-    label: settings.attributeLabels.templateCacheDuration,
-    instructions: settings.attributeHints.templateCacheDuration,
-    id: 'templateCacheDuration',
-    name: 'templateCacheDuration',
-    value: settings.templateCacheDuration,
-    type: 'number',
-    min: 0,
-    step: 1
-}) }}
-
-{{ forms.textField({
-    label: settings.attributeLabels.elementCacheDuration,
-    instructions: settings.attributeHints.elementCacheDuration,
-    id: 'elementCacheDuration',
-    name: 'elementCacheDuration',
-    value: settings.elementCacheDuration,
-    type: 'number',
-    min: 0,
-    step: 1
-}) }}
-
-{{ forms.textField({
-    label: settings.attributeLabels.existenceCacheDuration,
-    instructions: settings.attributeHints.existenceCacheDuration,
-    id: 'existenceCacheDuration',
-    name: 'existenceCacheDuration',
-    value: settings.existenceCacheDuration,
-    type: 'number',
-    min: 0,
-    step: 1
-}) }}
-
-<div class="field">
-    <div class="heading">
-        <label>{{ "Cache Information"|t('bonsai-twig') }}</label>
-    </div>
-    <div class="instructions">
-        <p>{{ "Current cache status:"|t('bonsai-twig') }}</p>
-        <ul>
-            <li>
-                <strong>{{ "Development Mode:"|t('bonsai-twig') }}</strong>
-                {% if craft.app.config.general.devMode %}
-                    <span style="color: #f39c12;">{{ "Enabled"|t('bonsai-twig') }}</span>
-                    {% if settings.cacheInDevMode %}
-                        - <span style="color: #27ae60;">{{ "Caching Override Active"|t('bonsai-twig') }}</span>
-                    {% else %}
-                        - <span style="color: #e74c3c;">{{ "Caching Disabled"|t('bonsai-twig') }}</span>
-                    {% endif %}
-                {% else %}
-                    <span style="color: #27ae60;">{{ "Disabled (Production)"|t('bonsai-twig') }}</span>
-                {% endif %}
-            </li>
-            <li>
-                <strong>{{ "Cache Driver:"|t('bonsai-twig') }}</strong>
-                {{ className(craft.app.cache)|split('\\')|last }}
-            </li>
-        </ul>
-    </div>
-</div>

@@ -608,20 +608,24 @@ class CacheService extends Component
      */
     private function shouldSkipCaching(): bool
     {
-        $isDev = Craft::$app->getConfig()->general->devMode;
-        
-        if (!$isDev) {
-            // Always cache in production mode
-            return false;
-        }
-        
-        // In development mode, check plugin setting
-        $plugin = BonsaiTwig::getInstance();
-        if ($plugin && $plugin->getSettings()) {
-            return !$plugin->getSettings()->cacheInDevMode;
-        }
-        
-        // Default: skip caching in dev mode if no plugin settings
+        // DISABLED: Always skip caching to avoid multi-site cache collision issues
         return true;
+
+        // Original logic (commented out):
+        // $isDev = Craft::$app->getConfig()->general->devMode;
+        //
+        // if (!$isDev) {
+        //     // Always cache in production mode
+        //     return false;
+        // }
+        //
+        // // In development mode, check plugin setting
+        // $plugin = BonsaiTwig::getInstance();
+        // if ($plugin && $plugin->getSettings()) {
+        //     return !$plugin->getSettings()->cacheInDevMode;
+        // }
+        //
+        // // Default: skip caching in dev mode if no plugin settings
+        // return true;
     }
 }
