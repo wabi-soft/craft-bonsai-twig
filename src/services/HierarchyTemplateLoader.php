@@ -155,31 +155,7 @@ class HierarchyTemplateLoader extends Component
                 variables: $validatedVariables,
                 showDebug: $isDev
             );
-
-            // Enhanced cache disabled
         }
-
-        // Fallback to legacy cache key for backward compatibility
-        $legacyKeyContext = [
-            'directory' => $directory,
-            'style' => $validatedVariables['style'] ?? null,
-            'baseSite' => $validatedVariables['baseSite'] ?? null,
-        ];
-
-        if ($element instanceof \craft\base\ElementInterface) {
-            // Add element identifiers to avoid collisions across elements (e.g., matrix blocks)
-            $legacyKeyContext['elementId'] = (int)($element->id ?? 0);
-            $legacyKeyContext['siteId'] = (int)($element->siteId ?? 0);
-        }
-
-        // Include context element ID if present to avoid cache collisions
-        if (isset($validatedVariables['context']) && $validatedVariables['context'] instanceof \craft\base\ElementInterface) {
-            $legacyKeyContext['contextElementId'] = (int)($validatedVariables['context']->id ?? 0);
-        }
-
-        $cacheKey = SecurityUtils::generateSecureCacheKey($validatedTemplates, $templateType->value, $legacyKeyContext);
-
-        // Legacy cache disabled
 
         // Process templates with optimized resolution
         {
@@ -203,8 +179,6 @@ class HierarchyTemplateLoader extends Component
                     'fallback_site' => $fallbackSite,
                     'enhanced_count' => count($optimizedPaths)
                 ]);
-
-                // Site-specific cache disabled
             }
             
             // Early exit: Check if we have any paths to process
@@ -330,9 +304,6 @@ class HierarchyTemplateLoader extends Component
                     $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($optimizedPaths));
                 }
 
-                // Cache the result for an hour (legacy cache) (DISABLED)
-                // Craft::$app->cache->set($cacheKey, $content, 3600);
-
                 // Enhanced caching
                 if (isset($templateContext)) {
                     // Use site-specific caching if fallback site was used
@@ -427,28 +398,15 @@ class HierarchyTemplateLoader extends Component
     /**
      * Attempts to retrieve cached template content.
      *
-     * In production mode, this method checks the cache for previously rendered
-     * template content to improve performance. In development mode, caching is
-     * disabled to ensure template changes are immediately visible.
+     * Note: Caching has been disabled. This method always returns false.
      *
      * @param string $key Cache key to lookup in the application cache
-     * @return string|false Cached template content or false if not found/dev mode
+     * @return false Always returns false as caching is disabled
      */
-    private static function getCached(string $key): string|false
+    private static function getCached(string $key): false
     {
-        // DISABLED: Always return false to disable legacy caching
+        // Caching disabled - always return false
         return false;
-
-        // Original logic (commented out):
-        // // Check plugin setting for caching in dev mode
-        // $plugin = BonsaiTwig::getInstance();
-        // $isDev = Craft::$app->getConfig()->general->devMode;
-        //
-        // if ($isDev && (!$plugin || !$plugin->getSettings() || !$plugin->getSettings()->cacheInDevMode)) {
-        //     return false;
-        // }
-        //
-        // return Craft::$app->cache->get($key);
     }
 
     /**
