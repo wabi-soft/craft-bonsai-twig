@@ -329,12 +329,15 @@ class CacheService extends Component
         TemplateContext $context,
         array $attemptedPaths
     ): string {
+        $currentSiteId = $context->element->siteId ?? Craft::$app->sites->currentSite->id;
+
         $keyData = [
             'elementId' => $context->element->id,
             'elementType' => get_class($context->element),
             'path' => $context->path,
             'style' => $context->style,
             'baseSite' => $context->baseSite,
+            'currentSite' => $currentSiteId,
             'attemptedPaths' => $attemptedPaths,
             'contextElementId' => $context->context?->id,
         ];
@@ -512,6 +515,10 @@ class CacheService extends Component
             'element:' . $context->element->id,
             'elementType:' . get_class($context->element),
         ];
+
+        // Add current site tags
+        $currentSiteId = $context->element->siteId ?? Craft::$app->sites->currentSite->id;
+        $tags[] = 'currentSite:' . $currentSiteId;
 
         // Add context element tags if present
         if ($context->context) {
