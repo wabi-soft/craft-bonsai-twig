@@ -156,8 +156,7 @@ class HierarchyTemplateLoader extends Component
         }
 
         // Process templates with optimized resolution
-        {
-            $performanceMonitor->addCheckpoint($sessionId, 'start_resolution');
+        $performanceMonitor->addCheckpoint($sessionId, 'start_resolution');
             
             // Optimize path generation and deduplication
             $optimizedPaths = self::optimizeTemplatePaths($validatedTemplates, $validatedBasePath);
@@ -229,12 +228,11 @@ class HierarchyTemplateLoader extends Component
                 $content = Craft::$app->view->renderTemplate($resolvedPath, $validatedVariables);
                 $performanceMonitor->addCheckpoint($sessionId, 'template_rendered');
                 
-                // In production, return content directly (caching disabled)
+                // In production, return content directly
                 if (!$isDev) {
                     // End performance monitoring
                     $performanceData = $performanceMonitor->endTiming($sessionId);
                     $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($optimizedPaths));
-
                     return $content;
                 }
 
@@ -304,7 +302,6 @@ class HierarchyTemplateLoader extends Component
 
                 return $content;
             }
-        }
 
         // No template was found - end performance monitoring and handle error
         $performanceData = $performanceMonitor->endTiming($sessionId);
