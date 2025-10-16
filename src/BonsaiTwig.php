@@ -5,17 +5,13 @@ namespace wabisoft\bonsaitwig;
 use Craft;
 use craft\base\Plugin;
 use craft\events\RegisterTemplateRootsEvent;
-use craft\events\RegisterCacheOptionsEvent;
-use craft\utilities\ClearCaches;
 use craft\web\View;
-use craft\base\Element;
 use craft\helpers\App;
 use wabisoft\bonsaitwig\services\CategoryLoader;
 use wabisoft\bonsaitwig\services\EntryLoader;
 use wabisoft\bonsaitwig\services\HierarchyTemplateLoader;
 use wabisoft\bonsaitwig\services\ItemLoader;
 use wabisoft\bonsaitwig\services\MatrixLoader;
-use wabisoft\bonsaitwig\services\CacheService;
 use wabisoft\bonsaitwig\services\PerformanceMonitor;
 use wabisoft\bonsaitwig\services\ErrorReportingService;
 use wabisoft\bonsaitwig\web\twig\Templates;
@@ -39,7 +35,6 @@ use yii\base\InvalidConfigException;
  * @property-read ItemLoader $itemLoader Service for loading item-based templates
  * @property-read MatrixLoader $matrixLoader Service for loading matrix block templates
  * @property-read HierarchyTemplateLoader $hierarchyTemplateLoader Core template resolution service
- * @property-read CacheService $cacheService Enhanced caching service for performance optimization
  * @property-read PerformanceMonitor $performanceMonitor Performance monitoring service for development mode
  * @property-read ErrorReportingService $errorReportingService Comprehensive error reporting and debugging service
  */
@@ -97,9 +92,6 @@ class BonsaiTwig extends Plugin
     {
         return [
             'components' => [
-                'cacheService' => [
-                    'class' => CacheService::class,
-                ],
                 'performanceMonitor' => [
                     'class' => PerformanceMonitor::class,
                 ],
@@ -213,7 +205,6 @@ class BonsaiTwig extends Plugin
     {
         try {
             // Initialize core services first (no dependencies)
-            $this->get('cacheService');
             $this->get('performanceMonitor');
             $this->get('errorReportingService');
 
@@ -259,11 +250,10 @@ class BonsaiTwig extends Plugin
     }
 
     /**
-     * Attaches event handlers for development mode features and cache invalidation.
+     * Attaches event handlers for development mode features.
      *
      * In development mode, registers additional template roots to allow
-     * the plugin's debug templates to be accessible. Also sets up cache
-     * invalidation handlers for element changes.
+     * the plugin's debug templates to be accessible.
      *
      * @return void
      */
@@ -284,67 +274,5 @@ class BonsaiTwig extends Plugin
                 }
             );
         }
-
-        // Register cache clearing option in Craft CP
-        Event::on(
-            ClearCaches::class,
-            ClearCaches::EVENT_REGISTER_CACHE_OPTIONS,
-            function(RegisterCacheOptionsEvent $event): void {
-                $plugin = BonsaiTwig::getInstance();
-                $event->options[] = [
-                    'key' => 'bonsai-twig-caches',
-                    'label' => Craft::t('_bonsai-twig', 'Bonsai Twig caches'),
-                    'info' => Craft::t('_bonsai-twig', 'Template resolution, element properties, and template existence caches'),
-                    'action' => function() use ($plugin): void {
-                        try {
-                            $plugin->cacheService->clearAllCache();
-                            Craft::info('Bonsai Twig caches cleared successfully', __METHOD__);
-                        } catch (\Throwable $e) {
-                            Craft::error('Failed to clear Bonsai Twig caches: ' . $e->getMessage(), __METHOD__);
-                            throw $e;
-                        }
-                    },
-                ];
-            }
-        );
-
-        // Cache invalidation event handlers with error handling
-        Event::on(
-            Element::class,
-            Element::EVENT_AFTER_SAVE,
-            function(Event $event): void {
-                try {
-                    $sender = $event->sender;
-                    if ($sender instanceof Element) {
-                        $this->cacheService->invalidateElementCache($sender);
-                    }
-                } catch (\Throwable $e) {
-                    $this->errorReportingService->logError(
-                        'Cache invalidation failed after element save',
-                        $e,
-                        []
-                    );
-                }
-            }
-        );
-
-        Event::on(
-            Element::class,
-            Element::EVENT_AFTER_DELETE,
-            function(Event $event): void {
-                try {
-                    $sender = $event->sender;
-                    if ($sender instanceof Element) {
-                        $this->cacheService->invalidateElementCache($sender);
-                    }
-                } catch (\Throwable $e) {
-                    $this->errorReportingService->logError(
-                        'Cache invalidation failed after element delete',
-                        $e,
-                        []
-                    );
-                }
-            }
-        );
     }
 }
