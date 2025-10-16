@@ -216,7 +216,7 @@ class HierarchyTemplateLoader extends Component
             }
             
             // Batch template existence checks for better performance
-            $existenceResults = self::batchCheckTemplateExistence($optimizedPaths, $performanceMonitor);
+            $existenceResults = self::batchCheckTemplateExistence($optimizedPaths);
             $performanceMonitor->addCheckpoint($sessionId, 'existence_checked');
             
             // Find first existing template using early exit strategy
@@ -443,12 +443,10 @@ class HierarchyTemplateLoader extends Component
      * Checks all template paths for existence using the Craft view service.
      *
      * @param array<string> $templatePaths Template paths to check
-     * @param PerformanceMonitor $performanceMonitor Performance monitoring service
      * @return array<string, bool> Map of template paths to existence status
      */
     private static function batchCheckTemplateExistence(
-        array $templatePaths,
-        PerformanceMonitor $performanceMonitor
+        array $templatePaths
     ): array {
         $existenceResults = [];
         $view = Craft::$app->view;
