@@ -29,9 +29,9 @@
 
 <div class="field">
     <div class="heading">
-        <label>{{ "Item Templates Settings"|t('bonsai-twig') }}</label>
+        <label>{{ "Advanced: Item Templates Settings"|t('bonsai-twig') }}</label>
         <div class="instructions">
-            <p>{{ "Control how item template paths are resolved."|t('bonsai-twig') }}</p>
+            <p>Generally keep this off. Enable it only if you rely on legacy patterns where categories and entry templates share a handle and you need nested item templates by element type.</p>
         </div>
     </div>
 </div>
@@ -45,9 +45,7 @@
 }) }}
 
 <div class="field">
-    <div class="heading">
-        <label>{{ "Advanced"|t('bonsai-twig') }}</label>
-    </div>
+
     <div class="instructions">
         <p><strong>{{ "Custom Element Path Mapping"|t('bonsai-twig') }}</strong></p>
         <p>{{ "For more control, configure custom path mappings in your project config file (config/_bonsai-twig.php). This overrides the toggle above."|t('bonsai-twig') }}</p>
