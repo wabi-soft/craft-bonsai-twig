@@ -45,8 +45,11 @@
 }) }}
 
 <div class="field">
+    <div class="heading">
+        <label>{{ "Advanced"|t('bonsai-twig') }}</label>
+    </div>
     <div class="instructions">
-        <p><strong>{{ "Advanced: Custom Element Path Mapping"|t('bonsai-twig') }}</strong></p>
+        <p><strong>{{ "Custom Element Path Mapping"|t('bonsai-twig') }}</strong></p>
         <p>{{ "For more control, configure custom path mappings in your project config file (config/_bonsai-twig.php). This overrides the toggle above."|t('bonsai-twig') }}</p>
         {% if settings.itemsTemplateElementPaths is iterable %}
             <p>{{ "Current mapping:"|t('bonsai-twig') }}</p>
