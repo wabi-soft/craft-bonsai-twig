@@ -244,6 +244,106 @@
         .bonsai-info__performance-value--error {
             color: #f44747;
         }
+        .bonsai-info__fields {
+            margin-bottom: 12px;
+            padding: 8px;
+            background: rgba(206, 145, 120, 0.1);
+            border-radius: 4px;
+            border-left: 3px solid #ce9178;
+        }
+        .bonsai-info__fields-label {
+            color: #ce9178;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .bonsai-info__fields-count {
+            background: rgba(206, 145, 120, 0.3);
+            color: #ce9178;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: 500;
+        }
+        .bonsai-info__field-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 4px;
+        }
+        .bonsai-info__field-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 6px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        .bonsai-info__field-handle {
+            color: #dcdcaa;
+            font-weight: 600;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+        }
+        .bonsai-info__field-type {
+            color: #808080;
+            font-size: 10px;
+            font-style: italic;
+        }
+        .bonsai-info__field-name {
+            color: #9cdcfe;
+            font-size: 10px;
+            margin-left: 6px;
+        }
+        .bonsai-info__tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #454545;
+            padding-bottom: 0;
+        }
+        .bonsai-info__tab {
+            padding: 6px 12px;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            color: #808080;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: color 150ms ease, background 150ms ease;
+            border-radius: 4px 4px 0 0;
+            position: relative;
+        }
+        .bonsai-info__tab:hover {
+            color: #9cdcfe;
+            background: rgba(86, 156, 214, 0.1);
+        }
+        .bonsai-info__tab--active {
+            color: #569cd6;
+            background: rgba(86, 156, 214, 0.15);
+        }
+        .bonsai-info__tab--active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #569cd6;
+        }
+        .bonsai-info__tab-panel {
+            display: none;
+        }
+        .bonsai-info__tab-panel--active {
+            display: block;
+        }
     </style>
 {% endapply %}
 <div class="bonsai-info__hover">
@@ -253,7 +353,100 @@
             <div class="bonsai-info__type-badge">{{ data.type|default('template') }}</div>
         </div>
 
-        <div class="bonsai-info__directory">
+        <div class="bonsai-info__tabs">
+            <button class="bonsai-info__tab" data-tab="templates">Templates</button>
+            {% if data.field_handles is defined and data.field_handles is not null %}
+                <button class="bonsai-info__tab" data-tab="fields">Fields</button>
+            {% endif %}
+            <button class="bonsai-info__tab" data-tab="context">Context</button>
+        </div>
+
+        <div class="bonsai-info__tab-panel" data-panel="templates">
+            <div class="bonsai-info__templates">
+                <div class="bonsai-info__templates-label">
+                    Template Resolution Hierarchy
+                    <span class="bonsai-info__template-count">{{ data.templates|length }} paths</span>
+                </div>
+
+                <div class="bonsai-info__template-hierarchy">
+                    {% set originalTemplates = data.templates %}
+                    {% set optimizedTemplates = data.optimized_templates|default([]) %}
+                    {% set currentTemplate = data.currentTemplate %}
+
+                    {% if optimizedTemplates|length > 0 and optimizedTemplates != originalTemplates %}
+                        <div class="bonsai-info__template-group">
+                            <div class="bonsai-info__template-group-label">Original Templates ({{ originalTemplates|length }})</div>
+                            <div class="bonsai-info__template-list">
+                                {% for template in originalTemplates %}
+                                    <div class="bonsai-info__template-item {% if template == currentTemplate %}bonsai-info__template-item--current{% else %}bonsai-info__template-item--missing{% endif %}">
+                                        <span class="bonsai-info__template-path {% if template == currentTemplate %}bonsai-info__template-path--current{% else %}bonsai-info__template-path--missing{% endif %}">
+                                            {{ template }}
+                                        </span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="bonsai-info__template-group">
+                            <div class="bonsai-info__template-group-label">Optimized Templates ({{ optimizedTemplates|length }})</div>
+                            <div class="bonsai-info__template-list">
+                                {% for template in optimizedTemplates %}
+                                    {% set isSiteSpecific = template matches '/_(\\w+)/' or template matches '/(\\w+)/' %}
+                                    <div class="bonsai-info__template-item {% if template == currentTemplate %}bonsai-info__template-item--current{% else %}bonsai-info__template-item--missing{% endif %}">
+                                        <span class="bonsai-info__template-path {% if template == currentTemplate %}bonsai-info__template-path--current{% elseif isSiteSpecific %}bonsai-info__template-path--site-specific{% else %}bonsai-info__template-path--missing{% endif %}">
+                                            {{ template }}
+                                        </span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="bonsai-info__template-group">
+                            <div class="bonsai-info__template-group-label">Template Paths ({{ originalTemplates|length }})</div>
+                            <div class="bonsai-info__template-list">
+                                {% for template in originalTemplates %}
+                                    {% set isSiteSpecific = template matches '/_(\\w+)/' or template matches '/(\\w+)/' %}
+                                    <div class="bonsai-info__template-item {% if template == currentTemplate %}bonsai-info__template-item--current{% else %}bonsai-info__template-item--missing{% endif %}">
+                                        <span class="bonsai-info__template-path {% if template == currentTemplate %}bonsai-info__template-path--current{% elseif isSiteSpecific %}bonsai-info__template-path--site-specific{% else %}bonsai-info__template-path--missing{% endif %}">
+                                            {{ template }}
+                                        </span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="bonsai-info__note">
+                    Templates are checked in priority order. ✓ = found, ✗ = missing, blue = site-specific
+                </div>
+            </div>
+        </div>
+
+        {% if data.field_handles is defined and data.field_handles is not null %}
+            <div class="bonsai-info__tab-panel" data-panel="fields">
+                <div class="bonsai-info__fields">
+                    <div class="bonsai-info__fields-label">
+                        Available Field Handles
+                        <span class="bonsai-info__fields-count">{{ data.field_handles|length }} fields</span>
+                    </div>
+                    <div class="bonsai-info__field-list">
+                        {% for field in data.field_handles %}
+                            <div class="bonsai-info__field-item">
+                                <div>
+                                    <span class="bonsai-info__field-handle">{{ field.handle }}</span>
+                                    <span class="bonsai-info__field-name">({{ field.name }})</span>
+                                </div>
+                                <span class="bonsai-info__field-type">{{ field.type }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="bonsai-info__tab-panel" data-panel="context">
+            <div class="bonsai-info__directory">
             <div class="bonsai-info__directory-label">Template Directory</div>
             <div class="bonsai-info__directory-path">{{ data.directory }}</div>
         </div>
@@ -285,6 +478,26 @@
                         <span class="bonsai-info__site-value">{{ data.site_info.fallback_site }}</span>
                     </div>
                 {% endif %}
+            </div>
+        {% endif %}
+
+        {% if data.field_handles is defined and data.field_handles is not null %}
+            <div class="bonsai-info__fields">
+                <div class="bonsai-info__fields-label">
+                    Available Field Handles
+                    <span class="bonsai-info__fields-count">{{ data.field_handles|length }} fields</span>
+                </div>
+                <div class="bonsai-info__field-list">
+                    {% for field in data.field_handles %}
+                        <div class="bonsai-info__field-item">
+                            <div>
+                                <span class="bonsai-info__field-handle">{{ field.handle }}</span>
+                                <span class="bonsai-info__field-name">({{ field.name }})</span>
+                            </div>
+                            <span class="bonsai-info__field-type">{{ field.type }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
         {% endif %}
 

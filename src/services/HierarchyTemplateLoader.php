@@ -259,12 +259,21 @@ class HierarchyTemplateLoader extends Component
 
                     // Determine element kind for debug (entry vs category) when available
                     $elementKind = null;
+                    $debugElement = null;
                     if (isset($templateContext) && $templateContext->element) {
                         $el = $templateContext->element;
+                        $debugElement = $el;
                         $elementKind = ($el instanceof \craft\elements\Category) ? 'category' : (($el instanceof \craft\elements\Entry) ? 'entry' : null);
                     } elseif (isset($validatedVariables['entry']) && $validatedVariables['entry'] instanceof \craft\base\Element) {
                         $el = $validatedVariables['entry'];
+                        $debugElement = $el;
                         $elementKind = ($el instanceof \craft\elements\Category) ? 'category' : (($el instanceof \craft\elements\Entry) ? 'entry' : null);
+                    }
+
+                    // Extract field handles from the element for debugging
+                    $fieldHandles = null;
+                    if ($debugElement) {
+                        $fieldHandles = self::extractFieldHandles($debugElement);
                     }
 
                     $info = [
@@ -274,6 +283,7 @@ class HierarchyTemplateLoader extends Component
                         'currentTemplate' => $resolvedPath,
                         'type' => $templateType->value,
                         'element_kind' => $elementKind,
+                        'field_handles' => $fieldHandles,
                         'site_info' => [
                             'current_site' => Craft::$app->sites->currentSite->handle,
                             'element_site' => isset($templateContext) ? ($templateContext->element->site->handle ?? null) : null,
@@ -575,6 +585,70 @@ class HierarchyTemplateLoader extends Component
             'paths' => array_unique($enhancedPaths),
             'fallbackSite' => $fallbackSite,
         ];
+    }
+
+    /**
+     * Extracts first-level field handles from an element.
+     *
+     * Returns an array of field handles that are directly available on the element,
+     * along with their field types. This is useful for debugging to see what fields
+     * are accessible in templates.
+     *
+     * @param \craft\base\ElementInterface $element The element to extract field handles from
+     * @return array|null Array of field information or null if no fields found
+     */
+    private static function extractFieldHandles(\craft\base\ElementInterface $element): ?array
+    {
+        try {
+            $fieldLayout = $element->getFieldLayout();
+
+            if (!$fieldLayout) {
+                return null;
+            }
+
+            $fields = $fieldLayout->getCustomFields();
+
+            if (empty($fields)) {
+                return null;
+            }
+
+            $fieldInfo = [];
+
+            foreach ($fields as $field) {
+                $fieldInfo[] = [
+                    'handle' => $field->handle,
+                    'name' => $field->name,
+                    'type' => self::getFieldTypeDisplayName($field),
+                ];
+            }
+
+            return $fieldInfo;
+        } catch (\Exception $e) {
+            // Silently fail if we can't get field layout
+            Craft::info('Could not extract field handles: ' . $e->getMessage(), __METHOD__);
+            return null;
+        }
+    }
+
+    /**
+     * Gets a human-readable display name for a field type.
+     *
+     * Converts field class names to readable type names for debugging display.
+     *
+     * @param \craft\base\FieldInterface $field The field to get the type name for
+     * @return string Human-readable field type name
+     */
+    private static function getFieldTypeDisplayName(\craft\base\FieldInterface $field): string
+    {
+        $className = get_class($field);
+
+        // Extract the short class name (e.g., "PlainText" from "craft\fields\PlainText")
+        $shortName = substr($className, strrpos($className, '\\') + 1);
+
+        // Convert camelCase to Title Case with spaces
+        $displayName = preg_replace('/([a-z])([A-Z])/', '$1 $2', $shortName);
+
+        return $displayName ?? $className;
     }
 
     /**
