@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Field handles now displayed in beastmode debug information showing available first-level fields on entries, matrix blocks, and items (dev mode only)
+- Tabbed interface for beastmode debug window with Templates, Fields, and Context tabs
+- Active tab preference persists across page loads and all debug instances using localStorage
 
 ## [1.0.2](https://github.com/wabi-soft/craft-bonsai-twig/compare/v1.0.1...v1.0.2) (2023-06-13)
 

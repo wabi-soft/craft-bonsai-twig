@@ -447,156 +447,133 @@
 
         <div class="bonsai-info__tab-panel" data-panel="context">
             <div class="bonsai-info__directory">
-            <div class="bonsai-info__directory-label">Template Directory</div>
-            <div class="bonsai-info__directory-path">{{ data.directory }}</div>
-        </div>
-
-        {% if data.site_info is defined %}
-            <div class="bonsai-info__site-context">
-                <div class="bonsai-info__site-label">Site Context</div>
-                {% if data.site_info.current_site %}
-                    <div class="bonsai-info__site-item">
-                        <span class="bonsai-info__site-key">Current Site:</span>
-                        <span class="bonsai-info__site-value">{{ data.site_info.current_site }}</span>
-                    </div>
-                {% endif %}
-                {% if data.site_info.element_site %}
-                    <div class="bonsai-info__site-item">
-                        <span class="bonsai-info__site-key">Element Site:</span>
-                        <span class="bonsai-info__site-value">{{ data.site_info.element_site }}</span>
-                    </div>
-                {% endif %}
-                {% if data.site_info.base_site %}
-                    <div class="bonsai-info__site-item">
-                        <span class="bonsai-info__site-key">Base Site:</span>
-                        <span class="bonsai-info__site-value">{{ data.site_info.base_site }}</span>
-                    </div>
-                {% endif %}
-                {% if data.site_info.fallback_site %}
-                    <div class="bonsai-info__site-item">
-                        <span class="bonsai-info__site-key">Fallback Site:</span>
-                        <span class="bonsai-info__site-value">{{ data.site_info.fallback_site }}</span>
-                    </div>
-                {% endif %}
+                <div class="bonsai-info__directory-label">Template Directory</div>
+                <div class="bonsai-info__directory-path">{{ data.directory }}</div>
             </div>
-        {% endif %}
 
-        {% if data.field_handles is defined and data.field_handles is not null %}
-            <div class="bonsai-info__fields">
-                <div class="bonsai-info__fields-label">
-                    Available Field Handles
-                    <span class="bonsai-info__fields-count">{{ data.field_handles|length }} fields</span>
-                </div>
-                <div class="bonsai-info__field-list">
-                    {% for field in data.field_handles %}
-                        <div class="bonsai-info__field-item">
-                            <div>
-                                <span class="bonsai-info__field-handle">{{ field.handle }}</span>
-                                <span class="bonsai-info__field-name">({{ field.name }})</span>
-                            </div>
-                            <span class="bonsai-info__field-type">{{ field.type }}</span>
+            {% if data.site_info is defined %}
+                <div class="bonsai-info__site-context">
+                    <div class="bonsai-info__site-label">Site Context</div>
+                    {% if data.site_info.current_site %}
+                        <div class="bonsai-info__site-item">
+                            <span class="bonsai-info__site-key">Current Site:</span>
+                            <span class="bonsai-info__site-value">{{ data.site_info.current_site }}</span>
                         </div>
-                    {% endfor %}
-                </div>
-            </div>
-        {% endif %}
-
-        <div class="bonsai-info__templates">
-            <div class="bonsai-info__templates-label">
-                Template Resolution Hierarchy
-                <span class="bonsai-info__template-count">{{ data.templates|length }} paths</span>
-            </div>
-            
-            <div class="bonsai-info__template-hierarchy">
-                {% set originalTemplates = data.templates %}
-                {% set optimizedTemplates = data.optimized_templates|default([]) %}
-                {% set currentTemplate = data.currentTemplate %}
-                
-                {% if optimizedTemplates|length > 0 and optimizedTemplates != originalTemplates %}
-                    <div class="bonsai-info__template-group">
-                        <div class="bonsai-info__template-group-label">Original Templates ({{ originalTemplates|length }})</div>
-                        <div class="bonsai-info__template-list">
-                            {% for template in originalTemplates %}
-                                <div class="bonsai-info__template-item {% if template == currentTemplate %}bonsai-info__template-item--current{% else %}bonsai-info__template-item--missing{% endif %}">
-                                    <span class="bonsai-info__template-path {% if template == currentTemplate %}bonsai-info__template-path--current{% else %}bonsai-info__template-path--missing{% endif %}">
-                                        {{ template }}
-                                    </span>
-                                </div>
-                            {% endfor %}
+                    {% endif %}
+                    {% if data.site_info.element_site %}
+                        <div class="bonsai-info__site-item">
+                            <span class="bonsai-info__site-key">Element Site:</span>
+                            <span class="bonsai-info__site-value">{{ data.site_info.element_site }}</span>
                         </div>
-                    </div>
-                    
-                    <div class="bonsai-info__template-group">
-                        <div class="bonsai-info__template-group-label">Optimized Templates ({{ optimizedTemplates|length }})</div>
-                        <div class="bonsai-info__template-list">
-                            {% for template in optimizedTemplates %}
-                                {% set isSiteSpecific = template matches '/_(\\w+)/' or template matches '/(\\w+)/' %}
-                                <div class="bonsai-info__template-item {% if template == currentTemplate %}bonsai-info__template-item--current{% else %}bonsai-info__template-item--missing{% endif %}">
-                                    <span class="bonsai-info__template-path {% if template == currentTemplate %}bonsai-info__template-path--current{% elseif isSiteSpecific %}bonsai-info__template-path--site-specific{% else %}bonsai-info__template-path--missing{% endif %}">
-                                        {{ template }}
-                                    </span>
-                                </div>
-                            {% endfor %}
+                    {% endif %}
+                    {% if data.site_info.base_site %}
+                        <div class="bonsai-info__site-item">
+                            <span class="bonsai-info__site-key">Base Site:</span>
+                            <span class="bonsai-info__site-value">{{ data.site_info.base_site }}</span>
                         </div>
-                    </div>
-                {% else %}
-                    <div class="bonsai-info__template-group">
-                        <div class="bonsai-info__template-group-label">Template Paths ({{ originalTemplates|length }})</div>
-                        <div class="bonsai-info__template-list">
-                            {% for template in originalTemplates %}
-                                {% set isSiteSpecific = template matches '/_(\\w+)/' or template matches '/(\\w+)/' %}
-                                <div class="bonsai-info__template-item {% if template == currentTemplate %}bonsai-info__template-item--current{% else %}bonsai-info__template-item--missing{% endif %}">
-                                    <span class="bonsai-info__template-path {% if template == currentTemplate %}bonsai-info__template-path--current{% elseif isSiteSpecific %}bonsai-info__template-path--site-specific{% else %}bonsai-info__template-path--missing{% endif %}">
-                                        {{ template }}
-                                    </span>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                {% endif %}
-            </div>
-            
-            <div class="bonsai-info__note">
-                Templates are checked in priority order. ✓ = found, ✗ = missing, blue = site-specific
-            </div>
-        </div>
-        
-        {% if data.performance is defined %}
-            <div class="bonsai-info__performance">
-                <div class="bonsai-info__performance-title">{{ 'Resource Usage'|t('bonsai-twig') }}</div>
-
-                <div class="bonsai-info__performance-grid">
-                    <div class="bonsai-info__performance-item">
-                        <div class="bonsai-info__performance-label">Resolution Time</div>
-                        <div class="bonsai-info__performance-value {% if data.performance.resolution_time > 0.1 %}bonsai-info__performance-value--warning{% elseif data.performance.resolution_time > 0.5 %}bonsai-info__performance-value--error{% endif %}">
-                            {% if data.performance.resolution_time < 0.001 %}
-                                {{ (data.performance.resolution_time * 1000000)|round(2) }}μs
-                            {% elseif data.performance.resolution_time < 1 %}
-                                {{ (data.performance.resolution_time * 1000)|round(2) }}ms
-                            {% else %}
-                                {{ data.performance.resolution_time|round(3) }}s
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    {% if data.performance.memory_usage is defined and data.performance.memory_usage.delta is defined %}
-                        <div class="bonsai-info__performance-item">
-                            <div class="bonsai-info__performance-label">Memory Delta</div>
-                            <div class="bonsai-info__performance-value {% if data.performance.memory_usage.delta > 1048576 %}bonsai-info__performance-value--warning{% elseif data.performance.memory_usage.delta > 5242880 %}bonsai-info__performance-value--error{% endif %}">
-                                {% set memDelta = data.performance.memory_usage.delta %}
-                                {% if memDelta < 1024 %}
-                                    {{ memDelta }}B
-                                {% elseif memDelta < 1048576 %}
-                                    {{ (memDelta / 1024)|round(2) }}KB
-                                {% else %}
-                                    {{ (memDelta / 1048576)|round(2) }}MB
-                                {% endif %}
-                            </div>
+                    {% endif %}
+                    {% if data.site_info.fallback_site %}
+                        <div class="bonsai-info__site-item">
+                            <span class="bonsai-info__site-key">Fallback Site:</span>
+                            <span class="bonsai-info__site-value">{{ data.site_info.fallback_site }}</span>
                         </div>
                     {% endif %}
                 </div>
-            </div>
-        {% endif %}
+            {% endif %}
+
+            {% if data.performance is defined %}
+                <div class="bonsai-info__performance">
+                    <div class="bonsai-info__performance-title">{{ 'Resource Usage'|t('bonsai-twig') }}</div>
+
+                    <div class="bonsai-info__performance-grid">
+                        <div class="bonsai-info__performance-item">
+                            <div class="bonsai-info__performance-label">Resolution Time</div>
+                            <div class="bonsai-info__performance-value {% if data.performance.resolution_time > 0.1 %}bonsai-info__performance-value--warning{% elseif data.performance.resolution_time > 0.5 %}bonsai-info__performance-value--error{% endif %}">
+                                {% if data.performance.resolution_time < 0.001 %}
+                                    {{ (data.performance.resolution_time * 1000000)|round(2) }}μs
+                                {% elseif data.performance.resolution_time < 1 %}
+                                    {{ (data.performance.resolution_time * 1000)|round(2) }}ms
+                                {% else %}
+                                    {{ data.performance.resolution_time|round(3) }}s
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if data.performance.memory_usage is defined and data.performance.memory_usage.delta is defined %}
+                            <div class="bonsai-info__performance-item">
+                                <div class="bonsai-info__performance-label">Memory Delta</div>
+                                <div class="bonsai-info__performance-value {% if data.performance.memory_usage.delta > 1048576 %}bonsai-info__performance-value--warning{% elseif data.performance.memory_usage.delta > 5242880 %}bonsai-info__performance-value--error{% endif %}">
+                                    {% set memDelta = data.performance.memory_usage.delta %}
+                                    {% if memDelta < 1024 %}
+                                        {{ memDelta }}B
+                                    {% elseif memDelta < 1048576 %}
+                                        {{ (memDelta / 1024)|round(2) }}KB
+                                    {% else %}
+                                        {{ (memDelta / 1048576)|round(2) }}MB
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <script>
+            (function() {
+                const STORAGE_KEY = 'bonsai-twig-active-tab';
+                const infoText = document.currentScript.closest('.bonsai-info__text');
+                const tabs = infoText.querySelectorAll('.bonsai-info__tab');
+                const panels = infoText.querySelectorAll('.bonsai-info__tab-panel');
+
+                function activateTab(tabName) {
+                    tabs.forEach(tab => {
+                        if (tab.dataset.tab === tabName) {
+                            tab.classList.add('bonsai-info__tab--active');
+                        } else {
+                            tab.classList.remove('bonsai-info__tab--active');
+                        }
+                    });
+
+                    panels.forEach(panel => {
+                        if (panel.dataset.panel === tabName) {
+                            panel.classList.add('bonsai-info__tab-panel--active');
+                        } else {
+                            panel.classList.remove('bonsai-info__tab-panel--active');
+                        }
+                    });
+
+                    try {
+                        localStorage.setItem(STORAGE_KEY, tabName);
+                    } catch (e) {
+                        // localStorage might be disabled
+                    }
+                }
+
+                tabs.forEach(tab => {
+                    tab.addEventListener('click', function() {
+                        activateTab(this.dataset.tab);
+                    });
+                });
+
+                // Restore last active tab or default to first tab
+                let activeTab = 'templates';
+                try {
+                    const stored = localStorage.getItem(STORAGE_KEY);
+                    if (stored) {
+                        // Check if the stored tab exists in this infobar
+                        const tabExists = Array.from(tabs).some(tab => tab.dataset.tab === stored);
+                        if (tabExists) {
+                            activeTab = stored;
+                        }
+                    }
+                } catch (e) {
+                    // localStorage might be disabled
+                }
+
+                activateTab(activeTab);
+            })();
+        </script>
     </div>
     {{ content|raw }}
 </div>
