@@ -535,6 +535,27 @@
         .bonsai-info__tab-panel--active {
             display: block;
         }
+        .bonsai-info__copy-all-btn {
+            background: rgba(78, 201, 176, 0.15);
+            color: #4ec9b0;
+            border: 1px solid rgba(78, 201, 176, 0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 150ms ease;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .bonsai-info__copy-all-btn:hover {
+            background: rgba(78, 201, 176, 0.25);
+            border-color: rgba(78, 201, 176, 0.5);
+        }
+        .bonsai-info__copy-all-btn:active {
+            background: rgba(78, 201, 176, 0.35);
+        }
     </style>
 {% endapply %}
 <div class="bonsai-info__hover">
@@ -637,7 +658,12 @@
                 <div class="bonsai-info__fields">
                     <div class="bonsai-info__fields-label">
                         Available Field Handles
-                        <span class="bonsai-info__fields-count">{{ data.field_handles|length }} fields</span>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span class="bonsai-info__fields-count">{{ data.field_handles|length }} fields</span>
+                            <button class="bonsai-info__copy-all-btn" data-copy-all="fields" title="Copy all field handles as entry.fieldName format">
+                                📋 Copy All
+                            </button>
+                        </div>
                     </div>
                     <div class="bonsai-info__field-list">
                         {% for field in data.field_handles %}
@@ -901,29 +927,80 @@
                     });
                 });
 
+                // Copy all fields functionality
+                const copyAllBtn = infoText.querySelector('[data-copy-all="fields"]');
+                if (copyAllBtn) {
+                    copyAllBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+
+                        const elementVar = 'entry'; // Default element variable
+                        const fields = [];
+
+                        // Gather all field handles from the DOM
+                        infoText.querySelectorAll('.bonsai-info__field-item').forEach(fieldItem => {
+                            const handleEl = fieldItem.querySelector('.bonsai-info__field-handle');
+                            const typeEl = fieldItem.querySelector('.bonsai-info__field-type');
+
+                            if (handleEl && handleEl.dataset.copyText) {
+                                const handle = handleEl.dataset.copyText;
+                                const type = typeEl ? typeEl.textContent.trim() : '';
+
+                                // Smart suffix based on field type
+                                let suffix = '';
+                                if (type.includes('Asset')) {
+                                    suffix = '.one()';
+                                } else if (type.includes('Entries') || type.includes('Categories') ||
+                                          type.includes('Users') || type.includes('Tags')) {
+                                    suffix = '.all()';
+                                } else if (type.includes('Matrix') || type.includes('Table')) {
+                                    suffix = '.all()';
+                                }
+
+                                fields.push(`${elementVar}.${handle}${suffix}`);
+                            }
+                        });
+
+                        const textToCopy = fields.join('\n');
+                        const feedbackText = `${fields.length} fields copied!`;
+
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(textToCopy).then(() => {
+                                showCopyFeedback(this, feedbackText);
+                            }).catch(err => {
+                                console.warn('Failed to copy:', err);
+                                fallbackCopyText(textToCopy, this, feedbackText);
+                            });
+                        } else {
+                            fallbackCopyText(textToCopy, this, feedbackText);
+                        }
+                    });
+                }
+
                 // Show visual feedback when text is copied
-                function showCopyFeedback(element) {
+                function showCopyFeedback(element, customText) {
                     // Create tooltip if it doesn't exist
                     let tooltip = element.querySelector('.bonsai-info__copy-tooltip');
                     if (!tooltip) {
                         tooltip = document.createElement('span');
                         tooltip.className = 'bonsai-info__copy-tooltip';
-                        tooltip.textContent = 'Copied!';
                         element.style.position = 'relative';
                         element.appendChild(tooltip);
                     }
 
+                    tooltip.textContent = customText || 'Copied!';
+
                     // Show tooltip
                     tooltip.classList.add('bonsai-info__copy-tooltip--visible');
 
-                    // Hide after 1 second
+                    // Hide after appropriate duration
+                    const duration = customText ? 1500 : 1000;
                     setTimeout(() => {
                         tooltip.classList.remove('bonsai-info__copy-tooltip--visible');
-                    }, 1000);
+                    }, duration);
                 }
 
                 // Fallback for older browsers
-                function fallbackCopyText(text, element) {
+                function fallbackCopyText(text, element, customText) {
                     const textArea = document.createElement('textarea');
                     textArea.value = text;
                     textArea.style.position = 'fixed';
@@ -935,7 +1012,7 @@
 
                     try {
                         document.execCommand('copy');
-                        showCopyFeedback(element);
+                        showCopyFeedback(element, customText);
                     } catch (err) {
                         console.warn('Failed to copy text:', err);
                     }
