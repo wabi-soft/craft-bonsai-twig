@@ -272,11 +272,8 @@ class FieldInspectorService extends Component
                         $sectionUid = substr($source, 8);
                         LoggerHelper::debug('Looking up section with UID: ' . $sectionUid);
 
-                        // In Craft 5, use entries service; in Craft 4, use sections service
-                        $sectionsService = \Craft::$app->has('entries')
-                            ? \Craft::$app->entries
-                            : \Craft::$app->sections;
-                        $section = $sectionsService->getSectionByUid($sectionUid);
+                        // Always use sections service for section lookups (Craft 4 & 5)
+                        $section = \Craft::$app->sections->getSectionByUid($sectionUid);
 
                         if ($section) {
                             LoggerHelper::debug('Found section: ' . $section->handle . ' (' . $section->name . ')');
