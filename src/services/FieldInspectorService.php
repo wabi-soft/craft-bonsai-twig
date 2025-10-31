@@ -3,6 +3,7 @@
 namespace wabisoft\bonsaitwig\services;
 
 use Craft;
+use wabisoft\bonsaitwig\helpers\LoggerHelper;
 use yii\base\Component;
 
 /**
@@ -86,6 +87,12 @@ class FieldInspectorService extends Component
         try {
             $className = get_class($field);
 
+            // Debug logging in dev mode
+            LoggerHelper::debug(
+                'Extracting nested info for field: ' . ($field->handle ?? 'unknown') .
+                ', Class: ' . $className
+            );
+
             // Handle Matrix fields - show block types and their fields
             if ($className === 'craft\fields\Matrix') {
                 return $this->extractMatrixBlockInfo($field);
@@ -141,7 +148,7 @@ class FieldInspectorService extends Component
 
             return null;
         } catch (\Exception $e) {
-            Craft::info('Could not extract nested field info: ' . $e->getMessage(), __METHOD__);
+            LoggerHelper::warning('Could not extract nested field info: ' . $e->getMessage());
             return null;
         }
     }
@@ -149,13 +156,19 @@ class FieldInspectorService extends Component
     /**
      * Extracts block type information from a Matrix field.
      *
+     * Supports both Craft 4 (Matrix Block Types) and Craft 5 (Entry Types).
+     * Uses the same logic as MatrixLoader for consistency.
+     *
      * @param \craft\fields\Matrix $field The Matrix field
      * @return array|null Block type information
      */
     private function extractMatrixBlockInfo($field): ?array
     {
         try {
-            $blockTypes = $field->getBlockTypes();
+            // Craft 5 uses Entry Types, Craft 4 uses Block Types
+            $blockTypes = method_exists($field, 'getEntryTypes')
+                ? $field->getEntryTypes()
+                : $field->getBlockTypes();
 
             if (empty($blockTypes)) {
                 return null;
@@ -164,7 +177,13 @@ class FieldInspectorService extends Component
             $blockInfo = [];
             foreach ($blockTypes as $blockType) {
                 $blockFields = [];
-                foreach ($blockType->getCustomFields() as $blockField) {
+
+                // Get custom fields using the field layout
+                // This works for both Craft 4 and 5
+                $fieldLayout = $blockType->getFieldLayout();
+                $customFields = $fieldLayout ? $fieldLayout->getCustomFields() : [];
+
+                foreach ($customFields as $blockField) {
                     $blockFields[] = [
                         'handle' => $blockField->handle,
                         'name' => $blockField->name,
@@ -172,9 +191,25 @@ class FieldInspectorService extends Component
                     ];
                 }
 
+                // Get the handle using the exact same approach
+                // In both Craft 4 and 5, blockType/entryType should have a handle property
+                // Use getHandle() method if available, fall back to direct property access
+                $blockHandle = method_exists($blockType, 'getHandle')
+                    ? $blockType->getHandle()
+                    : ($blockType->handle ?? null);
+
+                // If still no handle, try converting to string (EntryType has __toString)
+                if (!$blockHandle && method_exists($blockType, '__toString')) {
+                    $blockHandle = (string) $blockType;
+                }
+
+                // Final fallback
+                $blockHandle = $blockHandle ?? 'unknown';
+                $blockName = $blockType->name ?? 'Unnamed Block';
+
                 $blockInfo[] = [
-                    'handle' => $blockType->handle,
-                    'name' => $blockType->name,
+                    'handle' => $blockHandle,
+                    'name' => $blockName,
                     'fields' => $blockFields,
                 ];
             }
@@ -199,6 +234,9 @@ class FieldInspectorService extends Component
         try {
             $sources = $field->sources;
 
+            // Debug logging
+            LoggerHelper::debug('Entries field sources: ' . print_r($sources, true));
+
             if ($sources === '*') {
                 return [
                     'type' => 'entries',
@@ -215,24 +253,55 @@ class FieldInspectorService extends Component
 
             $allowedSections = [];
             foreach ($sources as $source) {
-                // Parse source format: "section:uid" or "section:handle"
-                if (is_string($source) && strpos($source, 'section:') === 0) {
-                    $sectionUid = substr($source, 8);
-                    $section = Craft::$app->sections->getSectionByUid($sectionUid);
-                    if ($section) {
-                        $allowedSections[] = [
-                            'handle' => $section->handle,
-                            'name' => $section->name,
-                        ];
+                // Parse source format: "section:uid", "entryType:uid", or other formats
+                if (is_string($source)) {
+                    if (strpos($source, 'section:') === 0) {
+                        // Craft 4 & 5: Section sources
+                        $sectionUid = substr($source, 8);
+                        LoggerHelper::debug('Looking up section with UID: ' . $sectionUid);
+
+                        // In Craft 5, use entries service; in Craft 4, use sections service
+                        $sectionsService = \Craft::$app->has('entries')
+                            ? \Craft::$app->entries
+                            : \Craft::$app->sections;
+                        $section = $sectionsService->getSectionByUid($sectionUid);
+
+                        if ($section) {
+                            LoggerHelper::debug('Found section: ' . $section->handle . ' (' . $section->name . ')');
+                            $allowedSections[] = [
+                                'handle' => $section->handle,
+                                'name' => $section->name,
+                            ];
+                        } else {
+                            LoggerHelper::warning('Section not found for UID: ' . $sectionUid);
+                        }
+                    } elseif (strpos($source, 'entryType:') === 0) {
+                        // Craft 5: Entry type specific sources
+                        $entryTypeUid = substr($source, 10);
+                        if (\Craft::$app->has('entries')) {
+                            $entryType = \Craft::$app->entries->getEntryTypeByUid($entryTypeUid);
+                            if ($entryType) {
+                                $section = $entryType->getSection();
+                                $allowedSections[] = [
+                                    'handle' => $entryType->handle ?? $entryType->name,
+                                    'name' => $entryType->name . ($section ? ' (' . $section->name . ')' : ''),
+                                ];
+                            }
+                        }
                     }
                 }
             }
 
-            return [
+            $result = [
                 'type' => 'entries',
                 'sources' => $allowedSections,
             ];
+
+            LoggerHelper::debug('Entries field result: ' . print_r($result, true));
+
+            return $result;
         } catch (\Exception $e) {
+            LoggerHelper::error('Error extracting entries field info: ' . $e->getMessage());
             return null;
         }
     }
