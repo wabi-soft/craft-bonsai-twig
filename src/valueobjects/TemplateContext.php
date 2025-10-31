@@ -3,7 +3,6 @@
 namespace wabisoft\bonsaitwig\valueobjects;
 
 use craft\base\Element;
-use wabisoft\bonsaitwig\enums\TemplateType;
 
 /**
  * Value object representing the context for template resolution.
@@ -34,7 +33,7 @@ readonly class TemplateContext
         public ?Element $context = null,
         public ?string $baseSite = null,
         public array $variables = [],
-        public bool $showDebug = false
+        public bool $showDebug = false,
     ) {
         $this->validateElement($element);
         $this->validatePath($path);

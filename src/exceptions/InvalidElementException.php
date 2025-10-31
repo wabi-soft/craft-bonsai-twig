@@ -4,7 +4,7 @@ namespace wabisoft\bonsaitwig\exceptions;
 
 /**
  * Exception thrown when an invalid element is provided to template loading functions.
- * 
+ *
  * This exception provides detailed information about the expected element type
  * and what was actually provided, helping developers identify type mismatches.
  */
@@ -22,7 +22,7 @@ class InvalidElementException extends BonsaiTwigException
         public readonly mixed $actualValue,
         string $message = '',
         int $code = 0,
-        ?\Throwable $previous = null
+        ?\Throwable $previous = null,
     ) {
         if (empty($message)) {
             $actualType = get_debug_type($actualValue);
@@ -70,7 +70,7 @@ class InvalidElementException extends BonsaiTwigException
 
     /**
      * Get enhanced context for logging purposes.
-     * 
+     *
      * @return array<string, mixed>
      */
     public function getContext(): array

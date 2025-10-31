@@ -5,10 +5,6 @@ namespace wabisoft\bonsaitwig\web\twig;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 use wabisoft\bonsaitwig\BonsaiTwig;
-use wabisoft\bonsaitwig\services\CategoryLoader;
-use wabisoft\bonsaitwig\services\EntryLoader;
-use wabisoft\bonsaitwig\services\ItemLoader;
-use wabisoft\bonsaitwig\services\MatrixLoader;
 
 /**
  * Twig extension that provides hierarchical template loading functions.

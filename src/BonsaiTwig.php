@@ -5,18 +5,19 @@ namespace wabisoft\bonsaitwig;
 use Craft;
 use craft\base\Plugin;
 use craft\events\RegisterTemplateRootsEvent;
-use craft\web\View;
 use craft\helpers\App;
+use craft\web\View;
+use wabisoft\bonsaitwig\exceptions\BonsaiTwigException;
+use wabisoft\bonsaitwig\models\Settings;
 use wabisoft\bonsaitwig\services\CategoryLoader;
 use wabisoft\bonsaitwig\services\EntryLoader;
+use wabisoft\bonsaitwig\services\ErrorReportingService;
+use wabisoft\bonsaitwig\services\FieldInspectorService;
 use wabisoft\bonsaitwig\services\HierarchyTemplateLoader;
 use wabisoft\bonsaitwig\services\ItemLoader;
 use wabisoft\bonsaitwig\services\MatrixLoader;
 use wabisoft\bonsaitwig\services\PerformanceMonitor;
-use wabisoft\bonsaitwig\services\ErrorReportingService;
 use wabisoft\bonsaitwig\web\twig\Templates;
-use wabisoft\bonsaitwig\models\Settings;
-use wabisoft\bonsaitwig\exceptions\BonsaiTwigException;
 use yii\base\Event;
 use yii\base\InvalidConfigException;
 
@@ -37,6 +38,7 @@ use yii\base\InvalidConfigException;
  * @property-read HierarchyTemplateLoader $hierarchyTemplateLoader Core template resolution service
  * @property-read PerformanceMonitor $performanceMonitor Performance monitoring service for development mode
  * @property-read ErrorReportingService $errorReportingService Comprehensive error reporting and debugging service
+ * @property-read FieldInspectorService $fieldInspectorService Field inspection service for beastmode debugging
  */
 class BonsaiTwig extends Plugin
 {
@@ -98,6 +100,9 @@ class BonsaiTwig extends Plugin
                 'errorReportingService' => [
                     'class' => ErrorReportingService::class,
                 ],
+                'fieldInspectorService' => [
+                    'class' => FieldInspectorService::class,
+                ],
                 'hierarchyTemplateLoader' => [
                     'class' => HierarchyTemplateLoader::class,
                 ],
@@ -150,7 +155,6 @@ class BonsaiTwig extends Plugin
                 $this->registerTwigExtension();
                 $this->attachEventHandlers();
             }
-
         } catch (\Throwable $e) {
             throw new BonsaiTwigException(
                 'Failed to initialize Bonsai Twig plugin: ' . $e->getMessage(),
@@ -216,7 +220,6 @@ class BonsaiTwig extends Plugin
             $this->get('categoryLoader');
             $this->get('itemLoader');
             $this->get('matrixLoader');
-
         } catch (\Throwable $e) {
             throw new InvalidConfigException(
                 'Failed to initialize plugin services: ' . $e->getMessage(),
@@ -259,13 +262,13 @@ class BonsaiTwig extends Plugin
      */
     private function attachEventHandlers(): void
     {
-         // Normalize CRAFT_DEV_MODE to a boolean if set, otherwise fall back to config
-         $envDev = App::env('CRAFT_DEV_MODE');
-         $isDev = $envDev !== null
+        // Normalize CRAFT_DEV_MODE to a boolean if set, otherwise fall back to config
+        $envDev = App::env('CRAFT_DEV_MODE');
+        $isDev = $envDev !== null
              ? filter_var((string)$envDev, FILTER_VALIDATE_BOOLEAN)
              : Craft::$app->getConfig()->general->devMode;
 
-         if ($isDev) {
+        if ($isDev) {
             Event::on(
                 View::class,
                 View::EVENT_REGISTER_SITE_TEMPLATE_ROOTS,

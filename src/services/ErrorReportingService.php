@@ -5,8 +5,8 @@ namespace wabisoft\bonsaitwig\services;
 use Craft;
 use craft\base\Element;
 use wabisoft\bonsaitwig\enums\TemplateType;
-use wabisoft\bonsaitwig\exceptions\TemplateNotFoundException;
 use wabisoft\bonsaitwig\exceptions\InvalidElementException;
+use wabisoft\bonsaitwig\exceptions\TemplateNotFoundException;
 use wabisoft\bonsaitwig\valueobjects\TemplateContext;
 use yii\base\Component;
 
@@ -116,7 +116,7 @@ class ErrorReportingService extends Component
     public function generateTemplateNotFoundReport(
         TemplateNotFoundException $exception,
         ?TemplateContext $context = null,
-        array $debugData = []
+        array $debugData = [],
     ): array {
         $attemptedPaths = $exception->getAttemptedPaths();
         $templateType = $exception->getTemplateType();
@@ -159,7 +159,7 @@ class ErrorReportingService extends Component
     public function generateInvalidElementReport(
         InvalidElementException $exception,
         mixed $providedValue,
-        array $debugData = []
+        array $debugData = [],
     ): array {
         return [
             'error_type' => 'invalid_element',
@@ -254,7 +254,7 @@ class ErrorReportingService extends Component
         if (!empty($errorReport['debug_info']) && Craft::$app->getConfig()->general->devMode) {
             $output[] = "🔍 Debug Information:";
             foreach ($errorReport['debug_info'] as $key => $value) {
-                $output[] = "  " . ucfirst(str_replace('_', ' ', $key)) . ": " . 
+                $output[] = "  " . ucfirst(str_replace('_', ' ', $key)) . ": " .
                            (is_array($value) ? json_encode($value) : (string)$value);
             }
         }
@@ -428,7 +428,7 @@ class ErrorReportingService extends Component
         }
 
         // Check for site-specific paths
-        $siteSpecificPaths = array_filter($attemptedPaths, fn($path) => 
+        $siteSpecificPaths = array_filter($attemptedPaths, fn($path) =>
             str_contains($path, '/_') || preg_match('/\/[a-z]{2,}\//', $path)
         );
         
@@ -451,7 +451,7 @@ class ErrorReportingService extends Component
         }
 
         // Check for template type consistency
-        $typeSpecificPaths = array_filter($attemptedPaths, fn($path) => 
+        $typeSpecificPaths = array_filter($attemptedPaths, fn($path) =>
             str_contains($path, $templateType->value)
         );
         
@@ -478,7 +478,7 @@ class ErrorReportingService extends Component
         $identifiedIssues = [];
         
         foreach (self::COMMON_ISSUES as $issueKey => $issueData) {
-            $matchingPaths = array_filter($attemptedPaths, fn($path) => 
+            $matchingPaths = array_filter($attemptedPaths, fn($path) =>
                 preg_match($issueData['pattern'], $path)
             );
             
@@ -507,7 +507,7 @@ class ErrorReportingService extends Component
     private function generateSuggestions(
         array $attemptedPaths,
         TemplateType $templateType,
-        ?TemplateContext $context
+        ?TemplateContext $context,
     ): array {
         $suggestions = [];
         

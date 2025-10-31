@@ -4,10 +4,10 @@ namespace wabisoft\bonsaitwig\utilities;
 
 use Craft;
 use craft\base\Element;
+use wabisoft\bonsaitwig\BonsaiTwig;
 use wabisoft\bonsaitwig\enums\DebugMode;
 use wabisoft\bonsaitwig\enums\TemplateType;
 use wabisoft\bonsaitwig\exceptions\InvalidElementException;
-use wabisoft\bonsaitwig\BonsaiTwig;
 
 /**
  * Input validation utility class for service method parameters.
@@ -85,7 +85,7 @@ class InputValidator
 
     /**
      * Validates a MatrixBlock or Entry parameter for backward compatibility.
-     * 
+     *
      * This method supports Craft 4 to 5 migration scenarios where Matrix fields
      * have been converted to Related Entries fields but templates still use
      * the matrix template structure.
@@ -211,7 +211,7 @@ class InputValidator
         string $parameterName = 'parameter',
         bool $required = false,
         int $maxLength = self::MAX_STRING_LENGTH,
-        ?string $pattern = null
+        ?string $pattern = null,
     ): string {
         if ($value === null || $value === '') {
             if ($required) {
@@ -290,7 +290,7 @@ class InputValidator
         mixed $value,
         string $parameterName = 'array',
         bool $required = false,
-        int $maxSize = self::MAX_ARRAY_SIZE
+        int $maxSize = self::MAX_ARRAY_SIZE,
     ): array {
         if ($value === null || $value === []) {
             if ($required) {
@@ -332,7 +332,7 @@ class InputValidator
         string $parameterName = 'integer',
         bool $required = false,
         ?int $min = null,
-        ?int $max = null
+        ?int $max = null,
     ): ?int {
         if ($value === null || $value === '') {
             if ($required) {
@@ -452,8 +452,8 @@ class InputValidator
         // Handle general debug modes (path, hierarchy, full, all)
         if (!DebugMode::isValidForTemplateType($debugValue, $templateType)) {
             throw new \InvalidArgumentException(
-                sprintf('Invalid debug mode "%s". Allowed values: %s', 
-                    $debugValue, 
+                sprintf('Invalid debug mode "%s". Allowed values: %s',
+                    $debugValue,
                     implode(', ', array_merge(
                         array_map(fn($case) => $case->value, DebugMode::cases()),
                         ['entry', 'category', 'item', 'matrix']
@@ -467,8 +467,8 @@ class InputValidator
             $debugMode = DebugMode::fromString($debugValue);
         } catch (\ValueError $e) {
             throw new \InvalidArgumentException(
-                sprintf('Invalid debug mode "%s". Allowed values: %s', 
-                    $debugValue, 
+                sprintf('Invalid debug mode "%s". Allowed values: %s',
+                    $debugValue,
                     implode(', ', array_merge(
                         array_map(fn($case) => $case->value, DebugMode::cases()),
                         ['entry', 'category', 'item', 'matrix']

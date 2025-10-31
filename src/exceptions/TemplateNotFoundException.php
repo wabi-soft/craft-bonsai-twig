@@ -6,7 +6,7 @@ use wabisoft\bonsaitwig\enums\TemplateType;
 
 /**
  * Exception thrown when a template cannot be found during template resolution.
- * 
+ *
  * This exception provides detailed context about the template resolution attempt,
  * including all attempted paths and the template type being resolved.
  */
@@ -24,7 +24,7 @@ class TemplateNotFoundException extends BonsaiTwigException
         public readonly TemplateType $templateType,
         string $message = '',
         int $code = 0,
-        ?\Throwable $previous = null
+        ?\Throwable $previous = null,
     ) {
         if (empty($message)) {
             $message = sprintf(
@@ -39,7 +39,7 @@ class TemplateNotFoundException extends BonsaiTwigException
 
     /**
      * Get the attempted template paths.
-     * 
+     *
      * @return array<string>
      */
     public function getAttemptedPaths(): array
@@ -65,7 +65,7 @@ class TemplateNotFoundException extends BonsaiTwigException
 
     /**
      * Get enhanced context for logging purposes.
-     * 
+     *
      * @return array<string, mixed>
      */
     public function getContext(): array

@@ -241,7 +241,7 @@ class PerformanceMonitor extends Component
     public function recordTemplateResolution(
         bool $successful,
         float $resolutionTime,
-        int $pathsAttempted = 0
+        int $pathsAttempted = 0,
     ): void {
         // Only track performance in development mode
         if (!Craft::$app->getConfig()->general->devMode) {
@@ -268,7 +268,7 @@ class PerformanceMonitor extends Component
         // Calculate running average
         $totalResolutions = $this->resolutionStats['total_resolutions'];
         $currentAverage = $this->resolutionStats['average_resolution_time'];
-        $this->resolutionStats['average_resolution_time'] = 
+        $this->resolutionStats['average_resolution_time'] =
             (($currentAverage * ($totalResolutions - 1)) + $resolutionTime) / $totalResolutions;
 
         // Track paths attempted
@@ -400,7 +400,7 @@ class PerformanceMonitor extends Component
         TemplateContext $context,
         array $attemptedPaths,
         ?string $resolvedPath,
-        array $performanceData = []
+        array $performanceData = [],
     ): DebugInfo {
         $templateType = TemplateType::ENTRY; // TODO: derive from $context
 

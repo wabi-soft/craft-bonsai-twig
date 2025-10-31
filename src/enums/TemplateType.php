@@ -30,7 +30,7 @@ enum TemplateType: string
      */
     public function getDefaultPath(): string
     {
-        return match($this) {
+        return match ($this) {
             self::ENTRY => 'entry',
             self::CATEGORY => 'category',
             self::ITEM => 'item',
@@ -48,7 +48,7 @@ enum TemplateType: string
      */
     public function getAllowedDebugValues(): array
     {
-        return match($this) {
+        return match ($this) {
             self::ENTRY => ['entry', 'all'],
             self::CATEGORY => ['category', 'all'],
             self::ITEM => ['item', 'all'],
@@ -67,7 +67,7 @@ enum TemplateType: string
      */
     public static function fromString(string $value): self
     {
-        return match($value) {
+        return match ($value) {
             'entry' => self::ENTRY,
             'category' => self::CATEGORY,
             'item' => self::ITEM,

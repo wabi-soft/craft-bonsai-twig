@@ -3,12 +3,10 @@
 namespace wabisoft\bonsaitwig\services;
 
 use craft\base\Element;
-use craft\helpers\ArrayHelper;
 use craft\helpers\StringHelper;
-use wabisoft\bonsaitwig\enums\TemplateType;
-use wabisoft\bonsaitwig\exceptions\InvalidElementException;
-use wabisoft\bonsaitwig\utilities\InputValidator;
 use wabisoft\bonsaitwig\BonsaiTwig;
+use wabisoft\bonsaitwig\enums\TemplateType;
+use wabisoft\bonsaitwig\utilities\InputValidator;
 
 /**
  * Service class for loading template paths based on Craft elements and context.

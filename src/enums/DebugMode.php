@@ -43,7 +43,7 @@ enum DebugMode: string
      */
     public function shouldShowPaths(): bool
     {
-        return match($this) {
+        return match ($this) {
             self::PATH, self::HIERARCHY, self::FULL, self::ALL => true,
             default => false,
         };
@@ -59,7 +59,7 @@ enum DebugMode: string
      */
     public function shouldShowHierarchy(): bool
     {
-        return match($this) {
+        return match ($this) {
             self::HIERARCHY, self::FULL, self::ALL => true,
             default => false,
         };
@@ -75,7 +75,7 @@ enum DebugMode: string
      */
     public function shouldShowPerformance(): bool
     {
-        return match($this) {
+        return match ($this) {
             self::FULL, self::ALL => true,
             default => false,
         };
@@ -96,7 +96,7 @@ enum DebugMode: string
             return self::DISABLED;
         }
 
-        return match($value) {
+        return match ($value) {
             '' => self::ALL, // Empty string means show all (the ?beastmode case)
             'path' => self::PATH,
             'hierarchy' => self::HIERARCHY,

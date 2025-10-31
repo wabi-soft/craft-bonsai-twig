@@ -4,7 +4,7 @@ namespace wabisoft\bonsaitwig\exceptions;
 
 /**
  * Exception thrown when an invalid or potentially dangerous template path is detected.
- * 
+ *
  * This exception is used for security purposes to prevent path traversal attacks
  * and other path-related security issues.
  */
@@ -22,7 +22,7 @@ class InvalidTemplatePathException extends BonsaiTwigException
         public readonly string $reason,
         string $message = '',
         int $code = 0,
-        ?\Throwable $previous = null
+        ?\Throwable $previous = null,
     ) {
         if (empty($message)) {
             $message = sprintf(
@@ -53,7 +53,7 @@ class InvalidTemplatePathException extends BonsaiTwigException
 
     /**
      * Get enhanced context for logging purposes.
-     * 
+     *
      * @return array<string, mixed>
      */
     public function getContext(): array

@@ -35,7 +35,7 @@ readonly class DebugInfo implements \JsonSerializable
         public float $resolutionTime = 0.0,
         public float $memoryUsage = 0.0,
         public array $elementData = [],
-        public array $contextData = []
+        public array $contextData = [],
     ) {
         $this->validateDirectory($directory);
         $this->validateTemplates($templates);
@@ -178,7 +178,7 @@ readonly class DebugInfo implements \JsonSerializable
      */
     public function getMissingTemplates(): array
     {
-        return array_filter($this->templates, fn(string $template): bool => 
+        return array_filter($this->templates, fn(string $template): bool =>
             $template !== $this->currentTemplate
         );
     }
@@ -314,7 +314,7 @@ readonly class DebugInfo implements \JsonSerializable
         string $currentTemplate,
         TemplateType $type,
         float $startTime,
-        float $startMemory
+        float $startMemory,
     ): self {
         $endTime = microtime(true);
         $endMemory = memory_get_usage();
