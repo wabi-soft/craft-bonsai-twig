@@ -556,6 +556,39 @@
         .bonsai-info__copy-all-btn:active {
             background: rgba(78, 201, 176, 0.35);
         }
+        .bonsai-info__var-inputs {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 10px;
+        }
+        .bonsai-info__var-input-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .bonsai-info__var-label {
+            color: #808080;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .bonsai-info__var-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(206, 145, 120, 0.3);
+            color: #dcdcaa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+            width: 60px;
+        }
+        .bonsai-info__var-input:focus {
+            outline: none;
+            border-color: rgba(206, 145, 120, 0.6);
+            background: rgba(0, 0, 0, 0.4);
+        }
     </style>
 {% endapply %}
 <div class="bonsai-info__hover">
@@ -654,8 +687,18 @@
         </div>
 
         {% if data.field_handles is defined and data.field_handles is not null %}
-            <div class="bonsai-info__tab-panel" data-panel="fields">
+            <div class="bonsai-info__tab-panel" data-panel="fields" data-element-type="{{ data.type|default('template') }}">
                 <div class="bonsai-info__fields">
+                    <div class="bonsai-info__var-inputs">
+                        <div class="bonsai-info__var-input-group">
+                            <label class="bonsai-info__var-label">Element:</label>
+                            <input type="text" class="bonsai-info__var-input" id="bonsai-element-var" placeholder="entry" value="entry">
+                        </div>
+                        <div class="bonsai-info__var-input-group">
+                            <label class="bonsai-info__var-label">Loop:</label>
+                            <input type="text" class="bonsai-info__var-input" id="bonsai-loop-var" placeholder="item" value="item">
+                        </div>
+                    </div>
                     <div class="bonsai-info__fields-label">
                         Available Field Handles
                         <div style="display: flex; gap: 8px; align-items: center;">
@@ -886,6 +929,59 @@
 
                 activateTab(activeTab);
 
+                // Variable name inputs with localStorage persistence (per element type)
+                const elementVarInput = infoText.querySelector('#bonsai-element-var');
+                const loopVarInput = infoText.querySelector('#bonsai-loop-var');
+                const fieldsPanel = infoText.querySelector('[data-panel="fields"]');
+
+                if (elementVarInput && loopVarInput && fieldsPanel) {
+                    // Get element type for context-specific storage
+                    const elementType = fieldsPanel.dataset.elementType || 'template';
+
+                    // Smart defaults based on element type
+                    const defaults = {
+                        'entry': { element: 'entry', loop: 'item' },
+                        'category': { element: 'category', loop: 'item' },
+                        'matrix': { element: 'block', loop: 'item' },
+                        'asset': { element: 'asset', loop: 'item' },
+                        'user': { element: 'user', loop: 'item' },
+                        'product': { element: 'product', loop: 'item' },
+                        'template': { element: 'entry', loop: 'item' }
+                    };
+
+                    const defaultVars = defaults[elementType] || defaults['template'];
+
+                    // Load saved values or set smart defaults
+                    try {
+                        const savedElementVar = localStorage.getItem(`bonsai-twig-element-var-${elementType}`);
+                        const savedLoopVar = localStorage.getItem(`bonsai-twig-loop-var-${elementType}`);
+
+                        elementVarInput.value = savedElementVar || defaultVars.element;
+                        loopVarInput.value = savedLoopVar || defaultVars.loop;
+                    } catch (e) {
+                        // localStorage might be disabled
+                        elementVarInput.value = defaultVars.element;
+                        loopVarInput.value = defaultVars.loop;
+                    }
+
+                    // Save to localStorage on change (type-specific)
+                    elementVarInput.addEventListener('input', function() {
+                        try {
+                            localStorage.setItem(`bonsai-twig-element-var-${elementType}`, this.value);
+                        } catch (e) {
+                            // localStorage might be disabled
+                        }
+                    });
+
+                    loopVarInput.addEventListener('input', function() {
+                        try {
+                            localStorage.setItem(`bonsai-twig-loop-var-${elementType}`, this.value);
+                        } catch (e) {
+                            // localStorage might be disabled
+                        }
+                    });
+                }
+
                 // Nested field expand/collapse functionality
                 const nestedToggles = infoText.querySelectorAll('.bonsai-info__field-nested-toggle');
                 nestedToggles.forEach(toggle => {
@@ -934,7 +1030,9 @@
                     copyAllBtn.addEventListener('click', function(e) {
                         e.stopPropagation();
 
-                        const elementVar = 'entry'; // Default element variable
+                        // Get variable names from inputs
+                        const elementVar = elementVarInput.value.trim() || 'entry';
+                        const loopVar = loopVarInput.value.trim() || 'item';
                         const fields = [];
 
                         // Gather all field handles from the DOM
@@ -956,10 +1054,10 @@
                                 } else if (type.includes('Entries') || type.includes('Categories') ||
                                           type.includes('Users') || type.includes('Tags')) {
                                     suffix = '.all()';
-                                    twigWrapped = `{% for item in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
+                                    twigWrapped = `{% for ${loopVar} in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
                                 } else if (type.includes('Matrix') || type.includes('Table')) {
                                     suffix = '.all()';
-                                    twigWrapped = `{% for item in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
+                                    twigWrapped = `{% for ${loopVar} in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
                                 } else {
                                     // Plain field, just wrap in output tags
                                     twigWrapped = `{{ ${elementVar}.${handle} }}`;
