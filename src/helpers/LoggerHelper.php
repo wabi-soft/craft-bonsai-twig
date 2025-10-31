@@ -3,7 +3,7 @@
 namespace wabisoft\bonsaitwig\helpers;
 
 use Craft;
-use Psr\Log\LogLevel;
+use yii\log\Logger;
 
 /**
  * Custom logger helper for BonsaiTwig plugin.
@@ -19,10 +19,10 @@ class LoggerHelper
     /**
      * Logs a message to our custom log target.
      *
-     * @param string $level The log level (use LogLevel constants)
+     * @param int $level The log level (use Logger::LEVEL_* constants)
      * @param string $message The message to log
      */
-    public static function log($level, $message): void
+    public static function log(int $level, string $message): void
     {
         // Get full backtrace to walk through wrapper methods
         $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
@@ -65,10 +65,10 @@ class LoggerHelper
      *
      * @param string $message The message to log
      */
-    public static function info($message): void
+    public static function info(string $message): void
     {
         if (Craft::$app->config->general->devMode) {
-            self::log(LogLevel::INFO, $message);
+            self::log(Logger::LEVEL_INFO, $message);
         }
     }
 
@@ -77,9 +77,9 @@ class LoggerHelper
      *
      * @param string $message The message to log
      */
-    public static function error($message): void
+    public static function error(string $message): void
     {
-        self::log(LogLevel::ERROR, $message);
+        self::log(Logger::LEVEL_ERROR, $message);
     }
 
     /**
@@ -87,9 +87,9 @@ class LoggerHelper
      *
      * @param string $message The message to log
      */
-    public static function warning($message): void
+    public static function warning(string $message): void
     {
-        self::log(LogLevel::WARNING, $message);
+        self::log(Logger::LEVEL_WARNING, $message);
     }
 
     /**
@@ -99,10 +99,10 @@ class LoggerHelper
      *
      * @param string $message The message to log
      */
-    public static function debug($message): void
+    public static function debug(string $message): void
     {
         if (Craft::$app->config->general->devMode) {
-            self::log(LogLevel::DEBUG, $message);
+            self::log(Logger::LEVEL_TRACE, $message);
         }
     }
 }
