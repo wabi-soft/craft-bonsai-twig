@@ -299,6 +299,108 @@
             font-size: 10px;
             margin-left: 6px;
         }
+        .bonsai-info__field-nested {
+            margin-top: 6px;
+            padding-left: 20px;
+            border-left: 2px solid rgba(206, 145, 120, 0.3);
+        }
+        .bonsai-info__field-nested-toggle {
+            cursor: pointer;
+            color: #569cd6;
+            font-size: 10px;
+            margin-top: 4px;
+            display: inline-block;
+            user-select: none;
+        }
+        .bonsai-info__field-nested-toggle:hover {
+            color: #9cdcfe;
+        }
+        .bonsai-info__field-nested-toggle::before {
+            content: '▶ ';
+            display: inline-block;
+            transition: transform 150ms ease;
+        }
+        .bonsai-info__field-nested-toggle--expanded::before {
+            transform: rotate(90deg);
+        }
+        .bonsai-info__field-nested-content {
+            display: none;
+            margin-top: 4px;
+            padding: 6px 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 3px;
+        }
+        .bonsai-info__field-nested-content--visible {
+            display: block;
+        }
+        .bonsai-info__field-block-type {
+            margin-bottom: 8px;
+            padding: 4px 0;
+        }
+        .bonsai-info__field-block-type:last-child {
+            margin-bottom: 0;
+        }
+        .bonsai-info__field-block-type-name {
+            color: #dcdcaa;
+            font-weight: 600;
+            font-size: 10px;
+            margin-bottom: 4px;
+        }
+        .bonsai-info__field-block-type-handle {
+            color: #808080;
+            font-style: italic;
+            font-size: 9px;
+        }
+        .bonsai-info__field-subfield {
+            padding: 2px 0 2px 12px;
+            font-size: 10px;
+            display: flex;
+            justify-content: space-between;
+            border-left: 1px solid rgba(128, 128, 128, 0.3);
+            margin-left: 4px;
+        }
+        .bonsai-info__field-subfield-handle {
+            color: #ce9178;
+        }
+        .bonsai-info__field-subfield-type {
+            color: #808080;
+            font-size: 9px;
+        }
+        .bonsai-info__field-source {
+            padding: 2px 0;
+            font-size: 10px;
+            color: #9cdcfe;
+        }
+        .bonsai-info__field-source-handle {
+            color: #ce9178;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+        }
+        .bonsai-info__field-note {
+            font-size: 10px;
+            color: #808080;
+            font-style: italic;
+        }
+        .bonsai-info__field-option {
+            padding: 3px 0;
+            font-size: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .bonsai-info__field-option-label {
+            color: #9cdcfe;
+        }
+        .bonsai-info__field-option-value {
+            color: #ce9178;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+            font-size: 9px;
+        }
+        .bonsai-info__field-option-default {
+            color: #4ec9b0;
+            font-size: 9px;
+            margin-left: 6px;
+            font-weight: bold;
+        }
         .bonsai-info__tabs {
             display: flex;
             gap: 4px;
@@ -433,11 +535,87 @@
                     <div class="bonsai-info__field-list">
                         {% for field in data.field_handles %}
                             <div class="bonsai-info__field-item">
-                                <div>
-                                    <span class="bonsai-info__field-handle">{{ field.handle }}</span>
-                                    <span class="bonsai-info__field-name">({{ field.name }})</span>
+                                <div style="width: 100%;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <span class="bonsai-info__field-handle">{{ field.handle }}</span>
+                                            <span class="bonsai-info__field-name">({{ field.name }})</span>
+                                        </div>
+                                        <span class="bonsai-info__field-type">{{ field.type }}</span>
+                                    </div>
+
+                                    {% if field.nested is defined %}
+                                        <div class="bonsai-info__field-nested">
+                                            <span class="bonsai-info__field-nested-toggle" data-toggle="nested-{{ loop.index }}">
+                                                {% if field.nested.type == 'matrix' %}
+                                                    Show {{ field.nested.blocks|length }} block types
+                                                {% elseif field.nested.type == 'entries' %}
+                                                    Show allowed sections
+                                                {% elseif field.nested.type == 'categories' %}
+                                                    Show allowed groups
+                                                {% elseif field.nested.type == 'assets' %}
+                                                    Show allowed volumes
+                                                {% elseif field.nested.type == 'users' %}
+                                                    User elements
+                                                {% elseif field.nested.type == 'dropdown' %}
+                                                    {% set optionCount = field.nested.options is defined ? field.nested.options|length : 0 %}
+                                                    Show {{ optionCount }} dropdown options
+                                                {% elseif field.nested.type == 'radio' %}
+                                                    {% set optionCount = field.nested.options is defined ? field.nested.options|length : 0 %}
+                                                    Show {{ optionCount }} radio options
+                                                {% elseif field.nested.type == 'checkboxes' %}
+                                                    {% set optionCount = field.nested.options is defined ? field.nested.options|length : 0 %}
+                                                    Show {{ optionCount }} checkbox options
+                                                {% elseif field.nested.type == 'multiselect' %}
+                                                    {% set optionCount = field.nested.options is defined ? field.nested.options|length : 0 %}
+                                                    Show {{ optionCount }} select options
+                                                {% elseif field.nested.type == 'lightswitch' %}
+                                                    Boolean field
+                                                {% endif %}
+                                            </span>
+
+                                            <div class="bonsai-info__field-nested-content" data-content="nested-{{ loop.index }}">
+                                                {% if field.nested.type == 'matrix' and field.nested.blocks is defined %}
+                                                    {% for block in field.nested.blocks %}
+                                                        <div class="bonsai-info__field-block-type">
+                                                            <div class="bonsai-info__field-block-type-name">
+                                                                {{ block.name }}
+                                                                <span class="bonsai-info__field-block-type-handle">({{ block.handle }})</span>
+                                                            </div>
+                                                            {% for subfield in block.fields %}
+                                                                <div class="bonsai-info__field-subfield">
+                                                                    <span class="bonsai-info__field-subfield-handle">{{ subfield.handle }}</span>
+                                                                    <span class="bonsai-info__field-subfield-type">{{ subfield.type }}</span>
+                                                                </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    {% endfor %}
+                                                {% elseif field.nested.sources is defined %}
+                                                    {% for source in field.nested.sources %}
+                                                        <div class="bonsai-info__field-source">
+                                                            <span class="bonsai-info__field-source-handle">{{ source.handle }}</span>
+                                                            <span class="bonsai-info__field-name"> ({{ source.name }})</span>
+                                                        </div>
+                                                    {% endfor %}
+                                                {% elseif field.nested.options is defined %}
+                                                    {% for option in field.nested.options %}
+                                                        <div class="bonsai-info__field-option">
+                                                            <span class="bonsai-info__field-option-label">
+                                                                {{ option.label }}
+                                                                {% if option.isDefault is defined and option.isDefault %}
+                                                                    <span class="bonsai-info__field-option-default">(default)</span>
+                                                                {% endif %}
+                                                            </span>
+                                                            <span class="bonsai-info__field-option-value">{{ option.value }}</span>
+                                                        </div>
+                                                    {% endfor %}
+                                                {% elseif field.nested.note is defined %}
+                                                    <div class="bonsai-info__field-note">{{ field.nested.note }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
                                 </div>
-                                <span class="bonsai-info__field-type">{{ field.type }}</span>
                             </div>
                         {% endfor %}
                     </div>
@@ -526,6 +704,7 @@
                 const tabs = infoText.querySelectorAll('.bonsai-info__tab');
                 const panels = infoText.querySelectorAll('.bonsai-info__tab-panel');
 
+                // Tab switching functionality
                 function activateTab(tabName) {
                     tabs.forEach(tab => {
                         if (tab.dataset.tab === tabName) {
@@ -572,6 +751,27 @@
                 }
 
                 activateTab(activeTab);
+
+                // Nested field expand/collapse functionality
+                const nestedToggles = infoText.querySelectorAll('.bonsai-info__field-nested-toggle');
+                nestedToggles.forEach(toggle => {
+                    toggle.addEventListener('click', function() {
+                        const targetId = this.dataset.toggle;
+                        const content = infoText.querySelector('[data-content="' + targetId + '"]');
+
+                        if (content) {
+                            const isExpanded = content.classList.contains('bonsai-info__field-nested-content--visible');
+
+                            if (isExpanded) {
+                                content.classList.remove('bonsai-info__field-nested-content--visible');
+                                this.classList.remove('bonsai-info__field-nested-toggle--expanded');
+                            } else {
+                                content.classList.add('bonsai-info__field-nested-content--visible');
+                                this.classList.add('bonsai-info__field-nested-toggle--expanded');
+                            }
+                        }
+                    });
+                });
             })();
         </script>
     </div>

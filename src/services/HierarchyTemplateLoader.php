@@ -615,17 +615,329 @@ class HierarchyTemplateLoader extends Component
             $fieldInfo = [];
 
             foreach ($fields as $field) {
-                $fieldInfo[] = [
+                $fieldData = [
                     'handle' => $field->handle,
                     'name' => $field->name,
                     'type' => self::getFieldTypeDisplayName($field),
                 ];
+
+                // Add nested information for relational and complex fields
+                $nestedInfo = self::extractNestedFieldInfo($field);
+                if ($nestedInfo) {
+                    $fieldData['nested'] = $nestedInfo;
+                }
+
+                $fieldInfo[] = $fieldData;
             }
 
             return $fieldInfo;
         } catch (\Exception $e) {
             // Silently fail if we can't get field layout
             Craft::info('Could not extract field handles: ' . $e->getMessage(), __METHOD__);
+            return null;
+        }
+    }
+
+    /**
+     * Extracts nested field information for relational and complex field types.
+     *
+     * For Matrix fields, shows block types and their fields.
+     * For relation fields (Entries, Categories, etc.), shows allowed sources.
+     *
+     * @param \craft\base\FieldInterface $field The field to extract nested info from
+     * @return array|null Nested field information or null if not applicable
+     */
+    private static function extractNestedFieldInfo(\craft\base\FieldInterface $field): ?array
+    {
+        try {
+            $className = get_class($field);
+
+            // Handle Matrix fields - show block types and their fields
+            if ($className === 'craft\fields\Matrix') {
+                return self::extractMatrixBlockInfo($field);
+            }
+
+            // Handle Entries field - show allowed sections and types
+            if ($className === 'craft\fields\Entries') {
+                return self::extractEntriesFieldInfo($field);
+            }
+
+            // Handle Categories field - show allowed groups
+            if ($className === 'craft\fields\Categories') {
+                return self::extractCategoriesFieldInfo($field);
+            }
+
+            // Handle Assets field - show allowed volumes
+            if ($className === 'craft\fields\Assets') {
+                return self::extractAssetsFieldInfo($field);
+            }
+
+            // Handle Users field
+            if ($className === 'craft\fields\Users') {
+                return ['type' => 'users', 'note' => 'User elements'];
+            }
+
+            // Handle Dropdown field
+            if ($className === 'craft\fields\Dropdown') {
+                return self::extractOptionsFieldInfo($field, 'dropdown');
+            }
+
+            // Handle Radio Buttons field
+            if ($className === 'craft\fields\RadioButtons') {
+                return self::extractOptionsFieldInfo($field, 'radio');
+            }
+
+            // Handle Checkboxes field
+            if ($className === 'craft\fields\Checkboxes') {
+                return self::extractOptionsFieldInfo($field, 'checkboxes');
+            }
+
+            // Handle Multi-select field
+            if ($className === 'craft\fields\MultiSelect') {
+                return self::extractOptionsFieldInfo($field, 'multiselect');
+            }
+
+            // Handle Lightswitch field
+            if ($className === 'craft\fields\Lightswitch') {
+                return [
+                    'type' => 'lightswitch',
+                    'note' => 'Boolean (true/false)',
+                ];
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            Craft::info('Could not extract nested field info: ' . $e->getMessage(), __METHOD__);
+            return null;
+        }
+    }
+
+    /**
+     * Extracts block type information from a Matrix field.
+     *
+     * @param \craft\fields\Matrix $field The Matrix field
+     * @return array|null Block type information
+     */
+    private static function extractMatrixBlockInfo($field): ?array
+    {
+        try {
+            $blockTypes = $field->getBlockTypes();
+
+            if (empty($blockTypes)) {
+                return null;
+            }
+
+            $blockInfo = [];
+            foreach ($blockTypes as $blockType) {
+                $blockFields = [];
+                foreach ($blockType->getCustomFields() as $blockField) {
+                    $blockFields[] = [
+                        'handle' => $blockField->handle,
+                        'name' => $blockField->name,
+                        'type' => self::getFieldTypeDisplayName($blockField),
+                    ];
+                }
+
+                $blockInfo[] = [
+                    'handle' => $blockType->handle,
+                    'name' => $blockType->name,
+                    'fields' => $blockFields,
+                ];
+            }
+
+            return [
+                'type' => 'matrix',
+                'blocks' => $blockInfo,
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Extracts allowed section information from an Entries field.
+     *
+     * @param \craft\fields\Entries $field The Entries field
+     * @return array|null Section information
+     */
+    private static function extractEntriesFieldInfo($field): ?array
+    {
+        try {
+            $sources = $field->sources;
+
+            if ($sources === '*') {
+                return [
+                    'type' => 'entries',
+                    'note' => 'All sections allowed',
+                ];
+            }
+
+            if (empty($sources)) {
+                return [
+                    'type' => 'entries',
+                    'note' => 'No sources configured',
+                ];
+            }
+
+            $allowedSections = [];
+            foreach ($sources as $source) {
+                // Parse source format: "section:uid" or "section:handle"
+                if (is_string($source) && strpos($source, 'section:') === 0) {
+                    $sectionUid = substr($source, 8);
+                    $section = Craft::$app->sections->getSectionByUid($sectionUid);
+                    if ($section) {
+                        $allowedSections[] = [
+                            'handle' => $section->handle,
+                            'name' => $section->name,
+                        ];
+                    }
+                }
+            }
+
+            return [
+                'type' => 'entries',
+                'sources' => $allowedSections,
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Extracts allowed group information from a Categories field.
+     *
+     * @param \craft\fields\Categories $field The Categories field
+     * @return array|null Group information
+     */
+    private static function extractCategoriesFieldInfo($field): ?array
+    {
+        try {
+            $sources = $field->sources;
+
+            if ($sources === '*') {
+                return [
+                    'type' => 'categories',
+                    'note' => 'All groups allowed',
+                ];
+            }
+
+            if (empty($sources)) {
+                return [
+                    'type' => 'categories',
+                    'note' => 'No sources configured',
+                ];
+            }
+
+            $allowedGroups = [];
+            foreach ($sources as $source) {
+                if (is_string($source) && strpos($source, 'group:') === 0) {
+                    $groupUid = substr($source, 6);
+                    $group = Craft::$app->categories->getGroupByUid($groupUid);
+                    if ($group) {
+                        $allowedGroups[] = [
+                            'handle' => $group->handle,
+                            'name' => $group->name,
+                        ];
+                    }
+                }
+            }
+
+            return [
+                'type' => 'categories',
+                'sources' => $allowedGroups,
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Extracts allowed volume information from an Assets field.
+     *
+     * @param \craft\fields\Assets $field The Assets field
+     * @return array|null Volume information
+     */
+    private static function extractAssetsFieldInfo($field): ?array
+    {
+        try {
+            $sources = $field->sources;
+
+            if ($sources === '*') {
+                return [
+                    'type' => 'assets',
+                    'note' => 'All volumes allowed',
+                ];
+            }
+
+            if (empty($sources)) {
+                return [
+                    'type' => 'assets',
+                    'note' => 'No sources configured',
+                ];
+            }
+
+            $allowedVolumes = [];
+            foreach ($sources as $source) {
+                if (is_string($source) && strpos($source, 'volume:') === 0) {
+                    $volumeUid = substr($source, 7);
+                    $volume = Craft::$app->volumes->getVolumeByUid($volumeUid);
+                    if ($volume) {
+                        $allowedVolumes[] = [
+                            'handle' => $volume->handle,
+                            'name' => $volume->name,
+                        ];
+                    }
+                }
+            }
+
+            return [
+                'type' => 'assets',
+                'sources' => $allowedVolumes,
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Extracts options from dropdown, radio, checkbox, and multiselect fields.
+     *
+     * @param \craft\base\FieldInterface $field The field with options
+     * @param string $type The field type identifier
+     * @return array|null Options information
+     */
+    private static function extractOptionsFieldInfo($field, string $type): ?array
+    {
+        try {
+            $options = $field->options ?? [];
+
+            if (empty($options)) {
+                return [
+                    'type' => $type,
+                    'note' => 'No options configured',
+                ];
+            }
+
+            $optionsList = [];
+            foreach ($options as $option) {
+                $optionData = [
+                    'label' => $option['label'] ?? '',
+                    'value' => $option['value'] ?? '',
+                ];
+
+                // Check if this option is default
+                if (isset($option['default']) && $option['default']) {
+                    $optionData['isDefault'] = true;
+                }
+
+                $optionsList[] = $optionData;
+            }
+
+            return [
+                'type' => $type,
+                'options' => $optionsList,
+            ];
+        } catch (\Exception $e) {
             return null;
         }
     }
