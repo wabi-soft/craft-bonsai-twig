@@ -969,7 +969,7 @@
                         });
 
                         const textToCopy = fields.join('\n');
-                        const feedbackText = `${fields.length} fields copied!`;
+                        const feedbackText = fields.length + ' fields copied!';
 
                         if (navigator.clipboard && navigator.clipboard.writeText) {
                             navigator.clipboard.writeText(textToCopy).then(() => {
