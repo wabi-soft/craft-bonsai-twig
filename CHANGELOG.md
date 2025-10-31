@@ -4,6 +4,15 @@
 All notable changes to this project will be documented in this file.
 <!--- END HEADER -->
 
+## [7.1.0](https://github.com/wabi-soft/craft-bonsai-twig/compare/v7.0.10...v7.1.0) (2025-10-31)
+
+### Bug Fixes
+
+* Auto formatting “stuff” and abstract field inspector ([857447](https://github.com/wabi-soft/craft-bonsai-twig/commit/857447cdd39e148c9ed0c4bb541938576de63b05))
+
+
+---
+
 ## [Unreleased]
 
 ### Added
