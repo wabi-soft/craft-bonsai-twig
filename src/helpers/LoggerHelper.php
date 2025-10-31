@@ -24,10 +24,31 @@ class LoggerHelper
      */
     public static function log($level, $message): void
     {
-        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
-        $caller = $trace[1] ?? [];
-        $file = $caller['file'] ?? 'unknown';
-        $line = $caller['line'] ?? 0;
+        // Get full backtrace to walk through wrapper methods
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+
+        // Find the first frame outside of this LoggerHelper class
+        $file = 'unknown';
+        $line = 0;
+
+        foreach ($trace as $frame) {
+            // Skip frames that are in this LoggerHelper class
+            if (isset($frame['class']) && $frame['class'] === __CLASS__) {
+                continue;
+            }
+
+            // Skip frames that are in this file (for static calls without class)
+            if (isset($frame['file']) && $frame['file'] === __FILE__) {
+                continue;
+            }
+
+            // Found the first frame outside LoggerHelper
+            if (isset($frame['file'])) {
+                $file = $frame['file'];
+                $line = $frame['line'] ?? 0;
+                break;
+            }
+        }
 
         $message = sprintf(
             "[BonsaiTwig] [%s:%d] %s",
