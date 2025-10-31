@@ -50,14 +50,14 @@ class LoggerHelper
             }
         }
 
-        $message = sprintf(
+        $formattedMessage = sprintf(
             "[BonsaiTwig] [%s:%d] %s",
             basename($file),
             $line,
             $message
         );
 
-        Craft::getLogger()->log($message, $level, 'bonsai-twig');
+        Craft::getLogger()->log($formattedMessage, $level, 'bonsai-twig');
     }
 
     /**
