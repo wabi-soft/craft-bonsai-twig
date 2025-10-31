@@ -1101,8 +1101,8 @@
                             const handleEl = fieldItem.querySelector('.bonsai-info__field-handle');
                             const typeEl = fieldItem.querySelector('.bonsai-info__field-type');
 
-                            if (handleEl && handleEl.dataset.copyText) {
-                                const handle = handleEl.dataset.copyText;
+                            if (handleEl && handleEl.dataset.fieldHandle) {
+                                const handle = handleEl.dataset.fieldHandle;
                                 const type = typeEl ? typeEl.textContent.trim() : '';
                                 const twigCode = generateTwigCode(handle, type, elementVar, loopVar);
                                 fields.push(twigCode);
