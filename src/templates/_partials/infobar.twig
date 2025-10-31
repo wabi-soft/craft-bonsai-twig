@@ -951,17 +951,17 @@
 
                                 if (type.includes('Asset')) {
                                     suffix = '.one()';
-                                    twigWrapped = `{{ ${elementVar}.${handle}${suffix} }}`;
+                                    twigWrapped = '{{ ' + elementVar + '.' + handle + suffix + ' }}';
                                 } else if (type.includes('Entries') || type.includes('Categories') ||
                                           type.includes('Users') || type.includes('Tags')) {
                                     suffix = '.all()';
-                                    twigWrapped = `{% for item in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
+                                    twigWrapped = '{% for item in ' + elementVar + '.' + handle + suffix + ' %}\n{% endfor %}';
                                 } else if (type.includes('Matrix') || type.includes('Table')) {
                                     suffix = '.all()';
-                                    twigWrapped = `{% for item in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
+                                    twigWrapped = '{% for item in ' + elementVar + '.' + handle + suffix + ' %}\n{% endfor %}';
                                 } else {
                                     // Plain field, just wrap in output tags
-                                    twigWrapped = `{{ ${elementVar}.${handle} }}`;
+                                    twigWrapped = '{{ ' + elementVar + '.' + handle + ' }}';
                                 }
 
                                 fields.push(twigWrapped);
