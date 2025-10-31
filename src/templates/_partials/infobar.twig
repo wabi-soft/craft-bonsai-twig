@@ -366,6 +366,15 @@
             color: #9cdcfe;
             font-size: 10px;
             margin-left: 6px;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: background 150ms ease;
+            position: relative;
+        }
+        .bonsai-info__field-name:hover {
+            background: rgba(156, 220, 254, 0.2);
+            color: #bde0ff;
         }
         .bonsai-info__field-nested {
             margin-top: 6px;
@@ -714,8 +723,8 @@
                                 <div style="width: 100%;">
                                     <div style="display: flex; justify-content: space-between; align-items: center;">
                                         <div>
-                                            <span class="bonsai-info__field-handle" data-copy-text="{{ field.handle }}" title="Click to copy">{{ field.handle }}</span>
-                                            <span class="bonsai-info__field-name">({{ field.name }})</span>
+                                            <span class="bonsai-info__field-handle" data-copy-text="{{ field.handle }}" title="Click to copy handle">{{ field.handle }}</span>
+                                            <span class="bonsai-info__field-name" data-field-handle="{{ field.handle }}" data-field-type="{{ field.type }}" title="Click to copy Twig formatted">({{ field.name }})</span>
                                         </div>
                                         <span class="bonsai-info__field-type">{{ field.type }}</span>
                                     </div>
@@ -1020,6 +1029,52 @@
                             });
                         } else {
                             fallbackCopyText(textToCopy, this);
+                        }
+                    });
+                });
+
+                // Click to copy Twig-formatted field names
+                const fieldNames = infoText.querySelectorAll('.bonsai-info__field-name[data-field-handle]');
+                fieldNames.forEach(element => {
+                    element.addEventListener('click', function(e) {
+                        e.stopPropagation();
+
+                        const handle = this.dataset.fieldHandle;
+                        const type = this.dataset.fieldType;
+
+                        // Get current variable names from inputs
+                        const elementVar = elementVarInput.value.trim() || 'entry';
+                        const loopVar = loopVarInput.value.trim() || 'item';
+
+                        // Generate Twig syntax based on field type
+                        let twigCode = '';
+                        let suffix = '';
+
+                        if (type.includes('Asset')) {
+                            suffix = '.one()';
+                            twigCode = `{{ ${elementVar}.${handle}${suffix} }}`;
+                        } else if (type.includes('Entries') || type.includes('Categories') ||
+                                  type.includes('Users') || type.includes('Tags')) {
+                            suffix = '.all()';
+                            twigCode = `{% for ${loopVar} in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
+                        } else if (type.includes('Matrix') || type.includes('Table')) {
+                            suffix = '.all()';
+                            twigCode = `{% for ${loopVar} in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
+                        } else {
+                            // Plain field, just wrap in output tags
+                            twigCode = `{{ ${elementVar}.${handle} }}`;
+                        }
+
+                        // Copy to clipboard
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(twigCode).then(() => {
+                                showCopyFeedback(this, 'Twig copied!');
+                            }).catch(err => {
+                                console.warn('Failed to copy:', err);
+                                fallbackCopyText(twigCode, this, 'Twig copied!');
+                            });
+                        } else {
+                            fallbackCopyText(twigCode, this, 'Twig copied!');
                         }
                     });
                 });
