@@ -1033,6 +1033,43 @@
                     });
                 });
 
+                // Helper function to generate Twig code based on field type
+                function generateTwigCode(handle, type, elementVar, loopVar) {
+                    let suffix = '';
+                    let twigCode = '';
+
+                    if (type.includes('Asset')) {
+                        suffix = '.one()';
+                        twigCode = `{{ ${elementVar}.${handle}${suffix} }}`;
+                    } else if (type.includes('Entries') || type.includes('Categories') ||
+                              type.includes('Users') || type.includes('Tags')) {
+                        suffix = '.all()';
+                        twigCode = `{% for ${loopVar} in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
+                    } else if (type.includes('Matrix') || type.includes('Table')) {
+                        suffix = '.all()';
+                        twigCode = `{% for ${loopVar} in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
+                    } else {
+                        // Plain field, just wrap in output tags
+                        twigCode = `{{ ${elementVar}.${handle} }}`;
+                    }
+
+                    return twigCode;
+                }
+
+                // Helper function to copy text to clipboard
+                function copyToClipboard(text, element, feedbackText) {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text).then(() => {
+                            showCopyFeedback(element, feedbackText);
+                        }).catch(err => {
+                            console.warn('Failed to copy:', err);
+                            fallbackCopyText(text, element, feedbackText);
+                        });
+                    } else {
+                        fallbackCopyText(text, element, feedbackText);
+                    }
+                }
+
                 // Click to copy Twig-formatted field names
                 const fieldNames = infoText.querySelectorAll('.bonsai-info__field-name[data-field-handle]');
                 fieldNames.forEach(element => {
@@ -1041,41 +1078,11 @@
 
                         const handle = this.dataset.fieldHandle;
                         const type = this.dataset.fieldType;
-
-                        // Get current variable names from inputs
                         const elementVar = elementVarInput.value.trim() || 'entry';
                         const loopVar = loopVarInput.value.trim() || 'item';
 
-                        // Generate Twig syntax based on field type
-                        let twigCode = '';
-                        let suffix = '';
-
-                        if (type.includes('Asset')) {
-                            suffix = '.one()';
-                            twigCode = `{{ ${elementVar}.${handle}${suffix} }}`;
-                        } else if (type.includes('Entries') || type.includes('Categories') ||
-                                  type.includes('Users') || type.includes('Tags')) {
-                            suffix = '.all()';
-                            twigCode = `{% for ${loopVar} in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
-                        } else if (type.includes('Matrix') || type.includes('Table')) {
-                            suffix = '.all()';
-                            twigCode = `{% for ${loopVar} in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
-                        } else {
-                            // Plain field, just wrap in output tags
-                            twigCode = `{{ ${elementVar}.${handle} }}`;
-                        }
-
-                        // Copy to clipboard
-                        if (navigator.clipboard && navigator.clipboard.writeText) {
-                            navigator.clipboard.writeText(twigCode).then(() => {
-                                showCopyFeedback(this, 'Twig copied!');
-                            }).catch(err => {
-                                console.warn('Failed to copy:', err);
-                                fallbackCopyText(twigCode, this, 'Twig copied!');
-                            });
-                        } else {
-                            fallbackCopyText(twigCode, this, 'Twig copied!');
-                        }
+                        const twigCode = generateTwigCode(handle, type, elementVar, loopVar);
+                        copyToClipboard(twigCode, this, 'Twig copied!');
                     });
                 });
 
@@ -1085,7 +1092,6 @@
                     copyAllBtn.addEventListener('click', function(e) {
                         e.stopPropagation();
 
-                        // Get variable names from inputs
                         const elementVar = elementVarInput.value.trim() || 'entry';
                         const loopVar = loopVarInput.value.trim() || 'item';
                         const fields = [];
@@ -1098,43 +1104,14 @@
                             if (handleEl && handleEl.dataset.copyText) {
                                 const handle = handleEl.dataset.copyText;
                                 const type = typeEl ? typeEl.textContent.trim() : '';
-
-                                // Smart suffix based on field type
-                                let suffix = '';
-                                let twigWrapped = '';
-
-                                if (type.includes('Asset')) {
-                                    suffix = '.one()';
-                                    twigWrapped = `{{ ${elementVar}.${handle}${suffix} }}`;
-                                } else if (type.includes('Entries') || type.includes('Categories') ||
-                                          type.includes('Users') || type.includes('Tags')) {
-                                    suffix = '.all()';
-                                    twigWrapped = `{% for ${loopVar} in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
-                                } else if (type.includes('Matrix') || type.includes('Table')) {
-                                    suffix = '.all()';
-                                    twigWrapped = `{% for ${loopVar} in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
-                                } else {
-                                    // Plain field, just wrap in output tags
-                                    twigWrapped = `{{ ${elementVar}.${handle} }}`;
-                                }
-
-                                fields.push(twigWrapped);
+                                const twigCode = generateTwigCode(handle, type, elementVar, loopVar);
+                                fields.push(twigCode);
                             }
                         });
 
                         const textToCopy = fields.join('\n');
                         const feedbackText = `${fields.length} fields copied!`;
-
-                        if (navigator.clipboard && navigator.clipboard.writeText) {
-                            navigator.clipboard.writeText(textToCopy).then(() => {
-                                showCopyFeedback(this, feedbackText);
-                            }).catch(err => {
-                                console.warn('Failed to copy:', err);
-                                fallbackCopyText(textToCopy, this, feedbackText);
-                            });
-                        } else {
-                            fallbackCopyText(textToCopy, this, feedbackText);
-                        }
+                        copyToClipboard(textToCopy, this, feedbackText);
                     });
                 }
 
