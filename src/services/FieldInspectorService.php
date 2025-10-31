@@ -165,10 +165,15 @@ class FieldInspectorService extends Component
     private function extractMatrixBlockInfo($field): ?array
     {
         try {
+            LoggerHelper::debug('Extracting matrix block info for field: ' . ($field->handle ?? 'unknown'));
+
             // Craft 5 uses Entry Types, Craft 4 uses Block Types
-            $blockTypes = method_exists($field, 'getEntryTypes')
+            $usesEntryTypes = method_exists($field, 'getEntryTypes');
+            $blockTypes = $usesEntryTypes
                 ? $field->getEntryTypes()
                 : $field->getBlockTypes();
+
+            LoggerHelper::debug('Using ' . ($usesEntryTypes ? 'Entry Types' : 'Block Types') . ', count: ' . count($blockTypes));
 
             if (empty($blockTypes)) {
                 return null;
@@ -176,6 +181,8 @@ class FieldInspectorService extends Component
 
             $blockInfo = [];
             foreach ($blockTypes as $blockType) {
+                LoggerHelper::debug('Processing block type - Class: ' . get_class($blockType) . ', ID: ' . ($blockType->id ?? 'unknown'));
+
                 $blockFields = [];
 
                 // Get custom fields using the field layout
@@ -198,14 +205,19 @@ class FieldInspectorService extends Component
                     ? $blockType->getHandle()
                     : ($blockType->handle ?? null);
 
+                LoggerHelper::debug('Block handle after getHandle: ' . ($blockHandle ?? 'null'));
+
                 // If still no handle, try converting to string (EntryType has __toString)
                 if (!$blockHandle && method_exists($blockType, '__toString')) {
                     $blockHandle = (string) $blockType;
+                    LoggerHelper::debug('Block handle after __toString: ' . $blockHandle);
                 }
 
                 // Final fallback
                 $blockHandle = $blockHandle ?? 'unknown';
                 $blockName = $blockType->name ?? 'Unnamed Block';
+
+                LoggerHelper::debug('Final block handle: ' . $blockHandle . ', name: ' . $blockName);
 
                 $blockInfo[] = [
                     'handle' => $blockHandle,

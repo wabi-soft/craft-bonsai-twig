@@ -278,8 +278,18 @@ class HierarchyTemplateLoader extends Component
                     $fieldHandles = $fieldInspector->extractFieldHandles($debugElement);
 
                     // Extract element information for the header
+                    // For matrix blocks (Entry elements in Craft 5), use the entry type handle
+                    $elementHandle = null;
+                    if ($debugElement instanceof \craft\elements\Entry && $debugElement->type) {
+                        // Use entry type handle (works for both regular entries and matrix blocks)
+                        $elementHandle = $debugElement->type->handle;
+                    } else {
+                        // Fallback for other element types
+                        $elementHandle = $debugElement->slug ?? $debugElement->handle ?? null;
+                    }
+
                     $elementInfo = [
-                        'handle' => $debugElement->slug ?? $debugElement->handle ?? null,
+                        'handle' => $elementHandle,
                         'title' => $debugElement->title ?? null,
                         'id' => $debugElement->id ?? null,
                         'type' => $elementKind,
