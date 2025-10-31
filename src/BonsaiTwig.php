@@ -183,7 +183,6 @@ class BonsaiTwig extends Plugin
         Craft::getLogger()->dispatcher->targets[] = new MonologTarget([
             'name' => 'bonsai-twig',
             'categories' => ['bonsai-twig'],
-            'logFile' => '@storage/logs/bonsai-twig.log',
             'level' => Craft::$app->config->general->devMode ? \Monolog\Logger::DEBUG : \Monolog\Logger::WARNING,
             'logContext' => false,
             'allowLineBreaks' => false,
