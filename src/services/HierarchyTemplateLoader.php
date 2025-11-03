@@ -169,11 +169,7 @@ class HierarchyTemplateLoader extends Component
                 // Determine element kind for debug (entry vs category) when available
                 $elementKind = null;
                 $debugElement = null;
-                if (isset($templateContext) && $templateContext->element) {
-                    $el = $templateContext->element;
-                    $debugElement = $el;
-                    $elementKind = ($el instanceof \craft\elements\Category) ? 'category' : (($el instanceof \craft\elements\Entry) ? 'entry' : null);
-                } elseif (isset($validatedVariables['entry']) && $validatedVariables['entry'] instanceof \craft\base\Element) {
+                if (isset($validatedVariables['entry']) && $validatedVariables['entry'] instanceof \craft\base\Element) {
                     $el = $validatedVariables['entry'];
                     $debugElement = $el;
                     $elementKind = ($el instanceof \craft\elements\Category) ? 'category' : (($el instanceof \craft\elements\Entry) ? 'entry' : null);

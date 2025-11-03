@@ -19,15 +19,7 @@ class Settings extends Model
      */
     public bool $nestByElementType = false;
 
-    /**
-     * @var bool Whether to enable performance monitoring
-     */
-    public bool $enablePerformanceMonitoring = true;
-
-    /**
-     * @var bool Whether to enable error reporting
-     */
-    public bool $enableErrorReporting = true;
+    // Performance monitoring and error reporting settings removed in simplification
 
     /**
      * @var array<string,string>|false Mapping for Item templates to nest paths by element kind.
@@ -41,7 +33,7 @@ class Settings extends Model
     public function rules(): array
     {
         return [
-            [['enablePerformanceMonitoring', 'enableErrorReporting', 'nestByElementType'], 'boolean'],
+            [['nestByElementType'], 'boolean'],
             // itemsTemplateElementPaths can be false or an associative array of strings
             [['itemsTemplateElementPaths'], function($attribute): void {
                 $value = $this->$attribute;
@@ -68,8 +60,7 @@ class Settings extends Model
     public function attributeLabels(): array
     {
         return [
-            'enablePerformanceMonitoring' => 'Enable Performance Monitoring',
-            'enableErrorReporting' => 'Enable Error Reporting',
+
             'itemsTemplateElementPaths' => 'Item Templates: Element Path Prefixes',
             'nestByElementType' => 'Item Templates: Nest Paths by Element Type (fallback)',
         ];
@@ -81,8 +72,7 @@ class Settings extends Model
     public function attributeHints(): array
     {
         return [
-            'enablePerformanceMonitoring' => 'Enables performance monitoring and timing statistics in debug mode.',
-            'enableErrorReporting' => 'Enables comprehensive error reporting and debugging information.',
+
             'itemsTemplateElementPaths' => 'Optional mapping used by the Item loader to nest paths by element type. Example: {"entry": "entry", "category": "category"}. Set to false to bypass. This replaces the older nestByElementType toggle.',
             'nestByElementType' => 'When enabled, item templates will be nested under item/entry or item/category automatically. Only used when itemsTemplateElementPaths is false.',
         ];
