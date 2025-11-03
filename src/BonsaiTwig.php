@@ -13,12 +13,9 @@ use wabisoft\bonsaitwig\exceptions\BonsaiTwigException;
 use wabisoft\bonsaitwig\models\Settings;
 use wabisoft\bonsaitwig\services\CategoryLoader;
 use wabisoft\bonsaitwig\services\EntryLoader;
-use wabisoft\bonsaitwig\services\ErrorReportingService;
-use wabisoft\bonsaitwig\services\FieldInspectorService;
 use wabisoft\bonsaitwig\services\HierarchyTemplateLoader;
 use wabisoft\bonsaitwig\services\ItemLoader;
 use wabisoft\bonsaitwig\services\MatrixLoader;
-use wabisoft\bonsaitwig\services\PerformanceMonitor;
 use wabisoft\bonsaitwig\web\twig\Templates;
 use yii\base\Event;
 use yii\base\InvalidConfigException;
@@ -38,9 +35,6 @@ use yii\base\InvalidConfigException;
  * @property-read ItemLoader $itemLoader Service for loading item-based templates
  * @property-read MatrixLoader $matrixLoader Service for loading matrix block templates
  * @property-read HierarchyTemplateLoader $hierarchyTemplateLoader Core template resolution service
- * @property-read PerformanceMonitor $performanceMonitor Performance monitoring service for development mode
- * @property-read ErrorReportingService $errorReportingService Comprehensive error reporting and debugging service
- * @property-read FieldInspectorService $fieldInspectorService Field inspection service for beastmode debugging
  */
 class BonsaiTwig extends Plugin
 {
@@ -96,15 +90,6 @@ class BonsaiTwig extends Plugin
     {
         return [
             'components' => [
-                'performanceMonitor' => [
-                    'class' => PerformanceMonitor::class,
-                ],
-                'errorReportingService' => [
-                    'class' => ErrorReportingService::class,
-                ],
-                'fieldInspectorService' => [
-                    'class' => FieldInspectorService::class,
-                ],
                 'hierarchyTemplateLoader' => [
                     'class' => HierarchyTemplateLoader::class,
                 ],
@@ -237,11 +222,7 @@ class BonsaiTwig extends Plugin
     private function initializeServices(): void
     {
         try {
-            // Initialize core services first (no dependencies)
-            $this->get('performanceMonitor');
-            $this->get('errorReportingService');
-
-            // Initialize hierarchy loader (depends on core services)
+            // Initialize hierarchy loader (core service)
             $this->get('hierarchyTemplateLoader');
 
             // Initialize template loaders (depend on hierarchy loader)
