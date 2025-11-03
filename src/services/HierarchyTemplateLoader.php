@@ -4,18 +4,18 @@ namespace wabisoft\bonsaitwig\services;
 
 use Craft;
 use craft\helpers\Json;
-use craft\helpers\StringHelper;
+
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
 use wabisoft\bonsaitwig\BonsaiTwig;
 use wabisoft\bonsaitwig\enums\DebugMode;
 use wabisoft\bonsaitwig\enums\TemplateType;
-use wabisoft\bonsaitwig\exceptions\InvalidTemplatePathException;
+
 use wabisoft\bonsaitwig\exceptions\TemplateNotFoundException;
 use wabisoft\bonsaitwig\utilities\InputValidator;
-use wabisoft\bonsaitwig\utilities\SecurityUtils;
-use wabisoft\bonsaitwig\valueobjects\TemplateContext;
+
+
 use yii\base\Component;
 use yii\base\Exception;
 use yii\base\InvalidArgumentException;
@@ -79,150 +79,37 @@ class HierarchyTemplateLoader extends Component
         // Initialize env flags and services before any early exit
         $isDev = Craft::$app->getConfig()->general->devMode;
         $plugin = BonsaiTwig::getInstance();
-        $performanceMonitor = $plugin->performanceMonitor;
-        $errorReportingService = $plugin->errorReportingService;
 
         if (empty($validatedTemplates)) {
-            $templateNotFoundException = new TemplateNotFoundException(
+            throw new TemplateNotFoundException(
                 attemptedPaths: [],
                 templateType: $templateType,
                 message: 'No template paths provided for resolution'
             );
-            
-            // Generate comprehensive error report
-            $errorReport = $errorReportingService->generateTemplateNotFoundReport(
-                $templateNotFoundException,
-                null,
-                ['input_templates' => $templates, 'base_path' => $basePath]
-            );
-            
-            // Log error with detailed context
-            $errorReportingService->logErrorReport($errorReport, 'error');
-            
-            // In dev mode, provide detailed error information
-            if ($isDev) {
-                $detailedMessage = $errorReportingService->formatErrorForDisplay($errorReport);
-                throw new TemplateNotFoundException(
-                    attemptedPaths: [],
-                    templateType: $templateType,
-                    message: $detailedMessage
-                );
-            }
-            
-            throw $templateNotFoundException;
         }
 
-        // Start performance monitoring
-        $sessionId = 'template_resolution_' . uniqid();
-        $performanceMonitor->startTiming($sessionId, 'Template Resolution', [
-            'template_type' => $templateType->value,
-            'template_count' => count($validatedTemplates),
-            'base_path' => $validatedBasePath,
-        ]);
+
 
         // Get the directory from variables or type
         $directory = (string) ($validatedVariables['path'] ?? $templateType->getDefaultPath());
 
-        // Create template context for enhanced caching
-        // Prefer explicit 'element' var, but gracefully fall back to common keys like 'block', 'entry', 'category'.
-        $element = $validatedVariables['element'] ?? null;
-        if (!$element) {
-            foreach (['block', 'entry', 'category', 'item'] as $elKey) {
-                if (isset($validatedVariables[$elKey]) && $validatedVariables[$elKey] instanceof \craft\base\ElementInterface) {
-                    $element = $validatedVariables[$elKey];
-                    break;
-                }
-            }
-            // As a last resort, scan all variables for an ElementInterface instance
-            if (!$element) {
-                foreach ($validatedVariables as $val) {
-                    if ($val instanceof \craft\base\ElementInterface) {
-                        $element = $val;
-                        break;
-                    }
-                }
+        // Simple template resolution - check each template path in order
+        $resolvedPath = null;
+        $finalAttemptedPaths = [];
+        
+        foreach ($validatedTemplates as $template) {
+            // Generate full path
+            $fullPath = $validatedBasePath ? trim($validatedBasePath . '/' . $template, '/') : trim($template, '/');
+            $finalAttemptedPaths[] = $fullPath;
+            
+            // Check if template exists
+            if (Craft::$app->view->doesTemplateExist($fullPath)) {
+                $resolvedPath = $fullPath;
+                break;
             }
         }
-        if ($element) {
-            $templateContext = new TemplateContext(
-                element: $element,
-                path: $directory,
-                style: $validatedVariables['style'] ?? null,
-                context: $validatedVariables['context'] ?? null,
-                baseSite: $validatedVariables['baseSite'] ?? null,
-                variables: $validatedVariables,
-                showDebug: $isDev
-            );
-        }
-
-        // Process templates with optimized resolution
-        $performanceMonitor->addCheckpoint($sessionId, 'start_resolution');
-            
-        // Optimize path generation and deduplication
-        $optimizedPaths = self::optimizeTemplatePaths($validatedTemplates, $validatedBasePath);
-        $performanceMonitor->addCheckpoint($sessionId, 'paths_optimized', [
-                'original_count' => count($validatedTemplates),
-                'optimized_count' => count($optimizedPaths),
-            ]);
-            
-        // Enhance paths for multi-site template handling if context is available
-        $fallbackSite = null;
-        if (isset($templateContext)) {
-            $siteEnhancementResult = self::enhancePathsForMultiSite($optimizedPaths, $templateContext);
-            $optimizedPaths = $siteEnhancementResult['paths'];
-            $fallbackSite = $siteEnhancementResult['fallbackSite'];
-                
-            $performanceMonitor->addCheckpoint($sessionId, 'site_paths_enhanced', [
-                    'fallback_site' => $fallbackSite,
-                    'enhanced_count' => count($optimizedPaths),
-                ]);
-        }
-            
-        // Early exit: Check if we have any paths to process
-        if (empty($optimizedPaths)) {
-            $performanceData = $performanceMonitor->endTiming($sessionId);
-            $performanceMonitor->recordTemplateResolution(false, $performanceData['total_time'] ?? 0.0, 0);
-                
-            $templateNotFoundException = new TemplateNotFoundException(
-                    attemptedPaths: $validatedTemplates,
-                    templateType: $templateType,
-                    message: 'No valid template paths after optimization'
-                );
-                
-            // Generate comprehensive error report
-            $errorReport = $errorReportingService->generateTemplateNotFoundReport(
-                    $templateNotFoundException,
-                    $templateContext ?? null,
-                    [
-                        'original_templates' => $validatedTemplates,
-                        'optimization_failed' => true,
-                        'performance_data' => $performanceData,
-                    ]
-                );
-                
-            // Log error with detailed context
-            $errorReportingService->logErrorReport($errorReport, 'warning');
-                
-            if ($isDev) {
-                $detailedMessage = $errorReportingService->formatErrorForDisplay($errorReport);
-                throw new TemplateNotFoundException(
-                        attemptedPaths: $validatedTemplates,
-                        templateType: $templateType,
-                        message: $detailedMessage
-                    );
-            }
-            return '';
-        }
-            
-        // Batch template existence checks for better performance
-        $existenceResults = self::batchCheckTemplateExistence($optimizedPaths);
-        $performanceMonitor->addCheckpoint($sessionId, 'existence_checked');
-            
-        // Find first existing template using early exit strategy
-        $resolvedPath = self::findFirstExistingTemplate($optimizedPaths, $existenceResults);
             
         if ($resolvedPath !== null) {
-            $performanceMonitor->addCheckpoint($sessionId, 'template_found', ['path' => $resolvedPath]);
 
             // ============================================================
             // DEV MODE ONLY: Store template resolution context for btPath()
@@ -256,13 +143,9 @@ class HierarchyTemplateLoader extends Component
 
             // Render the template
             $content = Craft::$app->view->renderTemplate($resolvedPath, $validatedVariables);
-            $performanceMonitor->addCheckpoint($sessionId, 'template_rendered');
                 
             // In production, return content directly
             if (!$isDev) {
-                // End performance monitoring
-                $performanceData = $performanceMonitor->endTiming($sessionId);
-                $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($optimizedPaths));
                 return $content;
             }
 
@@ -274,12 +157,8 @@ class HierarchyTemplateLoader extends Component
             $shouldShowDebug = $debugMode->isEnabled() &&
                     DebugMode::isValidForTemplateType((string) $beastmodeValue, $templateType);
 
-            // If debug is enabled, prepare debug info with performance metrics
+            // If debug is enabled, prepare debug info
             if ($shouldShowDebug) {
-                $performanceMonitor->addCheckpoint($sessionId, 'debug_info_start');
-                    
-                // Get performance data before ending timing
-                $performanceData = $performanceMonitor->endTiming($sessionId);
                     
                 // Process templates to remove directory prefix for display
                 $displayTemplates = array_map(function(string $path) use ($directory): string {
@@ -304,8 +183,6 @@ class HierarchyTemplateLoader extends Component
                 $fieldHandles = null;
                 $elementInfo = null;
                 if ($debugElement) {
-                    $fieldInspector = $plugin->fieldInspectorService;
-                    $fieldHandles = $fieldInspector->extractFieldHandles($debugElement);
 
                     // Extract element information for the header
                     // For matrix blocks (Entry elements in Craft 5), use the entry type handle
@@ -329,75 +206,30 @@ class HierarchyTemplateLoader extends Component
                 $info = [
                         'directory' => $directory,
                         'templates' => $displayTemplates,
-                        'optimized_templates' => $optimizedPaths,
                         'currentTemplate' => $resolvedPath,
                         'type' => $templateType->value,
                         'element_kind' => $elementKind,
                         'element_info' => $elementInfo,
                         'field_handles' => $fieldHandles,
-                        'site_info' => [
-                            'current_site' => Craft::$app->sites->currentSite->handle,
-                            'element_site' => isset($templateContext) ? ($templateContext->element->site->handle ?? null) : null,
-                            'base_site' => isset($templateContext) ? $templateContext->baseSite : null,
-                            'fallback_site' => $fallbackSite ?? null,
-                        ],
-                        'performance' => [
-                            'resolution_time' => $performanceData['total_time'] ?? 0.0,
-                            'memory_usage' => $performanceData['memory_usage'] ?? [],
-                            'checkpoints' => $performanceData['checkpoints'] ?? [],
-                            'optimization_savings' => count($validatedTemplates) - count($optimizedPaths),
-                        ],
-                        'cache_stats' => $performanceMonitor->getCacheStatistics(),
                     ];
                     
                 // Wrap content with enhanced debug info
                 $displayType = $templateType->value . ($elementKind ? (' (' . $elementKind . ')') : '');
                 $content = self::renderInfo($content, Json::encode($info), $displayType);
-                    
-                $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($optimizedPaths));
-            } else {
-                // End timing without debug info
-                $performanceData = $performanceMonitor->endTiming($sessionId);
-                $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($optimizedPaths));
             }
 
             return $content;
         }
 
-        // No template was found - end performance monitoring and handle error
-        $performanceData = $performanceMonitor->endTiming($sessionId);
-        $finalAttemptedPaths = $optimizedPaths ?? $validatedTemplates;
-        $performanceMonitor->recordTemplateResolution(false, $performanceData['total_time'] ?? 0.0, count($finalAttemptedPaths));
-        
-        // Create detailed exception
+        // No template was found - handle error
         $templateNotFoundException = new TemplateNotFoundException(
             attemptedPaths: $finalAttemptedPaths,
             templateType: $templateType
         );
-        
-        // Generate comprehensive error report
-        $errorReport = $errorReportingService->generateTemplateNotFoundReport(
-            $templateNotFoundException,
-            $templateContext ?? null,
-            [
-                'original_templates' => $validatedTemplates,
-                'optimized_templates' => $optimizedPaths ?? [],
-                'performance_data' => $performanceData,
-                'fallback_site' => $fallbackSite ?? null,
-            ]
-        );
-        
-        // Log error with comprehensive context
-        $errorReportingService->logErrorReport($errorReport, 'error');
 
         // In dev mode, throw exception with detailed info
         if ($isDev) {
-            $detailedMessage = $errorReportingService->formatErrorForDisplay($errorReport);
-            throw new TemplateNotFoundException(
-                attemptedPaths: $finalAttemptedPaths,
-                templateType: $templateType,
-                message: $detailedMessage
-            );
+            throw $templateNotFoundException;
         }
 
         // In production, return empty string
@@ -447,245 +279,13 @@ class HierarchyTemplateLoader extends Component
         return is_string($string) && json_decode($string) && json_last_error() === JSON_ERROR_NONE;
     }
 
-    /**
-     * Optimizes template paths by deduplication and normalization.
-     *
-     * This method implements efficient path deduplication algorithms to reduce
-     * the number of file system checks needed during template resolution.
-     * It maintains the original order while removing duplicates and normalizing paths.
-     *
-     * @param array<string> $templates Original template paths
-     * @param string $basePath Base path to prepend to template paths
-     * @return array<string> Optimized and deduplicated template paths
-     */
-    private static function optimizeTemplatePaths(array $templates, string $basePath): array
-    {
-        if (empty($templates)) {
-            return [];
-        }
 
-        $optimizedPaths = [];
-        $seenPaths = [];
-        
-        foreach ($templates as $template) {
-            // Generate full path
-            $fullPath = $basePath ? StringHelper::trim($basePath . '/' . $template, '/') : StringHelper::trim($template, '/');
-            
-            // Validate the full path before using it
-            try {
-                SecurityUtils::validateTemplatePath($fullPath);
-            } catch (InvalidTemplatePathException $e) {
-                // Skip invalid paths but continue processing
-                continue;
-            }
-            
-            // Normalize path for deduplication (convert backslashes, remove double slashes)
-            $normalizedPath = str_replace(['\\', '//'], ['/', '/'], $fullPath);
-            $normalizedPath = rtrim($normalizedPath, '/');
-            
-            // Skip if we've already seen this path
-            if (isset($seenPaths[$normalizedPath])) {
-                continue;
-            }
-            
-            $seenPaths[$normalizedPath] = true;
-            $optimizedPaths[] = $normalizedPath;
-        }
-        
-        return $optimizedPaths;
-    }
 
-    /**
-     * Performs batch template existence checks.
-     *
-     * Checks all template paths for existence using the Craft view service.
-     *
-     * @param array<string> $templatePaths Template paths to check
-     * @return array<string, bool> Map of template paths to existence status
-     */
-    private static function batchCheckTemplateExistence(
-        array $templatePaths,
-    ): array {
-        $existenceResults = [];
-        $view = Craft::$app->view;
 
-        foreach ($templatePaths as $path) {
-            $exists = $view->doesTemplateExist($path);
-            $existenceResults[$path] = $exists;
-        }
 
-        return $existenceResults;
-    }
 
-    /**
-     * Finds the first existing template using early exit strategy.
-     *
-     * This method implements an early exit strategy to stop processing as soon
-     * as the first existing template is found, improving performance for cases
-     * where templates are found early in the hierarchy.
-     *
-     * @param array<string> $templatePaths Template paths in priority order
-     * @param array<string, bool> $existenceResults Pre-computed existence results
-     * @return string|null Path of first existing template or null if none found
-     */
-    private static function findFirstExistingTemplate(
-        array $templatePaths,
-        array $existenceResults,
-    ): ?string {
-        foreach ($templatePaths as $path) {
-            if ($existenceResults[$path] ?? false) {
-                return $path;
-            }
-        }
-        
-        return null;
-    }
 
-    /**
-     * Enhances template paths with site-specific variations and fallback mechanisms.
-     *
-     * This method implements multi-site template resolution logic by generating
-     * site-specific template paths and proper fallback mechanisms for missing
-     * site templates.
-     *
-     * @param array<string> $templatePaths Original template paths
-     * @param TemplateContext $context Template resolution context
-     * @return array{paths: array<string>, fallbackSite: string|null} Enhanced paths with fallback info
-     */
-    private static function enhancePathsForMultiSite(
-        array $templatePaths,
-        TemplateContext $context,
-    ): array {
-        $sitesService = Craft::$app->sites;
-        $currentSite = $sitesService->currentSite;
 
-        if (!$currentSite) {
-            throw new \RuntimeException('Current site could not be determined for multi-site template resolution');
-        }
 
-        $fallbackSite = null;
 
-        // Get element's site or current site
-        $elementSiteId = $context->element->siteId ?? $currentSite->id;
-        $elementSite = $sitesService->getSiteById($elementSiteId);
-        
-        if (!$elementSite) {
-            $elementSite = $currentSite;
-        }
-        
-        $enhancedPaths = [];
-        
-        // If baseSite is specified, use it for site-specific paths
-        if ($context->baseSite) {
-            $baseSite = $sitesService->getSiteByHandle($context->baseSite);
-            if ($baseSite) {
-                // Generate site-specific paths first (highest priority)
-                foreach ($templatePaths as $path) {
-                    $siteSpecificPath = self::generateSiteSpecificPath($path, $baseSite->handle);
-                    if ($siteSpecificPath !== $path) {
-                        $enhancedPaths[] = $siteSpecificPath;
-                    }
-                }
-                
-                // Add original paths as fallback
-                $enhancedPaths = array_merge($enhancedPaths, $templatePaths);
-                
-                // If baseSite is different from element site, set up fallback
-                if ($baseSite->id !== $elementSite->id) {
-                    $fallbackSite = $elementSite->handle;
-                    
-                    // Add element site-specific paths as additional fallback
-                    foreach ($templatePaths as $path) {
-                        $fallbackPath = self::generateSiteSpecificPath($path, $elementSite->handle);
-                        if ($fallbackPath !== $path && !in_array($fallbackPath, $enhancedPaths)) {
-                            $enhancedPaths[] = $fallbackPath;
-                        }
-                    }
-                }
-            } else {
-                // Invalid baseSite handle, use original paths
-                $enhancedPaths = $templatePaths;
-            }
-        } else {
-            // No baseSite specified, use element's site for site-specific paths
-            foreach ($templatePaths as $path) {
-                $siteSpecificPath = self::generateSiteSpecificPath($path, $elementSite->handle);
-                if ($siteSpecificPath !== $path) {
-                    $enhancedPaths[] = $siteSpecificPath;
-                }
-            }
-            
-            // Add original paths as fallback
-            $enhancedPaths = array_merge($enhancedPaths, $templatePaths);
-            
-            // If element site is not the primary site, add primary site fallback
-            $primarySite = $sitesService->primarySite;
-            if ($primarySite && $primarySite->id !== $elementSite->id) {
-                $fallbackSite = $primarySite->handle;
-                
-                foreach ($templatePaths as $path) {
-                    $primarySitePath = self::generateSiteSpecificPath($path, $primarySite->handle);
-                    if ($primarySitePath !== $path && !in_array($primarySitePath, $enhancedPaths)) {
-                        $enhancedPaths[] = $primarySitePath;
-                    }
-                }
-            }
-        }
-        
-        return [
-            'paths' => array_unique($enhancedPaths),
-            'fallbackSite' => $fallbackSite,
-        ];
-    }
-
-    /**
-     * Generates a site-specific template path.
-     *
-     * This method creates site-specific template paths by inserting the site handle
-     * into the template path structure, following Craft CMS conventions.
-     *
-     * @param string $templatePath Original template path
-     * @param string $siteHandle Site handle to use for path generation
-     * @return string Site-specific template path
-     */
-    private static function generateSiteSpecificPath(string $templatePath, string $siteHandle): string
-    {
-        // Don't modify paths that already contain site-specific segments
-        if (str_contains($templatePath, '/_' . $siteHandle . '/') ||
-            str_contains($templatePath, '/' . $siteHandle . '/')) {
-            return $templatePath;
-        }
-        
-        // Split path into directory and filename
-        $pathParts = explode('/', $templatePath);
-        $filename = array_pop($pathParts);
-        $directory = implode('/', $pathParts);
-        
-        // Generate site-specific variations
-        $siteSpecificPaths = [];
-        
-        // Method 1: Add site handle as subdirectory
-        if (!empty($directory)) {
-            $siteSpecificPaths[] = $directory . '/' . $siteHandle . '/' . $filename;
-        } else {
-            $siteSpecificPaths[] = $siteHandle . '/' . $filename;
-        }
-        
-        // Method 2: Add site handle as filename prefix (for flat structures)
-        $filenameParts = explode('.', $filename);
-        if (count($filenameParts) > 1) {
-            $extension = array_pop($filenameParts);
-            $baseName = implode('.', $filenameParts);
-            $siteSpecificFilename = $baseName . '_' . $siteHandle . '.' . $extension;
-            
-            if (!empty($directory)) {
-                $siteSpecificPaths[] = $directory . '/' . $siteSpecificFilename;
-            } else {
-                $siteSpecificPaths[] = $siteSpecificFilename;
-            }
-        }
-        
-        // Return the first site-specific path (subdirectory method preferred)
-        return $siteSpecificPaths[0] ?? $templatePath;
-    }
 }
