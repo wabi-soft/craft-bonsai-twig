@@ -149,13 +149,9 @@ class HierarchyTemplateLoader extends Component
                 return $content;
             }
 
-            // Dev mode: Check beastmode parameter with validation
+            // Dev mode: Simple beastmode parameter check
             $beastmodeValue = Craft::$app->request->getParam('beastmode');
-            $debugMode = InputValidator::validateDebugMode($beastmodeValue, $templateType);
-                
-            // Show debug info only for matching template types or general debug modes
-            $shouldShowDebug = $debugMode->isEnabled() &&
-                    DebugMode::isValidForTemplateType((string) $beastmodeValue, $templateType);
+            $shouldShowDebug = $beastmodeValue !== null;
 
             // If debug is enabled, prepare debug info
             if ($shouldShowDebug) {

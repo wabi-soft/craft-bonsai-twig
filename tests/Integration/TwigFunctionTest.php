@@ -322,7 +322,7 @@ class TwigFunctionTest extends TestCase
             ->andReturn('entry');
         
         $this->mockInputValidator
-            ->shouldReceive('validateDebugMode')
+            ->shouldReceive('isDebugEnabled')
             ->with('full')
             ->andReturn(true);
         

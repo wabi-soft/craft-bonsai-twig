@@ -191,16 +191,13 @@ class InputValidator
     }
 
     /**
-     * Basic debug mode validation.
+     * Simple debug mode check - just returns whether debug is enabled.
      *
-     * @param mixed $value The debug mode value to validate
-     * @param mixed $templateType The template type (not used in simplified version)
-     * @return \wabisoft\bonsaitwig\enums\DebugMode The debug mode enum
+     * @param mixed $value The debug mode value to check
+     * @return bool True if debug should be enabled, false otherwise
      */
-    public static function validateDebugMode(mixed $value, mixed $templateType): \wabisoft\bonsaitwig\enums\DebugMode
+    public static function isDebugEnabled(mixed $value): bool
     {
-        // Convert to string and use DebugMode enum
-        $stringValue = $value === null ? null : (string) $value;
-        return \wabisoft\bonsaitwig\enums\DebugMode::fromString($stringValue);
+        return $value !== null;
     }
 }
