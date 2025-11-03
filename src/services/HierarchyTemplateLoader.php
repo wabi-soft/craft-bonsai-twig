@@ -232,8 +232,14 @@ class HierarchyTemplateLoader extends Component
             // Zero overhead in production mode.
             if ($isDev) {
                 $validatedVariables['_btTemplates'] = $validatedTemplates;
-                $validatedVariables['_btOptimizedTemplates'] = $optimizedPaths;
-                $validatedVariables['_btResolvedTemplate'] = $resolvedPath;
+
+                // Find which original template corresponds to the resolved path
+                // The resolvedPath comes from optimizedPaths (with basePath prepended),
+                // but we need to mark the corresponding original template
+                $resolvedIndex = array_search($resolvedPath, $optimizedPaths, true);
+                $validatedVariables['_btResolvedTemplate'] = $resolvedIndex !== false
+                    ? $validatedTemplates[$resolvedIndex]
+                    : $resolvedPath;
             }
 
             // Render the template
