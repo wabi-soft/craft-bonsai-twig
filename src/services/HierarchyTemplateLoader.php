@@ -235,11 +235,23 @@ class HierarchyTemplateLoader extends Component
 
                 // Find which original template corresponds to the resolved path
                 // The resolvedPath comes from optimizedPaths (with basePath prepended),
-                // but we need to mark the corresponding original template
-                $resolvedIndex = array_search($resolvedPath, $optimizedPaths, true);
-                $validatedVariables['_btResolvedTemplate'] = $resolvedIndex !== false
-                    ? $validatedTemplates[$resolvedIndex]
-                    : $resolvedPath;
+                // but we need to find the matching original template from validatedTemplates
+                $matchedOriginalTemplate = null;
+
+                // Try to match by checking if the resolved path ends with each original template
+                foreach ($validatedTemplates as $originalTemplate) {
+                    // Build the full path for comparison (same logic as optimizeTemplatePaths)
+                    $fullPath = $validatedBasePath
+                        ? StringHelper::trim($validatedBasePath . '/' . $originalTemplate, '/')
+                        : StringHelper::trim($originalTemplate, '/');
+
+                    if ($fullPath === $resolvedPath) {
+                        $matchedOriginalTemplate = $originalTemplate;
+                        break;
+                    }
+                }
+
+                $validatedVariables['_btResolvedTemplate'] = $matchedOriginalTemplate ?? $resolvedPath;
             }
 
             // Render the template
