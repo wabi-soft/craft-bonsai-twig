@@ -223,7 +223,19 @@ class HierarchyTemplateLoader extends Component
             
         if ($resolvedPath !== null) {
             $performanceMonitor->addCheckpoint($sessionId, 'template_found', ['path' => $resolvedPath]);
-                
+
+            // ============================================================
+            // DEV MODE ONLY: Store template resolution context for btPath()
+            // ============================================================
+            // These variables are only added in development mode to support
+            // the btPath() Twig function which displays template hierarchies.
+            // Zero overhead in production mode.
+            if ($isDev) {
+                $validatedVariables['_btTemplates'] = $validatedTemplates;
+                $validatedVariables['_btOptimizedTemplates'] = $optimizedPaths;
+                $validatedVariables['_btResolvedTemplate'] = $resolvedPath;
+            }
+
             // Render the template
             $content = Craft::$app->view->renderTemplate($resolvedPath, $validatedVariables);
             $performanceMonitor->addCheckpoint($sessionId, 'template_rendered');
