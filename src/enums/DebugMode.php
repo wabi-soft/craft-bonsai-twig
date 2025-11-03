@@ -132,7 +132,5 @@ enum DebugMode: string
 
         // Check if it matches the template type (entry, category, item, matrix)
         return $debugValue === $templateType->value;
-
-        return false;
     }
 }

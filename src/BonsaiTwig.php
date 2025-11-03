@@ -6,7 +6,9 @@ use Craft;
 use craft\base\Plugin;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\App;
+use craft\log\MonologTarget;
 use craft\web\View;
+use Monolog\Formatter\LineFormatter;
 use wabisoft\bonsaitwig\exceptions\BonsaiTwigException;
 use wabisoft\bonsaitwig\models\Settings;
 use wabisoft\bonsaitwig\services\CategoryLoader;
@@ -138,6 +140,9 @@ class BonsaiTwig extends Plugin
         parent::init();
 
         try {
+            // Register custom log target first
+            $this->registerLogTarget();
+
             // Validate plugin configuration
             $this->validateConfiguration();
 
@@ -162,6 +167,30 @@ class BonsaiTwig extends Plugin
                 $e
             );
         }
+    }
+
+    /**
+     * Registers a custom log target for BonsaiTwig plugin logging.
+     *
+     * Creates a dedicated log file (bonsai-twig.log) for plugin-specific logging,
+     * making it easier to debug and monitor the plugin's behavior without
+     * cluttering the main web.log file.
+     *
+     * @return void
+     */
+    private function registerLogTarget(): void
+    {
+        Craft::getLogger()->dispatcher->targets[] = new MonologTarget([
+            'name' => 'bonsai-twig',
+            'categories' => ['bonsai-twig'],
+            'level' => Craft::$app->config->general->devMode ? \Monolog\Logger::DEBUG : \Monolog\Logger::WARNING,
+            'logContext' => false,
+            'allowLineBreaks' => false,
+            'formatter' => new LineFormatter(
+                format: "%datetime% %message%\n",
+                dateFormat: 'Y-m-d H:i:s',
+            ),
+        ]);
     }
 
     /**

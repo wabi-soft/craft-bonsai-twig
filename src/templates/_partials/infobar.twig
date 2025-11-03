@@ -34,12 +34,15 @@
             backdrop-filter: blur(10px);
         }
         .bonsai-info__header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
             border-bottom: 1px solid #454545;
             padding-bottom: 12px;
             margin-bottom: 12px;
+        }
+        .bonsai-info__header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
         }
         .bonsai-info__title {
             color: #569cd6;
@@ -55,6 +58,64 @@
             font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+        }
+        .bonsai-info__element-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+        }
+        .bonsai-info__element-title {
+            color: #d4d4d4;
+        }
+        .bonsai-info__element-handle {
+            color: #dcdcaa;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+            background: rgba(220, 220, 170, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background 150ms ease, color 150ms ease;
+            user-select: none;
+        }
+        .bonsai-info__element-handle:hover {
+            background: rgba(220, 220, 170, 0.2);
+            color: #f0f0aa;
+        }
+        .bonsai-info__element-handle:active {
+            background: rgba(220, 220, 170, 0.3);
+        }
+        .bonsai-info__copyable {
+            cursor: pointer;
+            transition: background 150ms ease, color 150ms ease;
+            user-select: none;
+            position: relative;
+        }
+        .bonsai-info__copyable:hover {
+            background: rgba(220, 220, 170, 0.2) !important;
+        }
+        .bonsai-info__copyable:active {
+            background: rgba(220, 220, 170, 0.3) !important;
+        }
+        .bonsai-info__copy-tooltip {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4ec9b0;
+            color: #1e1e1e;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 150ms ease;
+            z-index: 10001;
+        }
+        .bonsai-info__copy-tooltip--visible {
+            opacity: 1;
         }
         .bonsai-info__directory {
             margin-bottom: 12px;
@@ -288,6 +349,13 @@
             color: #dcdcaa;
             font-weight: 600;
             font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: background 150ms ease;
+        }
+        .bonsai-info__field-handle:hover {
+            background: rgba(220, 220, 170, 0.2);
         }
         .bonsai-info__field-type {
             color: #808080;
@@ -298,6 +366,15 @@
             color: #9cdcfe;
             font-size: 10px;
             margin-left: 6px;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: background 150ms ease;
+            position: relative;
+        }
+        .bonsai-info__field-name:hover {
+            background: rgba(156, 220, 254, 0.2);
+            color: #bde0ff;
         }
         .bonsai-info__field-nested {
             margin-top: 6px;
@@ -350,6 +427,13 @@
             color: #808080;
             font-style: italic;
             font-size: 9px;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: background 150ms ease;
+        }
+        .bonsai-info__field-block-type-handle:hover {
+            background: rgba(128, 128, 128, 0.2);
         }
         .bonsai-info__field-subfield {
             padding: 2px 0 2px 12px;
@@ -361,6 +445,13 @@
         }
         .bonsai-info__field-subfield-handle {
             color: #ce9178;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: background 150ms ease;
+        }
+        .bonsai-info__field-subfield-handle:hover {
+            background: rgba(206, 145, 120, 0.2);
         }
         .bonsai-info__field-subfield-type {
             color: #808080;
@@ -374,6 +465,13 @@
         .bonsai-info__field-source-handle {
             color: #ce9178;
             font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: background 150ms ease;
+        }
+        .bonsai-info__field-source-handle:hover {
+            background: rgba(206, 145, 120, 0.2);
         }
         .bonsai-info__field-note {
             font-size: 10px;
@@ -446,13 +544,85 @@
         .bonsai-info__tab-panel--active {
             display: block;
         }
+        .bonsai-info__copy-all-btn {
+            background: rgba(78, 201, 176, 0.15);
+            color: #4ec9b0;
+            border: 1px solid rgba(78, 201, 176, 0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 150ms ease;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .bonsai-info__copy-all-btn:hover {
+            background: rgba(78, 201, 176, 0.25);
+            border-color: rgba(78, 201, 176, 0.5);
+        }
+        .bonsai-info__copy-all-btn:active {
+            background: rgba(78, 201, 176, 0.35);
+        }
+        .bonsai-info__var-inputs {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 10px;
+        }
+        .bonsai-info__var-input-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .bonsai-info__var-label {
+            color: #808080;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .bonsai-info__var-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(206, 145, 120, 0.3);
+            color: #dcdcaa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+            width: 60px;
+        }
+        .bonsai-info__var-input:focus {
+            outline: none;
+            border-color: rgba(206, 145, 120, 0.6);
+            background: rgba(0, 0, 0, 0.4);
+        }
     </style>
 {% endapply %}
 <div class="bonsai-info__hover">
     <div class="bonsai-info__text">
         <div class="bonsai-info__header">
-            <div class="bonsai-info__title">Bonsai Twig Debug</div>
-            <div class="bonsai-info__type-badge">{{ data.type|default('template') }}</div>
+            <div class="bonsai-info__header-top">
+                <div class="bonsai-info__title">Bonsai Twig Debug</div>
+                <div class="bonsai-info__type-badge">{{ data.type|default('template') }}</div>
+            </div>
+            {% if data.element_info is defined and data.element_info %}
+                <div class="bonsai-info__element-info">
+                    {% if data.element_info.title %}
+                        <span class="bonsai-info__element-title">{{ data.element_info.title }}</span>
+                        <span style="color: #454545;">|</span>
+                    {% endif %}
+                    {% if data.element_info.handle %}
+                        <span class="bonsai-info__element-handle" data-copy-text="{{ data.element_info.handle }}" title="Click to copy handle">
+                            {{ data.element_info.handle }}
+                        </span>
+                    {% endif %}
+                    {% if data.element_info.id %}
+                        <span style="color: #808080; font-size: 10px;">#{{ data.element_info.id }}</span>
+                    {% endif %}
+                </div>
+            {% endif %}
         </div>
 
         <div class="bonsai-info__tabs">
@@ -526,11 +696,26 @@
         </div>
 
         {% if data.field_handles is defined and data.field_handles is not null %}
-            <div class="bonsai-info__tab-panel" data-panel="fields">
+            <div class="bonsai-info__tab-panel" data-panel="fields" data-element-type="{{ data.type|default('template') }}">
                 <div class="bonsai-info__fields">
+                    <div class="bonsai-info__var-inputs">
+                        <div class="bonsai-info__var-input-group">
+                            <label class="bonsai-info__var-label">Element:</label>
+                            <input type="text" class="bonsai-info__var-input" id="bonsai-element-var" placeholder="entry" value="entry">
+                        </div>
+                        <div class="bonsai-info__var-input-group">
+                            <label class="bonsai-info__var-label">Loop:</label>
+                            <input type="text" class="bonsai-info__var-input" id="bonsai-loop-var" placeholder="item" value="item">
+                        </div>
+                    </div>
                     <div class="bonsai-info__fields-label">
                         Available Field Handles
-                        <span class="bonsai-info__fields-count">{{ data.field_handles|length }} fields</span>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span class="bonsai-info__fields-count">{{ data.field_handles|length }} fields</span>
+                            <button class="bonsai-info__copy-all-btn" data-copy-all="fields" title="Copy all fields with Twig tags (for loops for relational fields, output tags for others)">
+                                📋 Copy All
+                            </button>
+                        </div>
                     </div>
                     <div class="bonsai-info__field-list">
                         {% for field in data.field_handles %}
@@ -538,8 +723,8 @@
                                 <div style="width: 100%;">
                                     <div style="display: flex; justify-content: space-between; align-items: center;">
                                         <div>
-                                            <span class="bonsai-info__field-handle">{{ field.handle }}</span>
-                                            <span class="bonsai-info__field-name">({{ field.name }})</span>
+                                            <span class="bonsai-info__field-handle" data-field-handle="{{ field.handle }}" data-field-type="{{ field.type }}" title="Click to copy Twig formatted">{{ field.handle }}</span>
+                                            <span class="bonsai-info__field-name" data-copy-text="{{ field.handle }}" title="Click to copy handle">({{ field.name }})</span>
                                         </div>
                                         <span class="bonsai-info__field-type">{{ field.type }}</span>
                                     </div>
@@ -580,11 +765,11 @@
                                                         <div class="bonsai-info__field-block-type">
                                                             <div class="bonsai-info__field-block-type-name">
                                                                 {{ block.name }}
-                                                                <span class="bonsai-info__field-block-type-handle">({{ block.handle }})</span>
+                                                                <span class="bonsai-info__field-block-type-handle" data-copy-text="{{ block.handle }}" title="Click to copy">({{ block.handle }})</span>
                                                             </div>
                                                             {% for subfield in block.fields %}
                                                                 <div class="bonsai-info__field-subfield">
-                                                                    <span class="bonsai-info__field-subfield-handle">{{ subfield.handle }}</span>
+                                                                    <span class="bonsai-info__field-subfield-handle" data-copy-text="{{ subfield.handle }}" title="Click to copy">{{ subfield.handle }}</span>
                                                                     <span class="bonsai-info__field-subfield-type">{{ subfield.type }}</span>
                                                                 </div>
                                                             {% endfor %}
@@ -593,7 +778,7 @@
                                                 {% elseif field.nested.sources is defined %}
                                                     {% for source in field.nested.sources %}
                                                         <div class="bonsai-info__field-source">
-                                                            <span class="bonsai-info__field-source-handle">{{ source.handle }}</span>
+                                                            <span class="bonsai-info__field-source-handle" data-copy-text="{{ source.handle }}" title="Click to copy">{{ source.handle }}</span>
                                                             <span class="bonsai-info__field-name"> ({{ source.name }})</span>
                                                         </div>
                                                     {% endfor %}
@@ -698,6 +883,7 @@
         </div>
 
         <script>
+            {% verbatim %}
             (function() {
                 const STORAGE_KEY = 'bonsai-twig-active-tab';
                 const infoText = document.currentScript.closest('.bonsai-info__text');
@@ -752,6 +938,59 @@
 
                 activateTab(activeTab);
 
+                // Variable name inputs with localStorage persistence (per element type)
+                const elementVarInput = infoText.querySelector('#bonsai-element-var');
+                const loopVarInput = infoText.querySelector('#bonsai-loop-var');
+                const fieldsPanel = infoText.querySelector('[data-panel="fields"]');
+
+                if (elementVarInput && loopVarInput && fieldsPanel) {
+                    // Get element type for context-specific storage
+                    const elementType = fieldsPanel.dataset.elementType || 'template';
+
+                    // Smart defaults based on element type
+                    const defaults = {
+                        'entry': { element: 'entry', loop: 'item' },
+                        'category': { element: 'category', loop: 'item' },
+                        'matrix': { element: 'block', loop: 'item' },
+                        'asset': { element: 'asset', loop: 'item' },
+                        'user': { element: 'user', loop: 'item' },
+                        'product': { element: 'product', loop: 'item' },
+                        'template': { element: 'entry', loop: 'item' }
+                    };
+
+                    const defaultVars = defaults[elementType] || defaults['template'];
+
+                    // Load saved values or set smart defaults
+                    try {
+                        const savedElementVar = localStorage.getItem(`bonsai-twig-element-var-${elementType}`);
+                        const savedLoopVar = localStorage.getItem(`bonsai-twig-loop-var-${elementType}`);
+
+                        elementVarInput.value = savedElementVar || defaultVars.element;
+                        loopVarInput.value = savedLoopVar || defaultVars.loop;
+                    } catch (e) {
+                        // localStorage might be disabled
+                        elementVarInput.value = defaultVars.element;
+                        loopVarInput.value = defaultVars.loop;
+                    }
+
+                    // Save to localStorage on change (type-specific)
+                    elementVarInput.addEventListener('input', function() {
+                        try {
+                            localStorage.setItem(`bonsai-twig-element-var-${elementType}`, this.value);
+                        } catch (e) {
+                            // localStorage might be disabled
+                        }
+                    });
+
+                    loopVarInput.addEventListener('input', function() {
+                        try {
+                            localStorage.setItem(`bonsai-twig-loop-var-${elementType}`, this.value);
+                        } catch (e) {
+                            // localStorage might be disabled
+                        }
+                    });
+                }
+
                 // Nested field expand/collapse functionality
                 const nestedToggles = infoText.querySelectorAll('.bonsai-info__field-nested-toggle');
                 nestedToggles.forEach(toggle => {
@@ -772,7 +1011,155 @@
                         }
                     });
                 });
+
+                // Click to copy functionality
+                const copyableElements = infoText.querySelectorAll('[data-copy-text]');
+                copyableElements.forEach(element => {
+                    element.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const textToCopy = this.dataset.copyText;
+
+                        // Use modern clipboard API if available
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(textToCopy).then(() => {
+                                showCopyFeedback(this);
+                            }).catch(err => {
+                                console.warn('Failed to copy text:', err);
+                                fallbackCopyText(textToCopy, this);
+                            });
+                        } else {
+                            fallbackCopyText(textToCopy, this);
+                        }
+                    });
+                });
+
+                // Helper function to generate Twig code based on field type
+                function generateTwigCode(handle, type, elementVar, loopVar) {
+                    let suffix = '';
+                    let twigCode = '';
+
+                    if (type.includes('Asset')) {
+                        suffix = '.all()';
+                        twigCode = `{% for ${loopVar} in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
+                    } else if (type.includes('Entries') || type.includes('Categories') ||
+                              type.includes('Users') || type.includes('Tags')) {
+                        suffix = '.all()';
+                        twigCode = `{% for ${loopVar} in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
+                    } else if (type.includes('Matrix') || type.includes('Table')) {
+                        suffix = '.all()';
+                        twigCode = `{% for ${loopVar} in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
+                    } else {
+                        // Plain field, just wrap in output tags
+                        twigCode = `{{ ${elementVar}.${handle} }}`;
+                    }
+
+                    return twigCode;
+                }
+
+                // Helper function to copy text to clipboard
+                function copyToClipboard(text, element, feedbackText) {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text).then(() => {
+                            showCopyFeedback(element, feedbackText);
+                        }).catch(err => {
+                            console.warn('Failed to copy:', err);
+                            fallbackCopyText(text, element, feedbackText);
+                        });
+                    } else {
+                        fallbackCopyText(text, element, feedbackText);
+                    }
+                }
+
+                // Click to copy Twig-formatted field handles
+                const fieldHandles = infoText.querySelectorAll('.bonsai-info__field-handle[data-field-handle]');
+                fieldHandles.forEach(element => {
+                    element.addEventListener('click', function(e) {
+                        e.stopPropagation();
+
+                        const handle = this.dataset.fieldHandle;
+                        const type = this.dataset.fieldType;
+                        const elementVar = elementVarInput.value.trim() || 'entry';
+                        const loopVar = loopVarInput.value.trim() || 'item';
+
+                        const twigCode = generateTwigCode(handle, type, elementVar, loopVar);
+                        copyToClipboard(twigCode, this, 'Twig copied!');
+                    });
+                });
+
+                // Copy all fields functionality
+                const copyAllBtn = infoText.querySelector('[data-copy-all="fields"]');
+                if (copyAllBtn) {
+                    copyAllBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+
+                        const elementVar = elementVarInput.value.trim() || 'entry';
+                        const loopVar = loopVarInput.value.trim() || 'item';
+                        const fields = [];
+
+                        // Gather all field handles from the DOM
+                        infoText.querySelectorAll('.bonsai-info__field-item').forEach(fieldItem => {
+                            const handleEl = fieldItem.querySelector('.bonsai-info__field-handle');
+                            const typeEl = fieldItem.querySelector('.bonsai-info__field-type');
+
+                            if (handleEl && handleEl.dataset.fieldHandle) {
+                                const handle = handleEl.dataset.fieldHandle;
+                                const type = typeEl ? typeEl.textContent.trim() : '';
+                                const twigCode = generateTwigCode(handle, type, elementVar, loopVar);
+                                fields.push(twigCode);
+                            }
+                        });
+
+                        const textToCopy = fields.join('\n');
+                        const feedbackText = `${fields.length} fields copied!`;
+                        copyToClipboard(textToCopy, this, feedbackText);
+                    });
+                }
+
+                // Show visual feedback when text is copied
+                function showCopyFeedback(element, customText) {
+                    // Create tooltip if it doesn't exist
+                    let tooltip = element.querySelector('.bonsai-info__copy-tooltip');
+                    if (!tooltip) {
+                        tooltip = document.createElement('span');
+                        tooltip.className = 'bonsai-info__copy-tooltip';
+                        element.style.position = 'relative';
+                        element.appendChild(tooltip);
+                    }
+
+                    tooltip.textContent = customText || 'Copied!';
+
+                    // Show tooltip
+                    tooltip.classList.add('bonsai-info__copy-tooltip--visible');
+
+                    // Hide after appropriate duration
+                    const duration = customText ? 1500 : 1000;
+                    setTimeout(() => {
+                        tooltip.classList.remove('bonsai-info__copy-tooltip--visible');
+                    }, duration);
+                }
+
+                // Fallback for older browsers
+                function fallbackCopyText(text, element, customText) {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-999999px';
+                    textArea.style.top = '-999999px';
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+
+                    try {
+                        document.execCommand('copy');
+                        showCopyFeedback(element, customText);
+                    } catch (err) {
+                        console.warn('Failed to copy text:', err);
+                    }
+
+                    document.body.removeChild(textArea);
+                }
             })();
+            {% endverbatim %}
         </script>
     </div>
     {{ content|raw }}
