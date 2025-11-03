@@ -7,7 +7,7 @@ use wabisoft\bonsaitwig\services\EntryLoader;
 use wabisoft\bonsaitwig\services\HierarchyTemplateLoader;
 use wabisoft\bonsaitwig\valueobjects\TemplateContext;
 use wabisoft\bonsaitwig\enums\TemplateType;
-use wabisoft\bonsaitwig\exceptions\InvalidElementException;
+
 use craft\elements\Entry;
 use craft\elements\Category;
 use Mockery;
@@ -66,7 +66,7 @@ class EntryLoaderTest extends TestCase
             path: 'entry'
         );
         
-        $this->expectException(InvalidElementException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Expected Entry element');
         
         $this->entryLoader->load($context);

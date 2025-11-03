@@ -9,7 +9,7 @@ use craft\helpers\App;
 use craft\log\MonologTarget;
 use craft\web\View;
 use Monolog\Formatter\LineFormatter;
-use wabisoft\bonsaitwig\exceptions\BonsaiTwigException;
+
 use wabisoft\bonsaitwig\models\Settings;
 use wabisoft\bonsaitwig\services\CategoryLoader;
 use wabisoft\bonsaitwig\services\EntryLoader;
@@ -118,7 +118,7 @@ class BonsaiTwig extends Plugin
      *
      * @return void
      * @throws InvalidConfigException If plugin configuration is invalid
-     * @throws BonsaiTwigException If plugin initialization fails
+     * @throws \RuntimeException If plugin initialization fails
      */
     public function init(): void
     {
@@ -146,7 +146,7 @@ class BonsaiTwig extends Plugin
                 $this->attachEventHandlers();
             }
         } catch (\Throwable $e) {
-            throw new BonsaiTwigException(
+            throw new \RuntimeException(
                 'Failed to initialize Bonsai Twig plugin: ' . $e->getMessage(),
                 0,
                 $e
@@ -246,7 +246,7 @@ class BonsaiTwig extends Plugin
      * to the Twig environment with comprehensive error handling and validation.
      *
      * @return void
-     * @throws BonsaiTwigException If Twig extension registration fails
+     * @throws \RuntimeException If Twig extension registration fails
      */
     private function registerTwigExtension(): void
     {
@@ -254,7 +254,7 @@ class BonsaiTwig extends Plugin
             $twigExtension = new Templates();
             Craft::$app->view->registerTwigExtension($twigExtension);
         } catch (\Throwable $e) {
-            throw new BonsaiTwigException(
+            throw new \RuntimeException(
                 'Failed to register Twig extension: ' . $e->getMessage(),
                 0,
                 $e

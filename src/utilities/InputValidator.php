@@ -3,7 +3,6 @@
 namespace wabisoft\bonsaitwig\utilities;
 
 use craft\base\Element;
-use wabisoft\bonsaitwig\exceptions\InvalidElementException;
 use wabisoft\bonsaitwig\utilities\SecurityUtils;
 
 /**
@@ -25,26 +24,22 @@ class InputValidator
      * @param string $parameterName Name of the parameter for error messages
      * @param bool $required Whether the element is required
      * @return Element|null The validated element or null if not required and empty
-     * @throws InvalidElementException If validation fails
+     * @throws \InvalidArgumentException If validation fails
      */
     public static function validateElement(mixed $element, string $parameterName = 'element', bool $required = true): ?Element
     {
         if ($element === null || $element === '') {
             if ($required) {
-                throw new InvalidElementException(
-                    expectedType: 'craft\base\Element',
-                    actualValue: $element,
-                    message: sprintf('Parameter "%s" is required and must be a valid Craft Element', $parameterName)
+                throw new \InvalidArgumentException(
+                    sprintf('Parameter "%s" is required and must be a valid Craft Element', $parameterName)
                 );
             }
             return null;
         }
 
         if (!$element instanceof Element) {
-            throw new InvalidElementException(
-                expectedType: 'craft\base\Element',
-                actualValue: $element,
-                message: sprintf('Parameter "%s" must be a valid Craft Element, %s given', $parameterName, get_debug_type($element))
+            throw new \InvalidArgumentException(
+                sprintf('Parameter "%s" must be a valid Craft Element, %s given', $parameterName, get_debug_type($element))
             );
         }
 
@@ -58,16 +53,14 @@ class InputValidator
      * @param string $parameterName Name of the parameter for error messages
      * @param bool $required Whether the element is required
      * @return \craft\elements\MatrixBlock|\craft\elements\Entry|null The validated element
-     * @throws InvalidElementException If validation fails
+     * @throws \InvalidArgumentException If validation fails
      */
     public static function validateMatrixBlockOrEntry(mixed $element, string $parameterName = 'block', bool $required = true): \craft\elements\MatrixBlock|\craft\elements\Entry|null
     {
         if ($element === null || $element === '') {
             if ($required) {
-                throw new InvalidElementException(
-                    expectedType: 'craft\elements\MatrixBlock or craft\elements\Entry',
-                    actualValue: $element,
-                    message: sprintf('Parameter "%s" is required and must be a valid MatrixBlock or Entry', $parameterName)
+                throw new \InvalidArgumentException(
+                    sprintf('Parameter "%s" is required and must be a valid MatrixBlock or Entry', $parameterName)
                 );
             }
             return null;
@@ -77,10 +70,8 @@ class InputValidator
             return $element;
         }
 
-        throw new InvalidElementException(
-            expectedType: 'craft\elements\MatrixBlock or craft\elements\Entry',
-            actualValue: $element,
-            message: sprintf('Parameter "%s" must be a valid MatrixBlock or Entry, %s given', $parameterName, get_debug_type($element))
+        throw new \InvalidArgumentException(
+            sprintf('Parameter "%s" must be a valid MatrixBlock or Entry, %s given', $parameterName, get_debug_type($element))
         );
     }
 

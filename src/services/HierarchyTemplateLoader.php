@@ -81,11 +81,7 @@ class HierarchyTemplateLoader extends Component
         $plugin = BonsaiTwig::getInstance();
 
         if (empty($validatedTemplates)) {
-            throw new TemplateNotFoundException(
-                attemptedPaths: [],
-                templateType: $templateType,
-                message: 'No template paths provided for resolution'
-            );
+            throw new TemplateNotFoundException([], 'template');
         }
 
 
@@ -214,14 +210,9 @@ class HierarchyTemplateLoader extends Component
         }
 
         // No template was found - handle error
-        $templateNotFoundException = new TemplateNotFoundException(
-            attemptedPaths: $finalAttemptedPaths,
-            templateType: $templateType
-        );
-
         // In dev mode, throw exception with detailed info
         if ($isDev) {
-            throw $templateNotFoundException;
+            throw new TemplateNotFoundException($finalAttemptedPaths, $templateType->value);
         }
 
         // In production, return empty string
