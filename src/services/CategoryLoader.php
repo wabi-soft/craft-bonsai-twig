@@ -3,21 +3,13 @@
 namespace wabisoft\bonsaitwig\services;
 
 use craft\base\Element;
-use wabisoft\bonsaitwig\enums\TemplateType;
-use wabisoft\bonsaitwig\utilities\InputValidator;
 
 /**
  * Service class for loading template paths based on Craft categories.
  *
- * This class provides hierarchical template path resolution by examining a category's
- * group and slug to determine the most appropriate template to load.
- * It follows a fallback pattern from most specific to most general template paths.
- *
- * The resolution order follows this hierarchy:
- * 1. [site/]category/group/slug
- * 2. [site/]category/group/default
- * 3. [site/]category/group
- * 4. [site/]category/default
+ * Simplified service that provides basic hierarchical template path resolution
+ * for development use. Focuses on core functionality without complex validation
+ * or optimization layers.
  *
  * @author Wabisoft
  * @since 6.4.0
@@ -25,17 +17,7 @@ use wabisoft\bonsaitwig\utilities\InputValidator;
 class CategoryLoader
 {
     /**
-     * Loads and renders a template based on the provided category and configuration.
-     *
-     * Generates a prioritized list of possible template paths based on the category's
-     * group and slug properties. Supports multi-site template resolution and provides
-     * comprehensive fallback mechanisms for category-specific templates.
-     *
-     * Template path resolution follows this hierarchy:
-     * - Group/slug combination (most specific)
-     * - Group/default combination
-     * - Group only
-     * - Default fallback (most general)
+     * Loads and renders a template based on the provided category.
      *
      * @param array<string, mixed> $variables Configuration array containing:
      *        - entry: Required. Craft Category element to base template paths on
@@ -47,55 +29,42 @@ class CategoryLoader
      */
     public static function load(array $variables = []): string
     {
-        // Validate and sanitize all input parameters
-        $validatedVars = InputValidator::validateServiceParameters($variables, TemplateType::CATEGORY);
+        // Basic parameter validation
+        $category = $variables['entry'] ?? null;
+        if (!$category instanceof Element) {
+            throw new \InvalidArgumentException('Entry parameter is required and must be a valid Craft Element');
+        }
         
-        // Extract validated parameters with defaults
-        $category = $validatedVars['entry'];
-        $path = $validatedVars['path'] ?? 'category';
-        $baseSite = $validatedVars['baseSite'] ?? false;
+        // Extract parameters with defaults
+        $path = $variables['path'] ?? 'category';
+        $baseSite = $variables['baseSite'] ?? false;
 
         // Get category properties for path building
         $group = $category->group?->handle ?? '';
         $slug = $category->slug ?? '';
-        $default = 'default';
 
-        // Build array of possible template paths matching Craft's native pattern
+        // Build template paths in order of specificity
         $checkTemplates = [];
+        $basePath = $path;
 
-        // Helper to add both baseSite and default versions of a path
-        $addPath = function(string $templatePath) use (&$checkTemplates, $baseSite, $path): void {
-            $pathsToAdd = [];
-            
-            // Add base path first
-            $pathsToAdd[] = $path . '/' . $templatePath;
-            
-            // Add site-specific path if baseSite is set (as fallback)
-            if ($baseSite) {
-                $pathsToAdd[] = $baseSite . '/' . $path . '/' . $templatePath;
-                $pathsToAdd[] = 'default/' . $path . '/' . $templatePath;
-            }
-            
-            // Add only unique paths
-            foreach ($pathsToAdd as $p) {
-                if (!in_array($p, $checkTemplates)) {
-                    $checkTemplates[] = $p;
-                }
-            }
-        };
-
-        // Add paths in order of specificity
-        $addPath("{$group}/{$slug}");       // [site/]category/group/slug
-        $addPath("{$group}/{$default}");    // [site/]category/group/default
-        $addPath($group);                   // [site/]category/group
-        $addPath($default);                 // [site/]category/default
+        // Simple path generation without complex optimization
+        if ($baseSite) {
+            $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $group . '/' . $slug;
+            $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $group . '/default';
+            $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $group;
+            $checkTemplates[] = $baseSite . '/' . $basePath . '/default';
+        }
+        
+        $checkTemplates[] = $basePath . '/' . $group . '/' . $slug;
+        $checkTemplates[] = $basePath . '/' . $group . '/default';
+        $checkTemplates[] = $basePath . '/' . $group;
+        $checkTemplates[] = $basePath . '/default';
 
         return HierarchyTemplateLoader::load(
             $checkTemplates,
-            $validatedVars,
-            '',  // No base path needed since we include it in template paths
-            TemplateType::CATEGORY,
-            TemplateType::CATEGORY->getAllowedDebugValues()
+            $variables,
+            '',
+            'category'
         );
     }
 }
