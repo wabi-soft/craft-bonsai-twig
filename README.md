@@ -254,7 +254,7 @@ Add template info as a data attribute for browser DevTools inspection:
 
 In development mode, `btPath()` returns a formatted list of all attempted template paths:
 
-```
+```text
 item-new/features/default/default
 item-new/default/features
 item-new/default/default ✓
