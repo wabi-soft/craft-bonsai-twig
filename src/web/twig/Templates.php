@@ -74,6 +74,8 @@ class Templates extends AbstractExtension
      *
      * This function provides a lightweight way to show all template paths that were
      * attempted during template resolution, similar to what the beastmode infobar shows.
+     * Particularly useful for item and matrix templates where you need to quickly identify
+     * which template is being used and where to place custom overrides.
      *
      * **PRODUCTION MODE**: Returns empty string immediately with zero overhead
      * **DEV MODE**: Returns formatted list of all attempted template paths with the
@@ -82,12 +84,45 @@ class Templates extends AbstractExtension
      * The function name 'btPath' is short (Bonsai Twig Path) and unique enough to avoid
      * conflicts with other plugins or system functions.
      *
-     * Usage in templates:
+     * ## Usage Examples:
+     *
+     * ### Simple HTML Comment (minimal impact):
      * ```twig
      * <!-- {{ btPath() }} -->
      * ```
      *
-     * Output example (in devmode):
+     * ### Visible Debug Box for Items:
+     * ```twig
+     * {% if btPath() %}
+     *     <pre class="text-xs">
+     * <strong>Item Template</strong>
+     * <code>
+     * {{ btPath() }}
+     * </code>
+     * </pre>
+     * {% endif %}
+     * ```
+     *
+     * ### Visible Debug Box for Matrix Blocks:
+     * ```twig
+     * {% if btPath() %}
+     *     <pre class="text-xs">
+     * <strong>Matrix Default</strong>
+     * <code>
+     * {{ btPath() }}
+     * </code>
+     * </pre>
+     * {% endif %}
+     * ```
+     *
+     * ### Data Attribute (for DOM inspection):
+     * ```twig
+     * <div{% if btPath() %} data-template="{{ btPath()|split('\n')|first }}"{% endif %}>
+     *     {# Your content #}
+     * </div>
+     * ```
+     *
+     * ## Output Example (in devmode):
      * ```
      * item-new/features/default/default
      * item-new/default/features
@@ -96,6 +131,10 @@ class Templates extends AbstractExtension
      * item-new/features
      * item-new/default
      * ```
+     *
+     * The checkmark (✓) indicates which template was actually found and rendered.
+     * This helps you understand the template resolution hierarchy and identify
+     * exactly where to place your template override.
      *
      * @param array $context The Twig template context
      * @return string Template paths in devmode, empty string in production

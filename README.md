@@ -195,6 +195,88 @@ You can pass additional variables using either approach:
 
 Both approaches make the variables available in your matrix template. The `variables` parameter is useful for organizing custom data separately from system parameters.
 
+### 5. Template Path Display (`btPath()`)
+
+The `btPath()` function provides a lightweight way to display template resolution hierarchies directly in your templates. This is particularly useful for item and matrix templates where you need to quickly identify which template is being used and where to place custom overrides.
+
+**Key Features:**
+- **Production Mode**: Returns empty string immediately with zero overhead
+- **Dev Mode**: Shows all attempted template paths with the resolved one marked with a checkmark (✓)
+- **No Configuration**: Works automatically when `devMode` is enabled
+
+#### Usage Examples
+
+##### Simple HTML Comment (minimal impact)
+Perfect for leaving breadcrumbs without affecting the visual output:
+
+```twig
+<!-- {{ btPath() }} -->
+```
+
+##### Visible Debug Box for Items
+Display template hierarchy directly in your item templates:
+
+```twig
+{% if btPath() %}
+    <pre class="text-xs">
+<strong>Item Template</strong>
+<code>
+{{ btPath() }}
+</code>
+</pre>
+{% endif %}
+```
+
+##### Visible Debug Box for Matrix Blocks
+Show which matrix template is being used:
+
+```twig
+{% if btPath() %}
+    <pre class="text-xs">
+<strong>Matrix Default</strong>
+<code>
+{{ btPath() }}
+</code>
+</pre>
+{% endif %}
+```
+
+##### Data Attribute (for DOM inspection)
+Add template info as a data attribute for browser DevTools inspection:
+
+```twig
+<div{% if btPath() %} data-template="{{ btPath()|split('\n')|first }}"{% endif %}>
+    {# Your content #}
+</div>
+```
+
+#### Output Example
+
+In development mode, `btPath()` returns a formatted list of all attempted template paths:
+
+```
+item-new/features/default/default
+item-new/default/features
+item-new/default/default ✓
+item-new/features/default
+item-new/features
+item-new/default
+```
+
+The checkmark (✓) indicates which template was actually found and rendered. This helps you understand the template resolution hierarchy and identify exactly where to place your template override.
+
+#### Why Use `btPath()` vs Beastmode?
+
+| Feature | `btPath()` | Beastmode (`?beastmode`) |
+|---------|-----------|-------------------------|
+| **Visibility** | Shows only where you place it | Shows on all Bonsai Twig calls |
+| **Overhead** | Zero in production | Zero in production |
+| **Detail Level** | Template paths only | Full debug with performance metrics |
+| **Best For** | Quick identification in specific templates | Comprehensive debugging |
+| **Usage** | Add to individual templates | Add to URL |
+
+**Recommended Pattern**: Use `btPath()` for permanent debug boxes in item and matrix templates, and use `?beastmode` when you need comprehensive debugging across the entire page.
+
 ## Debug Features
 
 The plugin provides comprehensive debugging tools that are only active in development mode (`devMode = true`). Debug information is triggered using the `beastmode` URL parameter.
