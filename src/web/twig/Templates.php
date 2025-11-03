@@ -156,10 +156,16 @@ class Templates extends AbstractExtension
             if (!isset($context['_btTemplates']) || empty($context['_btTemplates'])) {
                 // Fallback: try to get current template name from backtrace
                 // This is only used when btPath() is called outside of Bonsai Twig template functions
-                $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 20);
+                // (e.g., in regular Craft templates not rendered through Bonsai Twig loaders)
+                //
+                // Note: Limited to 50 stack frames. In deeply nested template includes
+                // (> 50 levels), the template may not be found. Increase this limit if needed.
+                $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 50);
                 foreach ($trace as $frame) {
                     if (isset($frame['object']) && $frame['object'] instanceof \Twig\Template) {
-                        return $frame['object']->getTemplateName();
+                        $templateName = $frame['object']->getTemplateName();
+                        // Format as a single-item hierarchy with checkmark for consistency
+                        return $templateName . ' ✓';
                     }
                 }
                 return '';
