@@ -1039,8 +1039,8 @@
                     let twigCode = '';
 
                     if (type.includes('Asset')) {
-                        suffix = '.one()';
-                        twigCode = `{{ ${elementVar}.${handle}${suffix} }}`;
+                        suffix = '.all()';
+                        twigCode = `{% for ${loopVar} in ${elementVar}.${handle}${suffix} %}\n{% endfor %}`;
                     } else if (type.includes('Entries') || type.includes('Categories') ||
                               type.includes('Users') || type.includes('Tags')) {
                         suffix = '.all()';
