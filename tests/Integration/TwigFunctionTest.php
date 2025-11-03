@@ -397,7 +397,7 @@ class TwigFunctionTest extends TestCase
         $functions = $this->twigExtension->getFunctions();
         
         $this->assertIsArray($functions);
-        $this->assertCount(4, $functions);
+        $this->assertCount(5, $functions);
         
         $functionNames = array_map(fn($func) => $func->getName(), $functions);
         
@@ -405,6 +405,7 @@ class TwigFunctionTest extends TestCase
         $this->assertContains('categoryTemplates', $functionNames);
         $this->assertContains('itemTemplates', $functionNames);
         $this->assertContains('matrixTemplates', $functionNames);
+        $this->assertContains('btPath', $functionNames);
     }
 
     public function testInputValidationFailure(): void
