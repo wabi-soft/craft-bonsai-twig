@@ -37,6 +37,11 @@ use yii\base\InvalidArgumentException;
 class HierarchyTemplateLoader extends Component
 {
     /**
+     * Track if the beastmode shortcut script has been added to the page
+     */
+    private static bool $shortcutScriptAdded = false;
+
+    /**
      * Loads and renders a template from a hierarchical list of possible templates.
      *
      * Core method for template resolution focused on development workflow support.
@@ -287,6 +292,13 @@ class HierarchyTemplateLoader extends Component
      */
     private static function renderInfo(string $content, string $info, string $type = 'entry'): string
     {
+        // Check if we should include the shortcut script
+        $includeShortcutScript = false;
+        if (!self::$shortcutScriptAdded) {
+            $includeShortcutScript = true;
+            self::$shortcutScriptAdded = true;
+        }
+
         // Render debug info template with content
         return Craft::$app->view->renderTemplate(
             template: '_bonsai-twig/_partials/infobar',
@@ -294,6 +306,7 @@ class HierarchyTemplateLoader extends Component
                 'info' => $info,
                 'content' => $content,
                 'type' => $type,
+                'includeShortcutScript' => $includeShortcutScript,
             ]
         );
     }
