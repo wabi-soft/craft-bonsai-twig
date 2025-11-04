@@ -47,26 +47,35 @@ class EntryLoader
         // Build template paths in order of specificity
         $checkTemplates = [];
 
-        // Simple path generation without complex optimization
-        $basePath = $path;
-        
+        // Build prefixes: $baseSite/entry (site-first) and entry (global)
+        $prefixes = [];
         if ($baseSite) {
-            $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $section . '/' . $type . '/' . $slug;
-            $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $section . '/' . $slug;
-            $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $section . '/' . $type;
-            $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $section . '/default';
-            $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $section;
-            $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $type;
-            $checkTemplates[] = $baseSite . '/' . $basePath . '/default';
+            $prefixes[] = $baseSite . '/' . $path;
         }
-        
-        $checkTemplates[] = $basePath . '/' . $section . '/' . $type . '/' . $slug;
-        $checkTemplates[] = $basePath . '/' . $section . '/' . $slug;
-        $checkTemplates[] = $basePath . '/' . $section . '/' . $type;
-        $checkTemplates[] = $basePath . '/' . $section . '/default';
-        $checkTemplates[] = $basePath . '/' . $section;
-        $checkTemplates[] = $basePath . '/' . $type;
-        $checkTemplates[] = $basePath . '/default';
+        $prefixes[] = $path;
+
+        // For each prefix, add paths in order of specificity
+        foreach ($prefixes as $prefix) {
+            // Slug-specific paths
+            $checkTemplates[] = $prefix . '/' . $section . '/' . $type . '/' . $slug;
+
+            // _entry fallback after slug-specific path
+            $checkTemplates[] = $prefix . '/' . $section . '/' . $type . '/_entry';
+
+            // Section/slug direct match (for entries without type)
+            $checkTemplates[] = $prefix . '/' . $section . '/' . $slug;
+
+            // Type and section fallbacks
+            $checkTemplates[] = $prefix . '/' . $section . '/' . $type;
+            $checkTemplates[] = $prefix . '/' . $section . '/default';
+            $checkTemplates[] = $prefix . '/' . $section;
+
+            // Type-only fallback
+            $checkTemplates[] = $prefix . '/' . $type;
+
+            // Default fallback for this prefix
+            $checkTemplates[] = $prefix . '/default';
+        }
 
         return HierarchyTemplateLoader::load(
             $checkTemplates,
