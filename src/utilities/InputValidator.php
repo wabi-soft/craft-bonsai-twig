@@ -116,7 +116,7 @@ class InputValidator
     public static function validateTemplatePaths(array $templates): array
     {
         $validatedTemplates = self::validateArray($templates, 'templates', true);
-        
+
         $sanitizedPaths = [];
         foreach ($validatedTemplates as $index => $template) {
             if (!is_string($template)) {
@@ -124,8 +124,22 @@ class InputValidator
                     sprintf('Template path at index %d must be a string, %s given', $index, get_debug_type($template))
                 );
             }
-            
-            $sanitizedPaths[] = SecurityUtils::sanitizeTemplatePath($template);
+
+            $sanitized = SecurityUtils::sanitizeTemplatePath($template);
+
+            // Validate that sanitization didn't produce an empty string
+            if (trim($sanitized) === '') {
+                throw new \InvalidArgumentException(
+                    sprintf(
+                        'Template path at index %d sanitized to an empty string and is invalid (original: %s, type: %s)',
+                        $index,
+                        $template,
+                        get_debug_type($template)
+                    )
+                );
+            }
+
+            $sanitizedPaths[] = $sanitized;
         }
 
         return $sanitizedPaths;
