@@ -26,17 +26,26 @@ use Mockery;
 class TemplateResolutionTest extends TestCase
 {
     private $mockView;
+    private $originalView;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
+
+        // Capture the existing real application view
+        $this->originalView = Craft::$app->getView();
+
+        // Create mock view and replace only the view component
         $this->mockView = Mockery::mock(View::class);
-        
-        // Mock Craft::$app->view to return our mock
-        $mockApp = Mockery::mock();
-        $mockApp->shouldReceive('getView')->andReturn($this->mockView);
-        Craft::shouldReceive('$app')->andReturn($mockApp);
+        Craft::$app->set('view', $this->mockView);
+    }
+
+    protected function tearDown(): void
+    {
+        // Restore the original view component
+        Craft::$app->set('view', $this->originalView);
+
+        parent::tearDown();
     }
 
     public function testCompleteEntryTemplateResolution(): void
