@@ -23,11 +23,12 @@ class Templates extends AbstractExtension
     /**
      * Returns an array of Twig functions provided by this extension.
      *
-     * Registers five main template loading functions for development workflow:
+     * Registers template loading functions for development workflow:
      * - itemTemplates(): For general element template loading with context support
      * - entryTemplates(): For Craft entry-specific template loading
      * - categoryTemplates(): For Craft category-specific template loading
      * - matrixTemplates(): For Craft matrix block template loading
+     * - productTemplates(): For Craft Commerce product template loading
      * - btPath(): Enhanced function that returns complete HTML debug output with styling
      *
      * All functions are marked as HTML-safe since they return rendered template content.
@@ -59,6 +60,11 @@ class Templates extends AbstractExtension
             new TwigFunction(
                 'matrixTemplates',
                 [$plugin->matrixLoader, 'load'],
+                ['is_safe' => ['html']]
+            ),
+            new TwigFunction(
+                'productTemplates',
+                [$plugin->productLoader, 'load'],
                 ['is_safe' => ['html']]
             ),
             new TwigFunction(
@@ -342,6 +348,21 @@ class Templates extends AbstractExtension
                 }
             }
             return 'Category Template';
+        }
+
+        // Check for product context (Commerce product variable)
+        if (isset($context['product'])) {
+            $product = $context['product'];
+            if ($product instanceof \craft\base\Element) {
+                // Check if it's a Commerce Product (without hard dependency)
+                if (method_exists($product, 'getType') && $product->type) {
+                    $productType = $product->type?->handle ?? null;
+                    if ($productType) {
+                        return 'Product Template: ' . ucfirst($productType);
+                    }
+                }
+            }
+            return 'Product Template';
         }
 
         // Check for item context (generic element)

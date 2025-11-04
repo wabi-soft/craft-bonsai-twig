@@ -14,6 +14,7 @@ use wabisoft\bonsaitwig\services\EntryLoader;
 use wabisoft\bonsaitwig\services\HierarchyTemplateLoader;
 use wabisoft\bonsaitwig\services\ItemLoader;
 use wabisoft\bonsaitwig\services\MatrixLoader;
+use wabisoft\bonsaitwig\services\ProductLoader;
 use wabisoft\bonsaitwig\web\twig\Templates;
 use yii\base\Event;
 
@@ -31,6 +32,7 @@ use yii\base\Event;
  * @property-read CategoryLoader $categoryLoader Service for loading category-based templates
  * @property-read ItemLoader $itemLoader Service for loading item-based templates
  * @property-read MatrixLoader $matrixLoader Service for loading matrix block templates
+ * @property-read ProductLoader $productLoader Service for loading product-based templates
  * @property-read HierarchyTemplateLoader $hierarchyTemplateLoader Core template resolution service
  */
 class BonsaiTwig extends Plugin
@@ -91,6 +93,7 @@ class BonsaiTwig extends Plugin
                 'categoryLoader' => CategoryLoader::class,
                 'itemLoader' => ItemLoader::class,
                 'matrixLoader' => MatrixLoader::class,
+                'productLoader' => ProductLoader::class,
             ],
         ];
     }
