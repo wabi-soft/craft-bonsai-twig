@@ -2,7 +2,7 @@
 
 namespace wabisoft\bonsaitwig\services;
 
-use craft\base\Element;
+use craft\elements\Asset;
 
 /**
  * Service class for loading template paths based on Craft assets.
@@ -37,8 +37,8 @@ class AssetLoader
     {
         // Basic parameter validation
         $asset = $variables['asset'] ?? null;
-        if (!$asset instanceof Element) {
-            throw new \InvalidArgumentException('Asset parameter is required and must be a valid Craft Element');
+        if (!$asset instanceof Asset) {
+            throw new \InvalidArgumentException('Asset parameter is required and must be a valid Craft Asset element');
         }
 
         // Extract parameters with defaults
@@ -53,7 +53,7 @@ class AssetLoader
 
         // Get folder path - normalize slashes and trim
         $folderPath = '';
-        if (method_exists($asset, 'getFolder') && $asset->getFolder()) {
+        if ($asset->getFolder()) {
             $folderPath = trim($asset->getFolder()->path ?? '', '/');
             $folderPath = str_replace('\\', '/', $folderPath);
         }
