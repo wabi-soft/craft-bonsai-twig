@@ -216,25 +216,47 @@ Just call the function directly - it returns complete HTML:
 
 This automatically outputs styled HTML like:
 ```html
-<pre class="bonsai-debug">
-<strong>Matrix Block Template</strong>
-<code>matrix/textBlock--hero.twig
-matrix/textBlock.twig ✓
-matrix/default.twig</code>
-</pre>
+<div class="bt-debug-output" id="bt-debug-abc123">
+<style>
+#bt-debug-abc123 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 12px;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border: 1px solid #454545;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 8px 0;
+}
+/* Additional scoped styles... */
+</style>
+<div class="bt-debug-header">Matrix Block Template</div>
+<ul class="bt-debug-list">
+  <li class="bt-debug-item bt-debug-item--missing">→ matrix/textBlock--hero.twig</li>
+  <li class="bt-debug-item bt-debug-item--resolved">✓ matrix/textBlock.twig</li>
+  <li class="bt-debug-item bt-debug-item--missing">→ matrix/default.twig</li>
+</ul>
+</div>
 ```
 
-##### Legacy Usage (Still Supported)
-The old manual wrapping still works for backward compatibility:
+The output includes:
+- A unique `id` attribute to scope CSS and avoid conflicts
+- Inline `<style>` block with scoped selectors
+- Dark theme styling for developer-friendly display
+- Visual indicators: ✓ for resolved template, → for attempts
+
+##### Legacy Usage (Manual Wrapping)
+You can still manually wrap the output if needed, though it's no longer necessary:
 
 ```twig
 {% if btPath() %}
-    <pre class="text-xs">
-        <strong>Matrix Default</strong>
-        <code>{{ btPath() }}</code>
-    </pre>
+    <div class="custom-wrapper">
+        {{ btPath() }}
+    </div>
 {% endif %}
 ```
+
+**Note**: The legacy `<pre class="bonsai-debug">` output format from earlier versions is no longer used. The current implementation uses the `<div class="bt-debug-output">` wrapper with inline styles shown above.
 
 ##### HTML Comment Usage
 For minimal visual impact:
