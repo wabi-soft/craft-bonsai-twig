@@ -15,7 +15,10 @@ namespace wabisoft\bonsaitwig\utilities;
 class SecurityUtils
 {
     /**
-     * Basic template path sanitization.
+     * Template path sanitization with proper path normalization.
+     *
+     * Uses a stack-based approach to properly handle path traversal attempts,
+     * ensuring no ".." or "." segments remain in the final path.
      *
      * @param string $path The path to sanitize
      * @return string The sanitized path
@@ -26,16 +29,36 @@ class SecurityUtils
             return '';
         }
 
-        // Remove path traversal attempts
-        $path = str_replace(['../', '..\\'], '', $path);
-        
-        // Normalize separators
+        // Normalize backslashes to forward slashes first
         $path = str_replace('\\', '/', $path);
-        
-        // Clean up multiple slashes
-        $path = preg_replace('/\/+/', '/', $path);
-        
-        // Trim and return
-        return trim($path, '/ ');
+
+        // Split path into segments
+        $segments = explode('/', $path);
+
+        // Use a stack to build the normalized path
+        $stack = [];
+
+        foreach ($segments as $segment) {
+            // Skip empty segments (from multiple slashes)
+            if ($segment === '' || $segment === '.') {
+                continue;
+            }
+
+            // Handle parent directory traversal
+            if ($segment === '..') {
+                // Pop from stack if not empty (prevents escaping root)
+                if (count($stack) > 0) {
+                    array_pop($stack);
+                }
+                // If stack is empty, ignore the ".." to prevent escaping
+                continue;
+            }
+
+            // Normal segment - add to stack
+            $stack[] = $segment;
+        }
+
+        // Join stack with "/" and trim leading/trailing slashes and spaces
+        return trim(implode('/', $stack), '/ ');
     }
 }
