@@ -4,7 +4,7 @@ Welcome to the **Bonsai Twig Plugin** README! This plugin is designed as a **dev
 
 ## Features
 
-- **Hierarchical Template Loading**: Automatically resolve templates for entries, categories, items, and matrix blocks with intelligent fallback mechanisms
+- **Hierarchical Template Loading**: Automatically resolve templates for entries, categories, items, matrix blocks, and assets with intelligent fallback mechanisms
 - **PHP 8.2 & Craft CMS 5 Optimized**: Built with modern PHP features including null-safe operators and union types
 - **Simple Debug Tools**: Clean, focused debugging that shows template paths and resolution without performance overhead
 - **Development-Focused**: Designed specifically for development workflow - no production features or optimizations
@@ -20,7 +20,7 @@ Welcome to the **Bonsai Twig Plugin** README! This plugin is designed as a **dev
 
 ### Core Template Functions
 
-The plugin provides four main Twig functions for hierarchical template loading:
+The plugin provides five main Twig functions for hierarchical template loading:
 
 #### 1. Entry Templates
 
@@ -195,7 +195,79 @@ You can pass additional variables using either approach:
 
 Both approaches make the variables available in your matrix template. The `variables` parameter is useful for organizing custom data separately from system parameters.
 
-### 5. Enhanced Template Path Display (`btPath()`)
+#### 5. Asset Templates
+
+```twig
+{{ assetTemplates({ asset }) }}
+```
+
+**Description**: Loads templates for Craft asset elements with intelligent hierarchy based on volume, folder, and filename.
+
+**Parameters**:
+
+- `asset` (Asset): The asset element to render
+- `path` (string, optional): Custom template path override (defaults to 'asset')
+- `baseSite` (string, optional): Base site handle for multi-site setups
+
+**Template Hierarchy**:
+
+The asset loader checks for templates in this order:
+
+1. `asset/{volume}/{folder}/{filename}` - Most specific match for a particular file
+2. `asset/{volume}/{filename}` - For assets in root of volume (no folder)
+3. `asset/{volume}/{folder}/default` - Default template for a specific folder
+4. `asset/{volume}/default` - Default template for the volume
+5. `asset/{volume}` - Volume-level template
+6. `asset/default` - Global fallback
+
+**Example Usage**:
+
+```twig
+{# Basic asset rendering #}
+{{ assetTemplates({ asset: image }) }}
+
+{# Render images in a gallery #}
+{% for image in entry.gallery.all() %}
+    {{ assetTemplates({ asset: image }) }}
+{% endfor %}
+
+{# Custom path #}
+{{ assetTemplates({
+    asset: document,
+    path: 'downloads'
+}) }}
+
+{# Multi-site support #}
+{{ assetTemplates({
+    asset: image,
+    baseSite: 'fr'
+}) }}
+```
+
+**Example Template Structure**:
+
+For an asset with volume `images`, folder `products/featured`, filename `hero.jpg`:
+
+```
+templates/
+  asset/
+    images/
+      products/
+        featured/
+          hero.twig           ← Matches specific file
+          default.twig        ← Folder fallback
+      default.twig            ← Volume fallback
+    default.twig              ← Global fallback
+```
+
+**Use Cases**:
+
+- Custom rendering for different asset types (images, videos, PDFs)
+- Volume-specific templates (e.g., different rendering for "documents" vs "images")
+- Folder-based organization (e.g., "products" vs "blog" assets)
+- File-specific templates for important assets
+
+### 6. Enhanced Template Path Display (`btPath()`)
 
 The `btPath()` function has been enhanced to provide complete HTML output with styling, eliminating the need for manual Twig wrapping. This is particularly useful for item and matrix templates where you need to quickly identify which template is being used.
 
