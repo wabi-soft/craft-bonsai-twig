@@ -623,25 +623,12 @@
     <div class="bonsai-info__text">
         <div class="bonsai-info__header">
             <div class="bonsai-info__header-top">
-                <div class="bonsai-info__title">Bonsai Twig Debug</div>
+                {% set displayHandle = data.element_info.section_handle ?? data.element_info.handle ?? data.type|default('template') %}
+                <div class="bonsai-info__title bonsai-info__copyable" data-copy-text="{{ displayHandle }}" title="Click to copy handle">
+                    {{ displayHandle }}
+                </div>
                 <div class="bonsai-info__type-badge">{{ data.type|default('template') }}</div>
             </div>
-            {% if data.element_info is defined and data.element_info %}
-                <div class="bonsai-info__element-info">
-                    {% if data.element_info.title %}
-                        <span class="bonsai-info__element-title">{{ data.element_info.title }}</span>
-                        <span style="color: #454545;">|</span>
-                    {% endif %}
-                    {% if data.element_info.handle %}
-                        <span class="bonsai-info__element-handle" data-copy-text="{{ data.element_info.handle }}" title="Click to copy handle">
-                            {{ data.element_info.handle }}
-                        </span>
-                    {% endif %}
-                    {% if data.element_info.id %}
-                        <span style="color: #808080; font-size: 10px;">#{{ data.element_info.id }}</span>
-                    {% endif %}
-                </div>
-            {% endif %}
         </div>
 
         <div class="bonsai-info__tabs">

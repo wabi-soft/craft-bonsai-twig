@@ -156,13 +156,19 @@ class HierarchyTemplateLoader extends Component
                     return $path;
                 }, $validatedTemplates);
 
-                // Determine element kind for debug (entry vs category) when available
+                // Determine element kind for debug (entry vs category vs asset) when available
                 $elementKind = null;
                 $debugElement = null;
-                if (isset($validatedVariables['entry']) && $validatedVariables['entry'] instanceof \craft\base\Element) {
-                    $el = $validatedVariables['entry'];
-                    $debugElement = $el;
-                    $elementKind = ($el instanceof \craft\elements\Category) ? 'category' : (($el instanceof \craft\elements\Entry) ? 'entry' : null);
+
+                // Check for element in common variable names (entry, asset, category, etc.)
+                $elementVarNames = ['entry', 'asset', 'category', 'user', 'product'];
+                foreach ($elementVarNames as $varName) {
+                    if (isset($validatedVariables[$varName]) && $validatedVariables[$varName] instanceof \craft\base\Element) {
+                        $el = $validatedVariables[$varName];
+                        $debugElement = $el;
+                        $elementKind = ($el instanceof \craft\elements\Category) ? 'category' : (($el instanceof \craft\elements\Entry) ? 'entry' : (($el instanceof \craft\elements\Asset) ? 'asset' : null));
+                        break;
+                    }
                 }
 
                 // Extract field handles from the element for debugging
@@ -179,9 +185,22 @@ class HierarchyTemplateLoader extends Component
                     // Extract element information for the header
                     // For matrix blocks (Entry elements in Craft 5), use the entry type handle
                     $elementHandle = null;
-                    if ($debugElement instanceof \craft\elements\Entry && $debugElement->type) {
-                        // Use entry type handle (works for both regular entries and matrix blocks)
-                        $elementHandle = $debugElement->type->handle;
+                    $sectionHandle = null;
+                    if ($debugElement instanceof \craft\elements\Entry) {
+                        // Get section handle for entries
+                        if ($debugElement->section) {
+                            $sectionHandle = $debugElement->section->handle;
+                        }
+                        // Use entry type handle as fallback
+                        if ($debugElement->type) {
+                            $elementHandle = $debugElement->type->handle;
+                        }
+                    } elseif ($debugElement instanceof \craft\elements\Asset) {
+                        // Get volume handle for assets
+                        $volume = $debugElement->getVolume();
+                        if ($volume) {
+                            $elementHandle = $volume->handle;
+                        }
                     } else {
                         // Fallback for other element types
                         $elementHandle = $debugElement->slug ?? $debugElement->handle ?? null;
@@ -189,6 +208,7 @@ class HierarchyTemplateLoader extends Component
 
                     $elementInfo = [
                         'handle' => $elementHandle,
+                        'section_handle' => $sectionHandle,
                         'title' => $debugElement->title ?? null,
                         'id' => $debugElement->id ?? null,
                         'type' => $elementKind,
