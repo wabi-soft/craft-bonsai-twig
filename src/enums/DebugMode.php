@@ -3,11 +3,11 @@
 namespace wabisoft\bonsaitwig\enums;
 
 /**
- * Enum for debug modes supported by the Bonsai Twig plugin.
+ * Simplified enum for debug modes in the Bonsai Twig plugin.
  *
- * This enum defines the different debug modes that can be enabled
- * via the beastmode parameter in development mode. Each mode provides
- * different levels of debugging information and visualization.
+ * This enum defines basic debug modes that can be enabled via the beastmode
+ * parameter in development mode. Simplified to just enabled/disabled without
+ * complex debug levels or performance monitoring modes.
  *
  * @author Wabisoft
  * @since 6.4.0
@@ -21,7 +21,8 @@ enum DebugMode: string
      * Checks if debug mode is enabled.
      *
      * Returns true for any debug mode except DISABLED, indicating
-     * that some form of debug information should be displayed.
+     * that basic debug information should be displayed without
+     * performance metrics or complex styling.
      *
      * @return bool True if debug mode is enabled, false otherwise
      */
@@ -37,8 +38,8 @@ enum DebugMode: string
     /**
      * Creates a DebugMode from a string value.
      *
-     * Provides a safe way to create DebugMode instances from string
-     * values, with fallback to DISABLED for unknown values.
+     * Simplified approach: any non-empty string enables basic debug mode.
+     * No complex debug level parsing or validation needed for dev-only tool.
      *
      * @param string|null $value The string value to convert
      * @return self The corresponding DebugMode enum case

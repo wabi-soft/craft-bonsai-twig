@@ -10,10 +10,10 @@ use wabisoft\bonsaitwig\BonsaiTwig;
 /**
  * Twig extension that provides hierarchical template loading functions.
  *
- * This extension registers Twig functions that allow templates to load other templates
- * based on hierarchical patterns. Each function corresponds to a different type of
- * Craft element and provides intelligent fallback mechanisms with proper dependency
- * injection for Craft 5 compatibility.
+ * This extension registers Twig functions for development-focused template loading
+ * based on hierarchical patterns. Simplified architecture without complex validation
+ * or performance monitoring. Enhanced btPath() function returns complete HTML output
+ * with styling, eliminating need for manual Twig wrapping.
  *
  * @author Wabisoft
  * @since 6.4.0
@@ -23,16 +23,16 @@ class Templates extends AbstractExtension
     /**
      * Returns an array of Twig functions provided by this extension.
      *
-     * Registers five main template loading functions using proper dependency injection
-     * to access services through the plugin instance:
+     * Registers five main template loading functions for development workflow:
      * - itemTemplates(): For general element template loading with context support
      * - entryTemplates(): For Craft entry-specific template loading
      * - categoryTemplates(): For Craft category-specific template loading
      * - matrixTemplates(): For Craft matrix block template loading
-     * - btPath(): Returns current template path in devmode, empty string otherwise
+     * - btPath(): Enhanced function that returns complete HTML debug output with styling
      *
      * All functions are marked as HTML-safe since they return rendered template content.
-     * Services are accessed through the plugin instance to ensure proper initialization.
+     * The enhanced btPath() function eliminates need for manual Twig wrapping by returning
+     * complete HTML with CSS styling and template type context detection.
      *
      * @return TwigFunction[] Array of Twig function definitions
      */

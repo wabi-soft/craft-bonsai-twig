@@ -1,3 +1,16 @@
+{#
+    Simplified debug template for Bonsai Twig development workflow.
+    
+    This template provides basic debug information display without performance
+    metrics or complex styling. Focuses on essential template resolution info
+    and field handles for development use only.
+    
+    Features:
+    - Template resolution hierarchy display
+    - Field handles with Twig code generation
+    - Simple context information
+    - Zero production overhead (only rendered in devMode)
+#}
 {% set data = info|json_decode %}
 
 {% apply spaceless %}

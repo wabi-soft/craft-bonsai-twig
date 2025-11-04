@@ -20,9 +20,9 @@ use yii\base\Event;
 /**
  * Bonsai Twig plugin
  *
- * A Craft CMS plugin that provides hierarchical template loading functions for entries,
- * categories, items, and matrix blocks. Supports development mode debugging and
- * multi-site template resolution.
+ * A development-only Craft CMS plugin that provides hierarchical template loading functions
+ * for entries, categories, items, and matrix blocks. Simplified architecture focused on
+ * core template resolution without performance monitoring or caching complexity.
  *
  * @author Wabisoft
  * @since 6.4.0
@@ -98,8 +98,9 @@ class BonsaiTwig extends Plugin
     /**
      * Initializes the plugin and registers Twig extensions.
      *
-     * Simplified initialization that registers the Twig extension and sets up
-     * development mode features. Only essential Craft 5 compatibility checks.
+     * Simplified initialization focused on development workflow support.
+     * Registers the Twig extension and sets up basic development mode features
+     * without complex dependency injection or performance monitoring.
      *
      * @return void
      */

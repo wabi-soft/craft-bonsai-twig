@@ -24,12 +24,12 @@ use yii\base\InvalidArgumentException;
 /**
  * HierarchyTemplateLoader Component
  *
- * This component handles the core template loading and rendering logic based on hierarchical
- * template resolution. It supports development mode features like debug information display,
- * template path visualization, and performance monitoring.
+ * Core service for hierarchical template loading focused on development workflow support.
+ * Simplified architecture without performance monitoring, caching, or complex error reporting.
+ * Provides basic template resolution with simple debug information display.
  *
- * The loader implements template existence checking and comprehensive error handling
- * for production and development environments.
+ * This is a development-only tool that prioritizes simplicity and maintainability over
+ * production optimizations.
  *
  * @author Wabisoft
  * @package wabisoft\bonsaitwig\services
@@ -40,24 +40,22 @@ class HierarchyTemplateLoader extends Component
     /**
      * Loads and renders a template from a hierarchical list of possible templates.
      *
-     * This is the core method that handles template resolution and rendering.
-     * It iterates through the provided template paths until it finds an existing template,
-     * then renders it with the provided variables. In development mode, it can display
-     * debug information about the template resolution process.
+     * Core method for template resolution focused on development workflow support.
+     * Uses simple template existence checking without caching or performance optimization.
+     * Provides basic debug information display when beastmode parameter is enabled.
      *
-     * Features:
-     * - Hierarchical template resolution with fallback patterns
-     * - Development mode debug information display
-     * - Comprehensive error handling and logging
-     * - Template existence validation before rendering
-     * - Optimized path deduplication and early exit strategies
-     * - Batch file system operations for improved performance
+     * Development-focused features:
+     * - Simple hierarchical template resolution with fallback patterns
+     * - Basic debug information display without performance metrics
+     * - Direct file system checks for template existence
+     * - Enhanced btPath() context storage for complete HTML debug output
+     * - Zero production overhead (debug features disabled in production)
      *
      * @param array<string> $templates Array of template paths to try loading in priority order
      * @param array<string, mixed> $variables Variables to pass to the template for rendering
      * @param string $basePath Base path to prepend to template paths (legacy parameter)
      * @param TemplateType|string $type Type of template being loaded (entry, category, item, matrix)
-     * @param array<string> $allowedBeastmodeValues Array of allowed beastmode debug values
+     * @param array<string> $allowedBeastmodeValues Array of allowed beastmode debug values (unused in simplified version)
      *
      * @return string The rendered template content or empty string if no template found
      *
@@ -227,11 +225,11 @@ class HierarchyTemplateLoader extends Component
     }
 
     /**
-     * Renders debug information around template content in development mode.
+     * Renders simple debug information around template content in development mode.
      *
-     * This method wraps the rendered template content with debug information
-     * including the template resolution hierarchy, current template path, and
-     * performance metrics. Only used when beastmode debugging is enabled.
+     * This method wraps the rendered template content with basic debug information
+     * including the template resolution hierarchy and current template path.
+     * Simplified version without performance metrics or complex styling.
      *
      * @param string $content Template content to wrap with debug information
      * @param string $info JSON encoded debug information containing paths and metadata
