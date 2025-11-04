@@ -4,7 +4,6 @@ namespace wabisoft\bonsaitwig\tests\Integration;
 
 use wabisoft\bonsaitwig\tests\TestCase;
 use wabisoft\bonsaitwig\web\twig\Templates;
-use wabisoft\bonsaitwig\BonsaiTwig;
 use craft\web\View;
 use craft\test\TestCase as CraftTestCase;
 use Craft;
@@ -29,20 +28,21 @@ class TwigFunctionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
-        // Mock the plugin instance
-        $this->mockPlugin = Mockery::mock(BonsaiTwig::class);
-        
+
+        // Create aliased mock of BonsaiTwig class to intercept static methods
+        $this->mockPlugin = Mockery::mock('alias:wabisoft\bonsaitwig\BonsaiTwig');
+
         // Mock the service properties
-        $this->mockPlugin->entryLoader = Mockery::mock('alias:wabisoft\bonsaitwig\services\EntryLoader');
-        $this->mockPlugin->categoryLoader = Mockery::mock('alias:wabisoft\bonsaitwig\services\CategoryLoader');
-        $this->mockPlugin->itemLoader = Mockery::mock('alias:wabisoft\bonsaitwig\services\ItemLoader');
-        $this->mockPlugin->matrixLoader = Mockery::mock('alias:wabisoft\bonsaitwig\services\MatrixLoader');
-        
-        // Mock BonsaiTwig::getInstance() to return our mock
-        BonsaiTwig::shouldReceive('getInstance')
+        $this->mockPlugin->entryLoader = Mockery::mock('wabisoft\bonsaitwig\services\EntryLoader');
+        $this->mockPlugin->categoryLoader = Mockery::mock('wabisoft\bonsaitwig\services\CategoryLoader');
+        $this->mockPlugin->itemLoader = Mockery::mock('wabisoft\bonsaitwig\services\ItemLoader');
+        $this->mockPlugin->matrixLoader = Mockery::mock('wabisoft\bonsaitwig\services\MatrixLoader');
+
+        // Set up the static getInstance() method on the aliased mock
+        $this->mockPlugin
+            ->shouldReceive('getInstance')
             ->andReturn($this->mockPlugin);
-        
+
         $this->twigExtension = new Templates();
     }
 
@@ -384,25 +384,25 @@ class TwigFunctionTest extends TestCase
         $functions = $this->twigExtension->getFunctions();
         
         // Test entryTemplates accepts entry parameter
-        $entryFunction = array_filter($functions, fn($f) => $f->getName() === 'entryTemplates')[0];
+        $entryFunction = array_values(array_filter($functions, fn($f) => $f->getName() === 'entryTemplates'))[0];
         $callable = $entryFunction->getCallable();
         $result = call_user_func($callable, ['entry' => $entry]);
         $this->assertIsString($result);
-        
+
         // Test categoryTemplates accepts entry parameter (for category)
-        $categoryFunction = array_filter($functions, fn($f) => $f->getName() === 'categoryTemplates')[0];
+        $categoryFunction = array_values(array_filter($functions, fn($f) => $f->getName() === 'categoryTemplates'))[0];
         $callable = $categoryFunction->getCallable();
         $result = call_user_func($callable, ['entry' => $category]);
         $this->assertIsString($result);
-        
+
         // Test itemTemplates accepts entry parameter
-        $itemFunction = array_filter($functions, fn($f) => $f->getName() === 'itemTemplates')[0];
+        $itemFunction = array_values(array_filter($functions, fn($f) => $f->getName() === 'itemTemplates'))[0];
         $callable = $itemFunction->getCallable();
         $result = call_user_func($callable, ['entry' => $entry]);
         $this->assertIsString($result);
-        
+
         // Test matrixTemplates accepts block parameter
-        $matrixFunction = array_filter($functions, fn($f) => $f->getName() === 'matrixTemplates')[0];
+        $matrixFunction = array_values(array_filter($functions, fn($f) => $f->getName() === 'matrixTemplates'))[0];
         $callable = $matrixFunction->getCallable();
         $result = call_user_func($callable, ['block' => $matrixBlock]);
         $this->assertIsString($result);
