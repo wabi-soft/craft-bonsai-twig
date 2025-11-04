@@ -19,6 +19,8 @@ enum TemplateType: string
     case CATEGORY = 'category';
     case ITEM = 'item';
     case MATRIX = 'matrix';
+    case PRODUCT = 'product';
+    case ASSET = 'asset';
 
     /**
      * Returns the default path for this template type.
@@ -35,26 +37,12 @@ enum TemplateType: string
             self::CATEGORY => 'category',
             self::ITEM => 'item',
             self::MATRIX => 'matrix',
+            self::PRODUCT => 'product',
+            self::ASSET => 'asset',
         };
     }
 
-    /**
-     * Returns the allowed beastmode debug values for this template type.
-     *
-     * Each template type supports specific debug modes that can be enabled
-     * via the beastmode parameter in development mode.
-     *
-     * @return array<string> Array of allowed debug values
-     */
-    public function getAllowedDebugValues(): array
-    {
-        return match ($this) {
-            self::ENTRY => ['entry', 'all'],
-            self::CATEGORY => ['category', 'all'],
-            self::ITEM => ['item', 'all'],
-            self::MATRIX => ['matrix', 'all'],
-        };
-    }
+
 
     /**
      * Creates a TemplateType from a string value.
@@ -72,6 +60,8 @@ enum TemplateType: string
             'category' => self::CATEGORY,
             'item' => self::ITEM,
             'matrix' => self::MATRIX,
+            'product' => self::PRODUCT,
+            'asset' => self::ASSET,
             default => self::ENTRY,
         };
     }

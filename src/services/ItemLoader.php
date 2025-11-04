@@ -3,21 +3,13 @@
 namespace wabisoft\bonsaitwig\services;
 
 use craft\base\Element;
-use craft\helpers\StringHelper;
-use wabisoft\bonsaitwig\BonsaiTwig;
-use wabisoft\bonsaitwig\enums\TemplateType;
-use wabisoft\bonsaitwig\utilities\InputValidator;
 
 /**
  * Service class for loading template paths based on Craft elements and context.
  *
- * This class provides hierarchical template path resolution by examining an element's
- * section, type, style and context to determine the most appropriate template to load.
- * It follows a fallback pattern from most specific to most general template paths.
- *
- * This is the most flexible loader, supporting context-aware template resolution,
- * style variations, and complex hierarchical patterns. It can handle both entries
- * and categories through their common Element interface.
+ * Simplified service that provides basic hierarchical template path resolution
+ * for development use. Supports style variations and context awareness without
+ * complex validation or optimization layers.
  *
  * @author Wabisoft
  * @since 6.4.0
@@ -25,18 +17,7 @@ use wabisoft\bonsaitwig\utilities\InputValidator;
 class ItemLoader
 {
     /**
-     * Loads and renders a template based on the provided element and context parameters.
-     *
-     * This is the most sophisticated template loader, supporting context-aware resolution,
-     * style variations, and complex hierarchical patterns. It can work with any Craft
-     * element type and provides extensive customization options.
-     *
-     * Template path resolution includes:
-     * - Context-specific paths (when ctx parameter provided)
-     * - Style-specific variations (when style parameter provided)
-     * - Element section and type combinations
-     * - Slug-specific templates
-     * - Comprehensive fallback mechanisms
+     * Loads and renders a template based on the provided element.
      *
      * @param array<string, mixed> $variables Configuration array containing:
      *        - entry: Required. Craft Element to base template paths on
@@ -46,145 +27,101 @@ class ItemLoader
      *        - default: Optional. Default template name (defaults to 'default')
      *        - ctxPath: Optional. Context path segment (defaults to 'ctx')
      *        - baseSite: Optional. Base site handle for multi-site support (defaults to false)
-     *        - nestByElementType: Optional. When true, nests under element type directory (e.g., item/entry or item/category). Default false.
-     *        - elementPaths: Optional. False or an array mapping element types to subdirectories. Example: ['entry' => 'entry', 'category' => 'category'].
-     *                         If provided as an array, this overrides nestByElementType and prefixes the base path with the mapped segment for the element kind.
      *
      * @throws \InvalidArgumentException If entry is not a valid Craft Element
      * @return string The rendered template content
      */
     public static function load(array $variables = []): string
     {
-        // Validate and sanitize all input parameters
-        $validatedVars = InputValidator::validateServiceParameters($variables, TemplateType::ITEM);
+        // Basic parameter validation
+        $entry = $variables['entry'] ?? null;
+        if (!$entry instanceof Element) {
+            throw new \InvalidArgumentException('Entry parameter is required and must be a valid Craft Element');
+        }
         
-        // Extract validated parameters with defaults
-        $entry = $validatedVars['entry'];
-        $path = $validatedVars['path'] ?? 'item';
-        $style = $validatedVars['style'] ?? null;
-        $ctx = $validatedVars['ctx'] ?? null;
-        $default = $validatedVars['default'] ?? 'default';
-        $ctxPath = StringHelper::trim($validatedVars['ctxPath'] ?? 'ctx', '/');
-        $baseSite = $validatedVars['baseSite'] ?? false;
-        // Determine settings first to allow fallback
-        $settings = BonsaiTwig::getInstance()?->getSettings();
-        $nestByElementType = (bool)($validatedVars['nestByElementType'] ?? ($settings->nestByElementType ?? false));
-        // Determine elementPaths from variables or settings; false bypasses logic
-        $elementPaths = $validatedVars['elementPaths'] ?? ($settings->itemsTemplateElementPaths ?? false); // false or array
-
-        // Determine effective base path, optionally nested by element type
-        $effectivePath = $path;
-
-        // Prefer explicit elementPaths mapping when provided
-        if (is_array($elementPaths)) {
-            $elementKind = null;
-            if ($entry instanceof \craft\elements\Category) {
-                $elementKind = 'category';
-            } elseif ($entry instanceof \craft\elements\Entry) {
-                $elementKind = 'entry';
-            }
-
-            if ($elementKind) {
-                // Support both short kind keys and FQCN keys
-                $mapped = $elementPaths[$elementKind]
-                    ?? ($elementKind === 'entry' ? ($elementPaths[\craft\elements\Entry::class] ?? null) : null)
-                    ?? ($elementKind === 'category' ? ($elementPaths[\craft\elements\Category::class] ?? null) : null);
-
-                if (is_string($mapped) && $mapped !== '') {
-                    $effectivePath = rtrim($path, '/') . '/' . ltrim($mapped, '/');
-                }
-            }
-        } elseif ($nestByElementType) {
-            // Backward-compatible boolean flag
-            if ($entry instanceof \craft\elements\Category) {
-                $effectivePath = $path . '/category';
-            } elseif ($entry instanceof \craft\elements\Entry) {
-                $effectivePath = $path . '/entry';
-            }
+        // Extract parameters with defaults
+        $path = trim($variables['path'] ?? 'item', '/');
+        $style = $variables['style'] ?? null;
+        $ctx = $variables['ctx'] ?? null;
+        $default = $variables['default'] ?? 'default';
+        $ctxPath = trim($variables['ctxPath'] ?? 'ctx', '/');
+        $baseSite = $variables['baseSite'] ?? false;
+        if ($baseSite) {
+            $baseSite = trim($baseSite, '/');
         }
 
-        // Get entry properties for path building
+        // Get element properties for path building
         $section = $entry->section?->handle ?? $entry->group?->handle ?? '';
         $type = $entry->type?->handle ?? false;
-        $slug = $entry->slug;
+        $slug = $entry->slug ?? '';
 
-        // Build array of possible template paths matching Craft's native pattern
+        // Build template paths in order of specificity
         $checkTemplates = [];
 
-        // Helper to add both baseSite and default versions of a path
-        $addPath = function(string $templatePath) use (&$checkTemplates, $baseSite, $effectivePath): void {
-            $pathsToAdd = [];
-            
-            // Add base path first
-            $pathsToAdd[] = $effectivePath . '/' . $templatePath;
-            
-            // Add site-specific path if baseSite is set (as fallback)
-            if ($baseSite) {
-                $pathsToAdd[] = $baseSite . '/' . $effectivePath . '/' . $templatePath;
-                $pathsToAdd[] = 'default/' . $effectivePath . '/' . $templatePath;
-            }
-            
-            // Add only unique paths
-            foreach ($pathsToAdd as $p) {
-                if (!in_array($p, $checkTemplates)) {
-                    $checkTemplates[] = $p;
+        // Build prefixes: $baseSite/$path (site-first) and $path (global)
+        $prefixes = [];
+        if ($baseSite) {
+            $prefixes[] = $baseSite . '/' . $path;
+        }
+        $prefixes[] = $path;
+
+        // For each prefix, add paths in order of specificity
+        foreach ($prefixes as $prefix) {
+            // Add context-specific paths if context element exists
+            if ($ctx) {
+                $contextSection = $ctx->section?->handle ?? $ctx->group?->handle ?? '';
+                $contextType = $ctx->type?->handle ?? '';
+
+                if ($style && $contextSection && $contextType) {
+                    $checkTemplates[] = $prefix . '/' . $section . '/' . $ctxPath . '/' . $contextSection . '/' . $contextType . '/' . $style;
+                }
+                if ($type && $contextSection && $contextType) {
+                    $checkTemplates[] = $prefix . '/' . $section . '/' . $ctxPath . '/' . $contextSection . '/' . $contextType . '/' . $type;
+                    $checkTemplates[] = $prefix . '/' . $section . '/' . $ctxPath . '/' . $contextSection . '/' . $contextType . '/' . $default;
+                }
+                if ($style && $contextSection) {
+                    $checkTemplates[] = $prefix . '/' . $section . '/' . $ctxPath . '/' . $contextSection . '/' . $style;
+                }
+                if ($type && $contextSection) {
+                    $checkTemplates[] = $prefix . '/' . $section . '/' . $ctxPath . '/' . $contextSection . '/' . $type;
+                }
+                if ($contextSection) {
+                    $checkTemplates[] = $prefix . '/' . $section . '/' . $ctxPath . '/' . $contextSection . '/' . $default;
+                    $checkTemplates[] = $prefix . '/' . $section . '/' . $ctxPath . '/' . $contextSection;
                 }
             }
-        };
 
-        // Add context-specific paths
-        if ($ctx) {
+            // Add non-context template paths
             if ($style) {
-                $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$ctx->type?->handle}/{$style}");
+                if ($type) {
+                    $checkTemplates[] = $prefix . '/' . $section . '/' . $type . '/' . $style;
+                }
+                $checkTemplates[] = $prefix . '/' . $section . '/' . $style;
+                $checkTemplates[] = $prefix . '/' . $style;
             }
+
             if ($type) {
-                $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$ctx->type?->handle}/{$type}");
-                $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$ctx->type?->handle}/{$default}");
+                $checkTemplates[] = $prefix . '/' . $section . '/' . $type . '/' . $slug;
+                $checkTemplates[] = $prefix . '/' . $section . '/' . $type;
+                $checkTemplates[] = $prefix . '/' . $section . '/' . $type . '/' . $default;
+            } else {
+                // Category (no type): include group/slug path
+                if (!empty($slug)) {
+                    $checkTemplates[] = $prefix . '/' . $section . '/' . $slug;
+                }
             }
-            if ($style) {
-                $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$style}");
-            }
-            if ($type) {
-                $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$type}");
-            }
-            // Default context section fallbacks
-            $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}/{$default}");
-            $addPath("{$section}/{$ctxPath}/{$ctx->section?->handle}");
+
+            // Add general fallback paths
+            $checkTemplates[] = $prefix . '/' . $section . '/' . $default;
+            $checkTemplates[] = $prefix . '/' . $section;
+            $checkTemplates[] = $prefix . '/' . $default;
         }
 
-        // Add non-context template paths
-        if ($style) {
-            if ($type) {
-                $addPath("{$section}/{$type}/{$style}");
-            }
-            // Section-specific style
-            $addPath("{$section}/{$style}");
-            // Global style fallback (e.g., item/none)
-            $addPath("{$style}");
-        }
-        if ($type) {
-            $addPath("{$section}/{$type}/{$slug}");
-            $addPath("{$section}/{$type}");
-            $addPath("{$section}/{$type}/{$default}");
-        } else {
-            // Category (no type): include group/slug path
-            if (!empty($slug)) {
-                $addPath("{$section}/{$slug}");
-            }
-        }
-        
-        // Add most general fallback paths
-        $addPath("{$section}/{$default}");
-        $addPath($section);
-        $addPath($default);
-
-        // Use HierarchyTemplateLoader to find first matching template
         return HierarchyTemplateLoader::load(
             $checkTemplates,
-            $validatedVars,
-            '',  // basePath is no longer used
-            TemplateType::ITEM,
-            TemplateType::ITEM->getAllowedDebugValues()
+            $variables,
+            '',
+            'item'
         );
     }
 }

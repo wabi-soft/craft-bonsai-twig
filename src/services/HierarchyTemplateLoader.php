@@ -4,18 +4,18 @@ namespace wabisoft\bonsaitwig\services;
 
 use Craft;
 use craft\helpers\Json;
+
 use craft\helpers\StringHelper;
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
 use wabisoft\bonsaitwig\BonsaiTwig;
-use wabisoft\bonsaitwig\enums\DebugMode;
 use wabisoft\bonsaitwig\enums\TemplateType;
-use wabisoft\bonsaitwig\exceptions\InvalidTemplatePathException;
+
 use wabisoft\bonsaitwig\exceptions\TemplateNotFoundException;
 use wabisoft\bonsaitwig\utilities\InputValidator;
-use wabisoft\bonsaitwig\utilities\SecurityUtils;
-use wabisoft\bonsaitwig\valueobjects\TemplateContext;
+
+
 use yii\base\Component;
 use yii\base\Exception;
 use yii\base\InvalidArgumentException;
@@ -23,12 +23,12 @@ use yii\base\InvalidArgumentException;
 /**
  * HierarchyTemplateLoader Component
  *
- * This component handles the core template loading and rendering logic based on hierarchical
- * template resolution. It supports development mode features like debug information display,
- * template path visualization, and performance monitoring.
+ * Core service for hierarchical template loading focused on development workflow support.
+ * Simplified architecture without performance monitoring, caching, or complex error reporting.
+ * Provides basic template resolution with simple debug information display.
  *
- * The loader implements template existence checking and comprehensive error handling
- * for production and development environments.
+ * This is a development-only tool that prioritizes simplicity and maintainability over
+ * production optimizations.
  *
  * @author Wabisoft
  * @package wabisoft\bonsaitwig\services
@@ -37,26 +37,29 @@ use yii\base\InvalidArgumentException;
 class HierarchyTemplateLoader extends Component
 {
     /**
+     * Track if the beastmode shortcut script has been added to the page
+     */
+    private static bool $shortcutScriptAdded = false;
+
+    /**
      * Loads and renders a template from a hierarchical list of possible templates.
      *
-     * This is the core method that handles template resolution and rendering.
-     * It iterates through the provided template paths until it finds an existing template,
-     * then renders it with the provided variables. In development mode, it can display
-     * debug information about the template resolution process.
+     * Core method for template resolution focused on development workflow support.
+     * Uses simple template existence checking without caching or performance optimization.
+     * Provides basic debug information display when beastmode parameter is enabled.
      *
-     * Features:
-     * - Hierarchical template resolution with fallback patterns
-     * - Development mode debug information display
-     * - Comprehensive error handling and logging
-     * - Template existence validation before rendering
-     * - Optimized path deduplication and early exit strategies
-     * - Batch file system operations for improved performance
+     * Development-focused features:
+     * - Simple hierarchical template resolution with fallback patterns
+     * - Basic debug information display without performance metrics
+     * - Direct file system checks for template existence
+     * - Enhanced btPath() context storage for complete HTML debug output
+     * - Zero production overhead (debug features disabled in production)
      *
      * @param array<string> $templates Array of template paths to try loading in priority order
      * @param array<string, mixed> $variables Variables to pass to the template for rendering
      * @param string $basePath Base path to prepend to template paths (legacy parameter)
      * @param TemplateType|string $type Type of template being loaded (entry, category, item, matrix)
-     * @param array<string> $allowedBeastmodeValues Array of allowed beastmode debug values
+     * @param array<string> $allowedBeastmodeValues Array of allowed beastmode debug values (unused in simplified version)
      *
      * @return string The rendered template content or empty string if no template found
      *
@@ -79,150 +82,33 @@ class HierarchyTemplateLoader extends Component
         // Initialize env flags and services before any early exit
         $isDev = Craft::$app->getConfig()->general->devMode;
         $plugin = BonsaiTwig::getInstance();
-        $performanceMonitor = $plugin->performanceMonitor;
-        $errorReportingService = $plugin->errorReportingService;
 
         if (empty($validatedTemplates)) {
-            $templateNotFoundException = new TemplateNotFoundException(
-                attemptedPaths: [],
-                templateType: $templateType,
-                message: 'No template paths provided for resolution'
-            );
-            
-            // Generate comprehensive error report
-            $errorReport = $errorReportingService->generateTemplateNotFoundReport(
-                $templateNotFoundException,
-                null,
-                ['input_templates' => $templates, 'base_path' => $basePath]
-            );
-            
-            // Log error with detailed context
-            $errorReportingService->logErrorReport($errorReport, 'error');
-            
-            // In dev mode, provide detailed error information
-            if ($isDev) {
-                $detailedMessage = $errorReportingService->formatErrorForDisplay($errorReport);
-                throw new TemplateNotFoundException(
-                    attemptedPaths: [],
-                    templateType: $templateType,
-                    message: $detailedMessage
-                );
-            }
-            
-            throw $templateNotFoundException;
+            throw new TemplateNotFoundException([], 'template');
         }
 
-        // Start performance monitoring
-        $sessionId = 'template_resolution_' . uniqid();
-        $performanceMonitor->startTiming($sessionId, 'Template Resolution', [
-            'template_type' => $templateType->value,
-            'template_count' => count($validatedTemplates),
-            'base_path' => $validatedBasePath,
-        ]);
+
 
         // Get the directory from variables or type
         $directory = (string) ($validatedVariables['path'] ?? $templateType->getDefaultPath());
 
-        // Create template context for enhanced caching
-        // Prefer explicit 'element' var, but gracefully fall back to common keys like 'block', 'entry', 'category'.
-        $element = $validatedVariables['element'] ?? null;
-        if (!$element) {
-            foreach (['block', 'entry', 'category', 'item'] as $elKey) {
-                if (isset($validatedVariables[$elKey]) && $validatedVariables[$elKey] instanceof \craft\base\ElementInterface) {
-                    $element = $validatedVariables[$elKey];
-                    break;
-                }
-            }
-            // As a last resort, scan all variables for an ElementInterface instance
-            if (!$element) {
-                foreach ($validatedVariables as $val) {
-                    if ($val instanceof \craft\base\ElementInterface) {
-                        $element = $val;
-                        break;
-                    }
-                }
+        // Simple template resolution - check each template path in order
+        $resolvedPath = null;
+        $finalAttemptedPaths = [];
+        
+        foreach ($validatedTemplates as $template) {
+            // Generate full path
+            $fullPath = $validatedBasePath ? trim($validatedBasePath . '/' . $template, '/') : trim($template, '/');
+            $finalAttemptedPaths[] = $fullPath;
+            
+            // Check if template exists
+            if (Craft::$app->view->doesTemplateExist($fullPath)) {
+                $resolvedPath = $fullPath;
+                break;
             }
         }
-        if ($element) {
-            $templateContext = new TemplateContext(
-                element: $element,
-                path: $directory,
-                style: $validatedVariables['style'] ?? null,
-                context: $validatedVariables['context'] ?? null,
-                baseSite: $validatedVariables['baseSite'] ?? null,
-                variables: $validatedVariables,
-                showDebug: $isDev
-            );
-        }
-
-        // Process templates with optimized resolution
-        $performanceMonitor->addCheckpoint($sessionId, 'start_resolution');
-            
-        // Optimize path generation and deduplication
-        $optimizedPaths = self::optimizeTemplatePaths($validatedTemplates, $validatedBasePath);
-        $performanceMonitor->addCheckpoint($sessionId, 'paths_optimized', [
-                'original_count' => count($validatedTemplates),
-                'optimized_count' => count($optimizedPaths),
-            ]);
-            
-        // Enhance paths for multi-site template handling if context is available
-        $fallbackSite = null;
-        if (isset($templateContext)) {
-            $siteEnhancementResult = self::enhancePathsForMultiSite($optimizedPaths, $templateContext);
-            $optimizedPaths = $siteEnhancementResult['paths'];
-            $fallbackSite = $siteEnhancementResult['fallbackSite'];
-                
-            $performanceMonitor->addCheckpoint($sessionId, 'site_paths_enhanced', [
-                    'fallback_site' => $fallbackSite,
-                    'enhanced_count' => count($optimizedPaths),
-                ]);
-        }
-            
-        // Early exit: Check if we have any paths to process
-        if (empty($optimizedPaths)) {
-            $performanceData = $performanceMonitor->endTiming($sessionId);
-            $performanceMonitor->recordTemplateResolution(false, $performanceData['total_time'] ?? 0.0, 0);
-                
-            $templateNotFoundException = new TemplateNotFoundException(
-                    attemptedPaths: $validatedTemplates,
-                    templateType: $templateType,
-                    message: 'No valid template paths after optimization'
-                );
-                
-            // Generate comprehensive error report
-            $errorReport = $errorReportingService->generateTemplateNotFoundReport(
-                    $templateNotFoundException,
-                    $templateContext ?? null,
-                    [
-                        'original_templates' => $validatedTemplates,
-                        'optimization_failed' => true,
-                        'performance_data' => $performanceData,
-                    ]
-                );
-                
-            // Log error with detailed context
-            $errorReportingService->logErrorReport($errorReport, 'warning');
-                
-            if ($isDev) {
-                $detailedMessage = $errorReportingService->formatErrorForDisplay($errorReport);
-                throw new TemplateNotFoundException(
-                        attemptedPaths: $validatedTemplates,
-                        templateType: $templateType,
-                        message: $detailedMessage
-                    );
-            }
-            return '';
-        }
-            
-        // Batch template existence checks for better performance
-        $existenceResults = self::batchCheckTemplateExistence($optimizedPaths);
-        $performanceMonitor->addCheckpoint($sessionId, 'existence_checked');
-            
-        // Find first existing template using early exit strategy
-        $resolvedPath = self::findFirstExistingTemplate($optimizedPaths, $existenceResults);
             
         if ($resolvedPath !== null) {
-            $performanceMonitor->addCheckpoint($sessionId, 'template_found', ['path' => $resolvedPath]);
 
             // ============================================================
             // DEV MODE ONLY: Store template resolution context for btPath()
@@ -256,30 +142,25 @@ class HierarchyTemplateLoader extends Component
 
             // Render the template
             $content = Craft::$app->view->renderTemplate($resolvedPath, $validatedVariables);
-            $performanceMonitor->addCheckpoint($sessionId, 'template_rendered');
                 
             // In production, return content directly
             if (!$isDev) {
-                // End performance monitoring
-                $performanceData = $performanceMonitor->endTiming($sessionId);
-                $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($optimizedPaths));
                 return $content;
             }
 
-            // Dev mode: Check beastmode parameter with validation
+            // Dev mode: Check beastmode parameter and filter by type
             $beastmodeValue = Craft::$app->request->getParam('beastmode');
-            $debugMode = InputValidator::validateDebugMode($beastmodeValue, $templateType);
-                
-            // Show debug info only for matching template types or general debug modes
-            $shouldShowDebug = $debugMode->isEnabled() &&
-                    DebugMode::isValidForTemplateType((string) $beastmodeValue, $templateType);
+            $shouldShowDebug = false;
 
-            // If debug is enabled, prepare debug info with performance metrics
+            if ($beastmodeValue !== null) {
+                // Show debug if beastmode=all or if it matches the current template type
+                if ($beastmodeValue === 'all' || $beastmodeValue === '' || $beastmodeValue === $templateType->value) {
+                    $shouldShowDebug = true;
+                }
+            }
+
+            // If debug is enabled, prepare debug info
             if ($shouldShowDebug) {
-                $performanceMonitor->addCheckpoint($sessionId, 'debug_info_start');
-                    
-                // Get performance data before ending timing
-                $performanceData = $performanceMonitor->endTiming($sessionId);
                     
                 // Process templates to remove directory prefix for display
                 $displayTemplates = array_map(function(string $path) use ($directory): string {
@@ -287,32 +168,73 @@ class HierarchyTemplateLoader extends Component
                     return $path;
                 }, $validatedTemplates);
 
-                // Determine element kind for debug (entry vs category) when available
+                // Determine element kind for debug (entry vs category vs asset vs product) when available
                 $elementKind = null;
                 $debugElement = null;
-                if (isset($templateContext) && $templateContext->element) {
-                    $el = $templateContext->element;
-                    $debugElement = $el;
-                    $elementKind = ($el instanceof \craft\elements\Category) ? 'category' : (($el instanceof \craft\elements\Entry) ? 'entry' : null);
-                } elseif (isset($validatedVariables['entry']) && $validatedVariables['entry'] instanceof \craft\base\Element) {
-                    $el = $validatedVariables['entry'];
-                    $debugElement = $el;
-                    $elementKind = ($el instanceof \craft\elements\Category) ? 'category' : (($el instanceof \craft\elements\Entry) ? 'entry' : null);
+
+                // Check for element in common variable names (entry, asset, category, etc.)
+                $elementVarNames = ['entry', 'asset', 'category', 'user', 'product'];
+                foreach ($elementVarNames as $varName) {
+                    if (isset($validatedVariables[$varName]) && $validatedVariables[$varName] instanceof \craft\base\Element) {
+                        $el = $validatedVariables[$varName];
+                        $debugElement = $el;
+
+                        // Determine element type
+                        if ($el instanceof \craft\elements\Category) {
+                            $elementKind = 'category';
+                        } elseif ($el instanceof \craft\elements\Entry) {
+                            $elementKind = 'entry';
+                        } elseif ($el instanceof \craft\elements\Asset) {
+                            $elementKind = 'asset';
+                        } elseif (class_exists('craft\commerce\elements\Product') && $el instanceof \craft\commerce\elements\Product) {
+                            $elementKind = 'product';
+                        }
+
+                        break;
+                    }
                 }
 
                 // Extract field handles from the element for debugging
                 $fieldHandles = null;
                 $elementInfo = null;
                 if ($debugElement) {
-                    $fieldInspector = $plugin->fieldInspectorService;
-                    $fieldHandles = $fieldInspector->extractFieldHandles($debugElement);
+                    try {
+                        $fieldHandles = self::extractFieldHandles($debugElement);
+                    } catch (\Exception $e) {
+                        // Silently fail field extraction to avoid breaking template loading
+                        $fieldHandles = null;
+                    }
 
                     // Extract element information for the header
-                    // For matrix blocks (Entry elements in Craft 5), use the entry type handle
                     $elementHandle = null;
-                    if ($debugElement instanceof \craft\elements\Entry && $debugElement->type) {
-                        // Use entry type handle (works for both regular entries and matrix blocks)
-                        $elementHandle = $debugElement->type->handle;
+                    $sectionHandle = null;
+                    if ($debugElement instanceof \craft\elements\Entry) {
+                        // Get section handle for entries
+                        if ($debugElement->section) {
+                            $sectionHandle = $debugElement->section->handle;
+                        }
+                        // Use entry type handle as fallback
+                        if ($debugElement->type) {
+                            $elementHandle = $debugElement->type->handle;
+                        }
+                    } elseif ($debugElement instanceof \craft\elements\Category) {
+                        // Get group handle for categories
+                        $group = $debugElement->getGroup();
+                        if ($group) {
+                            $elementHandle = $group->handle;
+                        }
+                    } elseif ($debugElement instanceof \craft\elements\Asset) {
+                        // Get volume handle for assets
+                        $volume = $debugElement->getVolume();
+                        if ($volume) {
+                            $elementHandle = $volume->handle;
+                        }
+                    } elseif (class_exists('craft\commerce\elements\Product') && $debugElement instanceof \craft\commerce\elements\Product) {
+                        // Get product type handle for commerce products
+                        $productType = $debugElement->getType();
+                        if ($productType) {
+                            $elementHandle = $productType->handle;
+                        }
                     } else {
                         // Fallback for other element types
                         $elementHandle = $debugElement->slug ?? $debugElement->handle ?? null;
@@ -320,6 +242,7 @@ class HierarchyTemplateLoader extends Component
 
                     $elementInfo = [
                         'handle' => $elementHandle,
+                        'section_handle' => $sectionHandle,
                         'title' => $debugElement->title ?? null,
                         'id' => $debugElement->id ?? null,
                         'type' => $elementKind,
@@ -329,75 +252,25 @@ class HierarchyTemplateLoader extends Component
                 $info = [
                         'directory' => $directory,
                         'templates' => $displayTemplates,
-                        'optimized_templates' => $optimizedPaths,
                         'currentTemplate' => $resolvedPath,
                         'type' => $templateType->value,
                         'element_kind' => $elementKind,
                         'element_info' => $elementInfo,
                         'field_handles' => $fieldHandles,
-                        'site_info' => [
-                            'current_site' => Craft::$app->sites->currentSite->handle,
-                            'element_site' => isset($templateContext) ? ($templateContext->element->site->handle ?? null) : null,
-                            'base_site' => isset($templateContext) ? $templateContext->baseSite : null,
-                            'fallback_site' => $fallbackSite ?? null,
-                        ],
-                        'performance' => [
-                            'resolution_time' => $performanceData['total_time'] ?? 0.0,
-                            'memory_usage' => $performanceData['memory_usage'] ?? [],
-                            'checkpoints' => $performanceData['checkpoints'] ?? [],
-                            'optimization_savings' => count($validatedTemplates) - count($optimizedPaths),
-                        ],
-                        'cache_stats' => $performanceMonitor->getCacheStatistics(),
                     ];
                     
                 // Wrap content with enhanced debug info
                 $displayType = $templateType->value . ($elementKind ? (' (' . $elementKind . ')') : '');
                 $content = self::renderInfo($content, Json::encode($info), $displayType);
-                    
-                $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($optimizedPaths));
-            } else {
-                // End timing without debug info
-                $performanceData = $performanceMonitor->endTiming($sessionId);
-                $performanceMonitor->recordTemplateResolution(true, $performanceData['total_time'] ?? 0.0, count($optimizedPaths));
             }
 
             return $content;
         }
 
-        // No template was found - end performance monitoring and handle error
-        $performanceData = $performanceMonitor->endTiming($sessionId);
-        $finalAttemptedPaths = $optimizedPaths ?? $validatedTemplates;
-        $performanceMonitor->recordTemplateResolution(false, $performanceData['total_time'] ?? 0.0, count($finalAttemptedPaths));
-        
-        // Create detailed exception
-        $templateNotFoundException = new TemplateNotFoundException(
-            attemptedPaths: $finalAttemptedPaths,
-            templateType: $templateType
-        );
-        
-        // Generate comprehensive error report
-        $errorReport = $errorReportingService->generateTemplateNotFoundReport(
-            $templateNotFoundException,
-            $templateContext ?? null,
-            [
-                'original_templates' => $validatedTemplates,
-                'optimized_templates' => $optimizedPaths ?? [],
-                'performance_data' => $performanceData,
-                'fallback_site' => $fallbackSite ?? null,
-            ]
-        );
-        
-        // Log error with comprehensive context
-        $errorReportingService->logErrorReport($errorReport, 'error');
-
+        // No template was found - handle error
         // In dev mode, throw exception with detailed info
         if ($isDev) {
-            $detailedMessage = $errorReportingService->formatErrorForDisplay($errorReport);
-            throw new TemplateNotFoundException(
-                attemptedPaths: $finalAttemptedPaths,
-                templateType: $templateType,
-                message: $detailedMessage
-            );
+            throw new TemplateNotFoundException($finalAttemptedPaths, $templateType->value);
         }
 
         // In production, return empty string
@@ -405,11 +278,11 @@ class HierarchyTemplateLoader extends Component
     }
 
     /**
-     * Renders debug information around template content in development mode.
+     * Renders simple debug information around template content in development mode.
      *
-     * This method wraps the rendered template content with debug information
-     * including the template resolution hierarchy, current template path, and
-     * performance metrics. Only used when beastmode debugging is enabled.
+     * This method wraps the rendered template content with basic debug information
+     * including the template resolution hierarchy and current template path.
+     * Simplified version without performance metrics or complex styling.
      *
      * @param string $content Template content to wrap with debug information
      * @param string $info JSON encoded debug information containing paths and metadata
@@ -419,6 +292,13 @@ class HierarchyTemplateLoader extends Component
      */
     private static function renderInfo(string $content, string $info, string $type = 'entry'): string
     {
+        // Check if we should include the shortcut script
+        $includeShortcutScript = false;
+        if (!self::$shortcutScriptAdded) {
+            $includeShortcutScript = true;
+            self::$shortcutScriptAdded = true;
+        }
+
         // Render debug info template with content
         return Craft::$app->view->renderTemplate(
             template: '_bonsai-twig/_partials/infobar',
@@ -426,6 +306,7 @@ class HierarchyTemplateLoader extends Component
                 'info' => $info,
                 'content' => $content,
                 'type' => $type,
+                'includeShortcutScript' => $includeShortcutScript,
             ]
         );
     }
@@ -448,244 +329,319 @@ class HierarchyTemplateLoader extends Component
     }
 
     /**
-     * Optimizes template paths by deduplication and normalization.
+     * Extracts field handles from an element for debugging purposes.
      *
-     * This method implements efficient path deduplication algorithms to reduce
-     * the number of file system checks needed during template resolution.
-     * It maintains the original order while removing duplicates and normalizing paths.
+     * Returns an array of field information including handle, name, type, and nested
+     * information for complex fields like Matrix blocks and relational fields.
      *
-     * @param array<string> $templates Original template paths
-     * @param string $basePath Base path to prepend to template paths
-     * @return array<string> Optimized and deduplicated template paths
+     * @param \craft\base\ElementInterface $element The element to extract field handles from
+     * @return array|null Array of field information or null if no fields found
      */
-    private static function optimizeTemplatePaths(array $templates, string $basePath): array
+    private static function extractFieldHandles(\craft\base\ElementInterface $element): ?array
     {
-        if (empty($templates)) {
-            return [];
-        }
+        try {
+            $fieldLayout = $element->getFieldLayout();
 
-        $optimizedPaths = [];
-        $seenPaths = [];
-        
-        foreach ($templates as $template) {
-            // Generate full path
-            $fullPath = $basePath ? StringHelper::trim($basePath . '/' . $template, '/') : StringHelper::trim($template, '/');
-            
-            // Validate the full path before using it
-            try {
-                SecurityUtils::validateTemplatePath($fullPath);
-            } catch (InvalidTemplatePathException $e) {
-                // Skip invalid paths but continue processing
-                continue;
+            if (!$fieldLayout) {
+                return null;
             }
-            
-            // Normalize path for deduplication (convert backslashes, remove double slashes)
-            $normalizedPath = str_replace(['\\', '//'], ['/', '/'], $fullPath);
-            $normalizedPath = rtrim($normalizedPath, '/');
-            
-            // Skip if we've already seen this path
-            if (isset($seenPaths[$normalizedPath])) {
-                continue;
+
+            $fields = $fieldLayout->getCustomFields();
+
+            if (empty($fields)) {
+                return null;
             }
-            
-            $seenPaths[$normalizedPath] = true;
-            $optimizedPaths[] = $normalizedPath;
+
+            $fieldInfo = [];
+
+            foreach ($fields as $field) {
+                $fieldData = [
+                    'handle' => $field->handle,
+                    'name' => $field->name,
+                    'type' => self::getFieldTypeDisplayName($field),
+                ];
+
+                // Add nested information for complex fields
+                $nestedInfo = self::extractNestedFieldInfo($field);
+                if ($nestedInfo) {
+                    $fieldData['nested'] = $nestedInfo;
+                }
+
+                $fieldInfo[] = $fieldData;
+            }
+
+            return $fieldInfo;
+        } catch (\Exception $e) {
+            // Silently fail if we can't get field layout
+            return null;
         }
-        
-        return $optimizedPaths;
     }
 
     /**
-     * Performs batch template existence checks.
+     * Gets a user-friendly display name for a field type.
      *
-     * Checks all template paths for existence using the Craft view service.
-     *
-     * @param array<string> $templatePaths Template paths to check
-     * @return array<string, bool> Map of template paths to existence status
+     * @param \craft\base\FieldInterface $field The field to get the display name for
+     * @return string The display name for the field type
      */
-    private static function batchCheckTemplateExistence(
-        array $templatePaths,
-    ): array {
-        $existenceResults = [];
-        $view = Craft::$app->view;
-
-        foreach ($templatePaths as $path) {
-            $exists = $view->doesTemplateExist($path);
-            $existenceResults[$path] = $exists;
-        }
-
-        return $existenceResults;
-    }
-
-    /**
-     * Finds the first existing template using early exit strategy.
-     *
-     * This method implements an early exit strategy to stop processing as soon
-     * as the first existing template is found, improving performance for cases
-     * where templates are found early in the hierarchy.
-     *
-     * @param array<string> $templatePaths Template paths in priority order
-     * @param array<string, bool> $existenceResults Pre-computed existence results
-     * @return string|null Path of first existing template or null if none found
-     */
-    private static function findFirstExistingTemplate(
-        array $templatePaths,
-        array $existenceResults,
-    ): ?string {
-        foreach ($templatePaths as $path) {
-            if ($existenceResults[$path] ?? false) {
-                return $path;
-            }
-        }
-        
-        return null;
-    }
-
-    /**
-     * Enhances template paths with site-specific variations and fallback mechanisms.
-     *
-     * This method implements multi-site template resolution logic by generating
-     * site-specific template paths and proper fallback mechanisms for missing
-     * site templates.
-     *
-     * @param array<string> $templatePaths Original template paths
-     * @param TemplateContext $context Template resolution context
-     * @return array{paths: array<string>, fallbackSite: string|null} Enhanced paths with fallback info
-     */
-    private static function enhancePathsForMultiSite(
-        array $templatePaths,
-        TemplateContext $context,
-    ): array {
-        $sitesService = Craft::$app->sites;
-        $currentSite = $sitesService->currentSite;
-
-        if (!$currentSite) {
-            throw new \RuntimeException('Current site could not be determined for multi-site template resolution');
-        }
-
-        $fallbackSite = null;
-
-        // Get element's site or current site
-        $elementSiteId = $context->element->siteId ?? $currentSite->id;
-        $elementSite = $sitesService->getSiteById($elementSiteId);
-        
-        if (!$elementSite) {
-            $elementSite = $currentSite;
-        }
-        
-        $enhancedPaths = [];
-        
-        // If baseSite is specified, use it for site-specific paths
-        if ($context->baseSite) {
-            $baseSite = $sitesService->getSiteByHandle($context->baseSite);
-            if ($baseSite) {
-                // Generate site-specific paths first (highest priority)
-                foreach ($templatePaths as $path) {
-                    $siteSpecificPath = self::generateSiteSpecificPath($path, $baseSite->handle);
-                    if ($siteSpecificPath !== $path) {
-                        $enhancedPaths[] = $siteSpecificPath;
-                    }
-                }
-                
-                // Add original paths as fallback
-                $enhancedPaths = array_merge($enhancedPaths, $templatePaths);
-                
-                // If baseSite is different from element site, set up fallback
-                if ($baseSite->id !== $elementSite->id) {
-                    $fallbackSite = $elementSite->handle;
-                    
-                    // Add element site-specific paths as additional fallback
-                    foreach ($templatePaths as $path) {
-                        $fallbackPath = self::generateSiteSpecificPath($path, $elementSite->handle);
-                        if ($fallbackPath !== $path && !in_array($fallbackPath, $enhancedPaths)) {
-                            $enhancedPaths[] = $fallbackPath;
-                        }
-                    }
-                }
-            } else {
-                // Invalid baseSite handle, use original paths
-                $enhancedPaths = $templatePaths;
-            }
-        } else {
-            // No baseSite specified, use element's site for site-specific paths
-            foreach ($templatePaths as $path) {
-                $siteSpecificPath = self::generateSiteSpecificPath($path, $elementSite->handle);
-                if ($siteSpecificPath !== $path) {
-                    $enhancedPaths[] = $siteSpecificPath;
-                }
-            }
-            
-            // Add original paths as fallback
-            $enhancedPaths = array_merge($enhancedPaths, $templatePaths);
-            
-            // If element site is not the primary site, add primary site fallback
-            $primarySite = $sitesService->primarySite;
-            if ($primarySite && $primarySite->id !== $elementSite->id) {
-                $fallbackSite = $primarySite->handle;
-                
-                foreach ($templatePaths as $path) {
-                    $primarySitePath = self::generateSiteSpecificPath($path, $primarySite->handle);
-                    if ($primarySitePath !== $path && !in_array($primarySitePath, $enhancedPaths)) {
-                        $enhancedPaths[] = $primarySitePath;
-                    }
-                }
-            }
-        }
-        
-        return [
-            'paths' => array_unique($enhancedPaths),
-            'fallbackSite' => $fallbackSite,
-        ];
-    }
-
-    /**
-     * Generates a site-specific template path.
-     *
-     * This method creates site-specific template paths by inserting the site handle
-     * into the template path structure, following Craft CMS conventions.
-     *
-     * @param string $templatePath Original template path
-     * @param string $siteHandle Site handle to use for path generation
-     * @return string Site-specific template path
-     */
-    private static function generateSiteSpecificPath(string $templatePath, string $siteHandle): string
+    private static function getFieldTypeDisplayName(\craft\base\FieldInterface $field): string
     {
-        // Don't modify paths that already contain site-specific segments
-        if (str_contains($templatePath, '/_' . $siteHandle . '/') ||
-            str_contains($templatePath, '/' . $siteHandle . '/')) {
-            return $templatePath;
-        }
+        $className = get_class($field);
         
-        // Split path into directory and filename
-        $pathParts = explode('/', $templatePath);
-        $filename = array_pop($pathParts);
-        $directory = implode('/', $pathParts);
+        // Extract the class name without namespace
+        $shortClassName = substr($className, strrpos($className, '\\') + 1);
         
-        // Generate site-specific variations
-        $siteSpecificPaths = [];
-        
-        // Method 1: Add site handle as subdirectory
-        if (!empty($directory)) {
-            $siteSpecificPaths[] = $directory . '/' . $siteHandle . '/' . $filename;
-        } else {
-            $siteSpecificPaths[] = $siteHandle . '/' . $filename;
-        }
-        
-        // Method 2: Add site handle as filename prefix (for flat structures)
-        $filenameParts = explode('.', $filename);
-        if (count($filenameParts) > 1) {
-            $extension = array_pop($filenameParts);
-            $baseName = implode('.', $filenameParts);
-            $siteSpecificFilename = $baseName . '_' . $siteHandle . '.' . $extension;
-            
-            if (!empty($directory)) {
-                $siteSpecificPaths[] = $directory . '/' . $siteSpecificFilename;
-            } else {
-                $siteSpecificPaths[] = $siteSpecificFilename;
+        // Convert from CamelCase to readable format
+        return preg_replace('/([a-z])([A-Z])/', '$1 $2', $shortClassName);
+    }
+
+    /**
+     * Extracts nested field information for complex field types.
+     *
+     * @param \craft\base\FieldInterface $field The field to extract nested info from
+     * @return array|null Nested field information or null if not applicable
+     */
+    private static function extractNestedFieldInfo(\craft\base\FieldInterface $field): ?array
+    {
+        try {
+            $className = get_class($field);
+
+            // Handle Matrix fields - show block types and their fields
+            if ($className === 'craft\fields\Matrix') {
+                return self::extractMatrixBlockInfo($field);
             }
+
+            // Handle Entries field - show allowed sections
+            if ($className === 'craft\fields\Entries') {
+                return self::extractEntriesFieldInfo($field);
+            }
+
+            // Handle Categories field - show allowed groups
+            if ($className === 'craft\fields\Categories') {
+                return self::extractCategoriesFieldInfo($field);
+            }
+
+            // Handle Assets field - show allowed volumes
+            if ($className === 'craft\fields\Assets') {
+                return self::extractAssetsFieldInfo($field);
+            }
+
+            // Handle Users field
+            if ($className === 'craft\fields\Users') {
+                return ['type' => 'users', 'note' => 'User elements'];
+            }
+
+            // Handle option-based fields
+            if (in_array($className, [
+                'craft\fields\Dropdown',
+                'craft\fields\RadioButtons', 
+                'craft\fields\Checkboxes',
+                'craft\fields\MultiSelect'
+            ])) {
+                return self::extractOptionsFieldInfo($field);
+            }
+
+            // Handle Lightswitch field
+            if ($className === 'craft\fields\Lightswitch') {
+                return [
+                    'type' => 'lightswitch',
+                    'note' => 'Boolean (true/false)',
+                ];
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            return null;
         }
-        
-        // Return the first site-specific path (subdirectory method preferred)
-        return $siteSpecificPaths[0] ?? $templatePath;
+    }
+
+    /**
+     * Extracts block type information from a Matrix field.
+     *
+     * @param \craft\fields\Matrix $field The Matrix field
+     * @return array|null Block type information
+     */
+    private static function extractMatrixBlockInfo($field): ?array
+    {
+        try {
+            // Craft 5 uses Entry Types, Craft 4 uses Block Types
+            $usesEntryTypes = method_exists($field, 'getEntryTypes');
+            $blockTypes = $usesEntryTypes
+                ? $field->getEntryTypes()
+                : $field->getBlockTypes();
+
+            if (empty($blockTypes)) {
+                return null;
+            }
+
+            $blockInfo = [];
+            foreach ($blockTypes as $blockType) {
+                $blockFields = [];
+
+                // Get custom fields using the field layout
+                $fieldLayout = $blockType->getFieldLayout();
+                $customFields = $fieldLayout ? $fieldLayout->getCustomFields() : [];
+
+                foreach ($customFields as $blockField) {
+                    $blockFields[] = [
+                        'handle' => $blockField->handle,
+                        'name' => $blockField->name,
+                        'type' => self::getFieldTypeDisplayName($blockField),
+                    ];
+                }
+
+                $blockInfo[] = [
+                    'handle' => $blockType->handle,
+                    'name' => $blockType->name,
+                    'fields' => $blockFields,
+                ];
+            }
+
+            return [
+                'type' => 'matrix',
+                'blocks' => $blockInfo,
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Extracts source information from an Entries field.
+     *
+     * @param \craft\fields\Entries $field The Entries field
+     * @return array|null Source information
+     */
+    private static function extractEntriesFieldInfo($field): ?array
+    {
+        try {
+            $sources = [];
+            $sourcesData = $field->sources ?? [];
+
+            foreach ($sourcesData as $source) {
+                if (is_string($source) && strpos($source, 'section:') === 0) {
+                    $sectionUid = substr($source, 8);
+                    $section = \Craft::$app->sections->getSectionByUid($sectionUid);
+                    if ($section) {
+                        $sources[] = [
+                            'handle' => $section->handle,
+                            'name' => $section->name,
+                        ];
+                    }
+                }
+            }
+
+            return [
+                'type' => 'entries',
+                'sources' => $sources,
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Extracts source information from a Categories field.
+     *
+     * @param \craft\fields\Categories $field The Categories field
+     * @return array|null Source information
+     */
+    private static function extractCategoriesFieldInfo($field): ?array
+    {
+        try {
+            $sources = [];
+            $sourcesData = $field->sources ?? [];
+
+            foreach ($sourcesData as $source) {
+                if (is_string($source) && strpos($source, 'group:') === 0) {
+                    $groupUid = substr($source, 6);
+                    $group = \Craft::$app->categories->getGroupByUid($groupUid);
+                    if ($group) {
+                        $sources[] = [
+                            'handle' => $group->handle,
+                            'name' => $group->name,
+                        ];
+                    }
+                }
+            }
+
+            return [
+                'type' => 'categories',
+                'sources' => $sources,
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Extracts source information from an Assets field.
+     *
+     * @param \craft\fields\Assets $field The Assets field
+     * @return array|null Source information
+     */
+    private static function extractAssetsFieldInfo($field): ?array
+    {
+        try {
+            $sources = [];
+            $sourcesData = $field->sources ?? [];
+
+            foreach ($sourcesData as $source) {
+                if (is_string($source) && strpos($source, 'volume:') === 0) {
+                    $volumeUid = substr($source, 7);
+                    $volume = \Craft::$app->volumes->getVolumeByUid($volumeUid);
+                    if ($volume) {
+                        $sources[] = [
+                            'handle' => $volume->handle,
+                            'name' => $volume->name,
+                        ];
+                    }
+                }
+            }
+
+            return [
+                'type' => 'assets',
+                'sources' => $sources,
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Extracts option information from option-based fields.
+     *
+     * @param \craft\base\FieldInterface $field The field with options
+     * @return array|null Option information
+     */
+    private static function extractOptionsFieldInfo($field): ?array
+    {
+        try {
+            $className = get_class($field);
+            $type = match ($className) {
+                'craft\fields\Dropdown' => 'dropdown',
+                'craft\fields\RadioButtons' => 'radio',
+                'craft\fields\Checkboxes' => 'checkboxes',
+                'craft\fields\MultiSelect' => 'multiselect',
+                default => 'options',
+            };
+
+            $options = [];
+            if (property_exists($field, 'options') && is_array($field->options)) {
+                foreach ($field->options as $option) {
+                    $options[] = [
+                        'label' => $option['label'] ?? '',
+                        'value' => $option['value'] ?? '',
+                        'isDefault' => $option['default'] ?? false,
+                    ];
+                }
+            }
+
+            return [
+                'type' => $type,
+                'options' => $options,
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }

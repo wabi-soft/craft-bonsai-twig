@@ -6,7 +6,7 @@ use wabisoft\bonsaitwig\tests\TestCase;
 use wabisoft\bonsaitwig\services\CategoryLoader;
 use wabisoft\bonsaitwig\services\HierarchyTemplateLoader;
 use wabisoft\bonsaitwig\valueobjects\TemplateContext;
-use wabisoft\bonsaitwig\exceptions\InvalidElementException;
+
 use craft\elements\Category;
 use craft\elements\Entry;
 use Mockery;
@@ -64,7 +64,7 @@ class CategoryLoaderTest extends TestCase
             path: 'category'
         );
         
-        $this->expectException(InvalidElementException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Expected Category element');
         
         $this->categoryLoader->load($context);

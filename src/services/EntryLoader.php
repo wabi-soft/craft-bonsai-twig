@@ -3,24 +3,13 @@
 namespace wabisoft\bonsaitwig\services;
 
 use craft\base\Element;
-use wabisoft\bonsaitwig\enums\TemplateType;
-use wabisoft\bonsaitwig\utilities\InputValidator;
 
 /**
  * Service class for loading template paths based on Craft entries.
  *
- * This class provides hierarchical template path resolution by examining an entry's
- * section, type and slug to determine the most appropriate template to load.
- * It follows a fallback pattern from most specific to most general template paths.
- *
- * The resolution order follows Craft's native template hierarchy:
- * 1. [site/]entry/section/type/slug
- * 2. [site/]entry/section/slug
- * 3. [site/]entry/section/type
- * 4. [site/]entry/section/default
- * 5. [site/]entry/section
- * 6. [site/]entry/type
- * 7. [site/]entry/default
+ * Simplified service that provides basic hierarchical template path resolution
+ * for development use. Focuses on core functionality without complex validation
+ * or optimization layers.
  *
  * @author Wabisoft
  * @since 6.4.0
@@ -28,20 +17,7 @@ use wabisoft\bonsaitwig\utilities\InputValidator;
 class EntryLoader
 {
     /**
-     * Loads and renders a template based on the provided entry and configuration.
-     *
-     * Generates a prioritized list of possible template paths based on the entry's
-     * section, type, and slug properties. Supports multi-site template resolution
-     * and provides comprehensive fallback mechanisms.
-     *
-     * Template path resolution follows this hierarchy:
-     * - Section/type/slug combination (most specific)
-     * - Section/slug combination
-     * - Section/type combination
-     * - Section/default combination
-     * - Section only
-     * - Type only
-     * - Default fallback (most general)
+     * Loads and renders a template based on the provided entry.
      *
      * @param array<string, mixed> $variables Configuration array containing:
      *        - entry: Required. Craft Entry element to base template paths on
@@ -53,58 +29,59 @@ class EntryLoader
      */
     public static function load(array $variables = []): string
     {
-        // Validate and sanitize all input parameters
-        $validatedVars = InputValidator::validateServiceParameters($variables, TemplateType::ENTRY);
+        // Basic parameter validation
+        $entry = $variables['entry'] ?? null;
+        if (!$entry instanceof Element) {
+            throw new \InvalidArgumentException('Entry parameter is required and must be a valid Craft Element');
+        }
         
-        // Extract validated parameters with defaults
-        $entry = $validatedVars['entry'];
-        $path = $validatedVars['path'] ?? 'entry';
-        $baseSite = $validatedVars['baseSite'] ?? false;
+        // Extract parameters with defaults
+        $path = $variables['path'] ?? 'entry';
+        $baseSite = $variables['baseSite'] ?? false;
 
         // Get entry properties for path building
         $section = $entry->section?->handle ?? '';
         $type = $entry->type?->handle ?? '';
         $slug = $entry->slug ?? '';
 
-        // Build array of possible template paths matching Craft's native pattern
+        // Build template paths in order of specificity
         $checkTemplates = [];
 
-        // Helper to add both baseSite and default versions of a path
-        $addPath = function(string $templatePath) use (&$checkTemplates, $baseSite, $path): void {
-            $pathsToAdd = [];
-            
-            // Add base path first
-            $pathsToAdd[] = $path . '/' . $templatePath;
-            
-            // Add site-specific path if baseSite is set (as fallback)
-            if ($baseSite) {
-                $pathsToAdd[] = $baseSite . '/' . $path . '/' . $templatePath;
-                $pathsToAdd[] = 'default/' . $path . '/' . $templatePath;
-            }
-            
-            // Add only unique paths
-            foreach ($pathsToAdd as $p) {
-                if (!in_array($p, $checkTemplates)) {
-                    $checkTemplates[] = $p;
-                }
-            }
-        };
+        // Build prefixes: $baseSite/entry (site-first) and entry (global)
+        $prefixes = [];
+        if ($baseSite) {
+            $prefixes[] = $baseSite . '/' . $path;
+        }
+        $prefixes[] = $path;
 
-        // Add paths in order of specificity
-        $addPath($section . '/' . $type . '/' . $slug);       // [site/]entry/section/type/slug
-        $addPath($section . '/' . $slug);                     // [site/]entry/section/slug
-        $addPath($section . '/' . $type);                     // [site/]entry/section/type
-        $addPath($section . '/default');                      // [site/]entry/section/default
-        $addPath($section);                                   // [site/]entry/section
-        $addPath($type);                                      // [site/]entry/type
-        $addPath('default');                                  // [site/]entry/default
+        // For each prefix, add paths in order of specificity
+        foreach ($prefixes as $prefix) {
+            // Slug-specific paths
+            $checkTemplates[] = $prefix . '/' . $section . '/' . $type . '/' . $slug;
+
+            // _entry fallback after slug-specific path
+            $checkTemplates[] = $prefix . '/' . $section . '/' . $type . '/_entry';
+
+            // Section/slug direct match (for entries without type)
+            $checkTemplates[] = $prefix . '/' . $section . '/' . $slug;
+
+            // Type and section fallbacks
+            $checkTemplates[] = $prefix . '/' . $section . '/' . $type;
+            $checkTemplates[] = $prefix . '/' . $section . '/default';
+            $checkTemplates[] = $prefix . '/' . $section;
+
+            // Type-only fallback
+            $checkTemplates[] = $prefix . '/' . $type;
+
+            // Default fallback for this prefix
+            $checkTemplates[] = $prefix . '/default';
+        }
 
         return HierarchyTemplateLoader::load(
             $checkTemplates,
-            $validatedVars,
-            '',  // basePath is no longer used
-            TemplateType::ENTRY,
-            TemplateType::ENTRY->getAllowedDebugValues()
+            $variables,
+            '',
+            'entry'
         );
     }
 }

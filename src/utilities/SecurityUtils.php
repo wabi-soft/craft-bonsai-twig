@@ -2,15 +2,11 @@
 
 namespace wabisoft\bonsaitwig\utilities;
 
-use craft\helpers\StringHelper;
-use wabisoft\bonsaitwig\exceptions\InvalidTemplatePathException;
-
 /**
- * Security utility class for path sanitization and validation.
+ * Simplified security utility for basic path sanitization.
  *
- * This class provides comprehensive security utilities for template path handling,
- * input validation, and protection against common security vulnerabilities like
- * path traversal attacks.
+ * This class provides essential path cleaning for template paths,
+ * focusing only on basic security needs for a dev-only tool.
  *
  * @author Wabisoft
  * @package wabisoft\bonsaitwig\utilities
@@ -19,285 +15,50 @@ use wabisoft\bonsaitwig\exceptions\InvalidTemplatePathException;
 class SecurityUtils
 {
     /**
-     * Maximum allowed path length to prevent buffer overflow attacks.
-     */
-    private const MAX_PATH_LENGTH = 1024;
-
-    /**
-     * Allowed characters in template paths (alphanumeric, dash, underscore, slash, dot).
-     */
-    private const ALLOWED_PATH_CHARS = '/^[a-zA-Z0-9\-_\/\.]+$/';
-
-    /**
-     * Dangerous path patterns that should be blocked.
-     */
-    private const DANGEROUS_PATTERNS = [
-        '../',
-        '..\\',
-        './',
-        '.\\',
-        '~/',
-        '~\\',
-    ];
-
-    /**
-     * Sanitize a template path and enforce safety rules.
+     * Template path sanitization with proper path normalization.
+     *
+     * Uses a stack-based approach to properly handle path traversal attempts,
+     * ensuring no ".." or "." segments remain in the final path.
+     *
+     * @param string $path The path to sanitize
+     * @return string The sanitized path
      */
     public static function sanitizeTemplatePath(string $path): string
     {
         if (empty(trim($path))) {
-            throw new InvalidTemplatePathException(path: $path, reason: 'Template path cannot be empty');
+            return '';
         }
 
-        if (strlen($path) > self::MAX_PATH_LENGTH) {
-            throw new InvalidTemplatePathException(path: $path, reason: sprintf('Template path exceeds maximum length of %d characters', self::MAX_PATH_LENGTH));
-        }
+        // Normalize backslashes to forward slashes first
+        $path = str_replace('\\', '/', $path);
 
-        foreach (self::DANGEROUS_PATTERNS as $pattern) {
-            if (str_contains($path, $pattern)) {
-                throw new InvalidTemplatePathException(path: $path, reason: sprintf('Path contains dangerous pattern: %s', $pattern));
+        // Split path into segments
+        $segments = explode('/', $path);
+
+        // Use a stack to build the normalized path
+        $stack = [];
+
+        foreach ($segments as $segment) {
+            // Skip empty segments (from multiple slashes)
+            if ($segment === '' || $segment === '.') {
+                continue;
             }
-        }
 
-        if (self::isAbsolutePath($path)) {
-            throw new InvalidTemplatePathException(path: $path, reason: 'Absolute paths are not allowed in template paths');
-        }
-
-        $normalized = str_replace('\\', '/', $path);
-        $normalized = trim($normalized);
-
-        $segments = array_filter(explode('/', $normalized), static fn($s) => $s !== '');
-        $normalizedSegments = [];
-        foreach ($segments as $seg) {
-            $normalizedSegments[] = self::normalizePathSegment($seg);
-        }
-        $sanitizedPath = implode('/', $normalizedSegments);
-
-        if ($sanitizedPath === '' || !preg_match(self::ALLOWED_PATH_CHARS, $sanitizedPath)) {
-            throw new InvalidTemplatePathException(path: $path, reason: 'Template path contains invalid characters');
-        }
-
-        $sanitizedPath = trim($sanitizedPath, '/ ');
-        $sanitizedPath = preg_replace('/\/+/', '/', $sanitizedPath);
-
-        if (empty($sanitizedPath)) {
-            throw new InvalidTemplatePathException(path: $path, reason: 'Path is empty after sanitization');
-        }
-
-        return $sanitizedPath;
-    }
-
-    /** Validate a template path is safe for use. */
-    public static function validateTemplatePath(string $path): bool
-    {
-        $sanitizedPath = self::sanitizeTemplatePath($path);
-
-        if (str_contains($sanitizedPath, "\0")) {
-            throw new InvalidTemplatePathException(path: $path, reason: 'Path contains null bytes');
-        }
-
-        if (str_contains($sanitizedPath, '..')) {
-            throw new InvalidTemplatePathException(path: $path, reason: 'Path contains consecutive dots');
-        }
-
-        if (str_starts_with($sanitizedPath, '.')) {
-            throw new InvalidTemplatePathException(path: $path, reason: 'Path cannot start with a dot');
-        }
-
-        $pathParts = explode('/', $sanitizedPath);
-        foreach ($pathParts as $part) {
-            if (self::isReservedName($part)) {
-                throw new InvalidTemplatePathException(path: $path, reason: sprintf('Path contains reserved name: %s', $part));
+            // Handle parent directory traversal
+            if ($segment === '..') {
+                // Pop from stack if not empty (prevents escaping root)
+                if (count($stack) > 0) {
+                    array_pop($stack);
+                }
+                // If stack is empty, ignore the ".." to prevent escaping
+                continue;
             }
+
+            // Normal segment - add to stack
+            $stack[] = $segment;
         }
 
-        return true;
-    }
-
-    /**
-     * Sanitizes an array of template paths.
-     *
-     * @param array<string> $paths Array of template paths to sanitize
-     * @return array<string> Array of sanitized template paths
-     * @throws InvalidTemplatePathException If any path is invalid
-     */
-    public static function sanitizeTemplatePaths(array $paths): array
-    {
-        $sanitizedPaths = [];
-        
-        foreach ($paths as $path) {
-            if (!is_string($path)) {
-                throw new InvalidTemplatePathException(
-                    path: (string) $path,
-                    reason: 'Template path must be a string'
-                );
-            }
-            
-            $sanitizedPaths[] = self::sanitizeTemplatePath($path);
-        }
-
-        return $sanitizedPaths;
-    }
-
-    /**
-     * Checks if a path is an absolute path.
-     *
-     * @param string $path The path to check
-     * @return bool True if the path is absolute
-     */
-    private static function isAbsolutePath(string $path): bool
-    {
-        // Unix/Linux absolute paths start with /
-        if (str_starts_with($path, '/')) {
-            return true;
-        }
-
-        // Windows absolute paths (C:, D:, etc.)
-        if (PHP_OS_FAMILY === 'Windows' && preg_match('/^[A-Za-z]:/', $path)) {
-            return true;
-        }
-
-        // UNC paths (\\server\share)
-        if (str_starts_with($path, '\\\\')) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Checks if a filename is a reserved system name.
-     *
-     * @param string $name The filename to check
-     * @return bool True if the name is reserved
-     */
-    private static function isReservedName(string $name): bool
-    {
-        // Windows reserved names
-        $reservedNames = [
-            'CON', 'PRN', 'AUX', 'NUL',
-            'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
-            'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9',
-        ];
-
-        $upperName = strtoupper($name);
-        
-        // Check exact matches
-        if (in_array($upperName, $reservedNames, true)) {
-            return true;
-        }
-
-        // Check with extensions (e.g., CON.txt)
-        $nameWithoutExt = pathinfo($upperName, PATHINFO_FILENAME);
-        return in_array($nameWithoutExt, $reservedNames, true);
-    }
-
-    /**
-     * Normalize a single path segment by transliterating to ASCII and replacing invalid characters.
-     */
-    private static function normalizePathSegment(string $segment): string
-    {
-        $segment = self::transliterateToAscii($segment);
-        // Replace any remaining invalid characters with a dash
-        $segment = preg_replace('/[^A-Za-z0-9\._-]+/', '-', $segment ?? '');
-        // Collapse multiple dashes
-        $segment = preg_replace('/-+/', '-', $segment ?? '-');
-        // Trim spaces, dashes
-        $segment = trim((string)$segment, " -");
-        // Avoid leading dots which would create hidden paths
-        $segment = ltrim($segment, '.');
-        if ($segment === '') {
-            $segment = '-';
-        }
-        return $segment;
-    }
-
-    /**
-     * Best-effort transliteration of a string to ASCII.
-     */
-    private static function transliterateToAscii(string $value): string
-    {
-        // Prefer Craft's built-in ASCII transliteration
-        try {
-            $ascii = StringHelper::toAscii($value);
-            if ($ascii !== '') {
-                return $ascii;
-            }
-        } catch (\Throwable $e) {
-            // fall through to other strategies
-        }
-        // Fallback to intl transliterator if available
-        if (function_exists('transliterator_transliterate')) {
-            $result = transliterator_transliterate('Any-Latin; Latin-ASCII', $value);
-            if ($result !== null) {
-                return $result;
-            }
-        }
-        // Final fallback to iconv
-        $result = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
-        if ($result !== false) {
-            return (string)$result;
-        }
-        return $value;
-    }
-
-    /**
-     * Generates a secure cache key from template information.
-     *
-     * Creates a secure hash-based cache key that prevents cache poisoning
-     * and ensures consistent key generation.
-     *
-     * @param array<string> $templates Array of template paths
-     * @param string $type Template type identifier
-     * @param array<string, mixed> $context Additional context for key generation
-     * @return string Secure cache key
-     */
-    public static function generateSecureCacheKey(array $templates, string $type, array $context = []): string
-    {
-        // Sanitize all template paths first
-        $sanitizedTemplates = self::sanitizeTemplatePaths($templates);
-        
-        // Create a consistent data structure for hashing
-        $keyData = [
-            'templates' => $sanitizedTemplates,
-            'type' => $type,
-            'context' => $context,
-            'version' => '1.0', // Version for cache invalidation if needed
-        ];
-
-        // Generate secure hash
-        $serializedData = serialize($keyData);
-        return 'bonsai_twig:' . hash('sha256', $serializedData);
-    }
-
-    /**
-     * Validates file permissions for template access.
-     *
-     * Checks if the current process has appropriate permissions to read
-     * the specified template file.
-     *
-     * @param string $templatePath The template path to check
-     * @return bool True if the file is readable
-     */
-    public static function validateFilePermissions(string $templatePath): bool
-    {
-        // First validate the path itself
-        self::validateTemplatePath($templatePath);
-
-        // Check if file exists and is readable
-        if (!file_exists($templatePath)) {
-            return false;
-        }
-
-        if (!is_readable($templatePath)) {
-            return false;
-        }
-
-        // Ensure it's a regular file (not a directory or special file)
-        if (!is_file($templatePath)) {
-            return false;
-        }
-
-        return true;
+        // Join stack with "/" and trim leading/trailing slashes and spaces
+        return trim(implode('/', $stack), '/ ');
     }
 }

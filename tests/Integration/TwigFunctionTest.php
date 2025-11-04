@@ -4,21 +4,14 @@ namespace wabisoft\bonsaitwig\tests\Integration;
 
 use wabisoft\bonsaitwig\tests\TestCase;
 use wabisoft\bonsaitwig\web\twig\Templates;
-use wabisoft\bonsaitwig\services\EntryLoader;
-use wabisoft\bonsaitwig\services\CategoryLoader;
-use wabisoft\bonsaitwig\services\ItemLoader;
-use wabisoft\bonsaitwig\services\MatrixLoader;
-use wabisoft\bonsaitwig\services\HierarchyTemplateLoader;
-use wabisoft\bonsaitwig\utilities\InputValidator;
-use wabisoft\bonsaitwig\utilities\SecurityUtils;
-use craft\web\View;
 use Mockery;
 
 /**
  * Integration tests for Twig function implementations.
  *
  * Tests the complete workflow from Twig function calls through
- * service layers to final template output.
+ * service layers to final template output, focusing on backward
+ * compatibility and function signature preservation.
  *
  * @author Wabisoft
  * @package wabisoft\bonsaitwig\tests\Integration
@@ -27,35 +20,30 @@ use Mockery;
 class TwigFunctionTest extends TestCase
 {
     private Templates $twigExtension;
-    private $mockEntryLoader;
-    private $mockCategoryLoader;
-    private $mockItemLoader;
-    private $mockMatrixLoader;
-    private $mockInputValidator;
-    private $mockSecurityUtils;
+    private $mockPlugin;
 
     protected function setUp(): void
     {
         parent::setUp();
-        
-        $this->mockEntryLoader = Mockery::mock(EntryLoader::class);
-        $this->mockCategoryLoader = Mockery::mock(CategoryLoader::class);
-        $this->mockItemLoader = Mockery::mock(ItemLoader::class);
-        $this->mockMatrixLoader = Mockery::mock(MatrixLoader::class);
-        $this->mockInputValidator = Mockery::mock(InputValidator::class);
-        $this->mockSecurityUtils = Mockery::mock(SecurityUtils::class);
-        
-        $this->twigExtension = new Templates(
-            $this->mockEntryLoader,
-            $this->mockCategoryLoader,
-            $this->mockItemLoader,
-            $this->mockMatrixLoader,
-            $this->mockInputValidator,
-            $this->mockSecurityUtils
-        );
+
+        // Create aliased mock of BonsaiTwig class to intercept static methods
+        $this->mockPlugin = Mockery::mock('alias:wabisoft\bonsaitwig\BonsaiTwig');
+
+        // Mock the service properties
+        $this->mockPlugin->entryLoader = Mockery::mock('wabisoft\bonsaitwig\services\EntryLoader');
+        $this->mockPlugin->categoryLoader = Mockery::mock('wabisoft\bonsaitwig\services\CategoryLoader');
+        $this->mockPlugin->itemLoader = Mockery::mock('wabisoft\bonsaitwig\services\ItemLoader');
+        $this->mockPlugin->matrixLoader = Mockery::mock('wabisoft\bonsaitwig\services\MatrixLoader');
+
+        // Set up the static getInstance() method on the aliased mock
+        $this->mockPlugin
+            ->shouldReceive('getInstance')
+            ->andReturn($this->mockPlugin);
+
+        $this->twigExtension = new Templates();
     }
 
-    public function testEntryTemplatesFunction(): void
+    public function testEntryTemplatesFunctionSignature(): void
     {
         $entry = $this->createMockEntry([
             'sectionHandle' => 'blog',
@@ -64,31 +52,30 @@ class TwigFunctionTest extends TestCase
         
         $expectedOutput = '<article>Entry content</article>';
         
-        // Mock input validation
-        $this->mockInputValidator
-            ->shouldReceive('validateElement')
-            ->with($entry)
-            ->andReturn(true);
-        
-        $this->mockInputValidator
-            ->shouldReceive('validatePath')
-            ->with('entry')
-            ->andReturn('entry');
-        
-        // Mock security validation
-        $this->mockSecurityUtils
-            ->shouldReceive('sanitizePath')
-            ->with('entry')
-            ->andReturn('entry');
-        
-        // Mock entry loader
-        $this->mockEntryLoader
+        // Mock entry loader to return expected output
+        $this->mockPlugin->entryLoader
             ->shouldReceive('load')
             ->once()
-            ->with(Mockery::type('wabisoft\bonsaitwig\valueobjects\TemplateContext'))
+            ->with(Mockery::type('array'))
             ->andReturn($expectedOutput);
         
-        $result = $this->twigExtension->entryTemplates($entry, 'entry');
+        // Test that the function accepts the expected parameters
+        $functions = $this->twigExtension->getFunctions();
+        $entryFunction = null;
+        
+        foreach ($functions as $function) {
+            if ($function->getName() === 'entryTemplates') {
+                $entryFunction = $function;
+                break;
+            }
+        }
+        
+        $this->assertNotNull($entryFunction, 'entryTemplates function should be registered');
+        $this->assertTrue($entryFunction->getOptions()['is_safe']['html'] ?? false, 'entryTemplates should be HTML safe');
+        
+        // Test function call with entry parameter
+        $callable = $entryFunction->getCallable();
+        $result = call_user_func($callable, ['entry' => $entry]);
         
         $this->assertEquals($expectedOutput, $result);
     }
@@ -96,48 +83,39 @@ class TwigFunctionTest extends TestCase
     public function testEntryTemplatesWithOptionalParameters(): void
     {
         $entry = $this->createMockEntry();
-        $variables = ['showAuthor' => true];
+        $variables = ['showAuthor' => true, 'entry' => $entry, 'path' => 'custom'];
         
         $expectedOutput = '<article>Entry with author</article>';
         
-        // Mock input validation
-        $this->mockInputValidator
-            ->shouldReceive('validateElement')
-            ->with($entry)
-            ->andReturn(true);
-        
-        $this->mockInputValidator
-            ->shouldReceive('validatePath')
-            ->with('custom')
-            ->andReturn('custom');
-        
-        $this->mockInputValidator
-            ->shouldReceive('validateVariables')
-            ->with($variables)
-            ->andReturn($variables);
-        
-        // Mock security validation
-        $this->mockSecurityUtils
-            ->shouldReceive('sanitizePath')
-            ->with('custom')
-            ->andReturn('custom');
-        
         // Mock entry loader
-        $this->mockEntryLoader
+        $this->mockPlugin->entryLoader
             ->shouldReceive('load')
             ->once()
-            ->with(Mockery::on(function($context) use ($variables) {
-                return $context->path === 'custom' && 
-                       $context->variables === $variables;
+            ->with(Mockery::on(function($params) use ($variables) {
+                return $params['path'] === 'custom' && 
+                       $params['showAuthor'] === true &&
+                       $params['entry'] === $variables['entry'];
             }))
             ->andReturn($expectedOutput);
         
-        $result = $this->twigExtension->entryTemplates($entry, 'custom', null, null, $variables);
+        // Test function call with additional variables
+        $functions = $this->twigExtension->getFunctions();
+        $entryFunction = null;
+        
+        foreach ($functions as $function) {
+            if ($function->getName() === 'entryTemplates') {
+                $entryFunction = $function;
+                break;
+            }
+        }
+        
+        $callable = $entryFunction->getCallable();
+        $result = call_user_func($callable, $variables);
         
         $this->assertEquals($expectedOutput, $result);
     }
 
-    public function testCategoryTemplatesFunction(): void
+    public function testCategoryTemplatesFunctionSignature(): void
     {
         $category = $this->createMockCategory([
             'groupHandle' => 'topics'
@@ -145,36 +123,35 @@ class TwigFunctionTest extends TestCase
         
         $expectedOutput = '<div class="category">Category content</div>';
         
-        // Mock input validation
-        $this->mockInputValidator
-            ->shouldReceive('validateElement')
-            ->with($category)
-            ->andReturn(true);
-        
-        $this->mockInputValidator
-            ->shouldReceive('validatePath')
-            ->with('category')
-            ->andReturn('category');
-        
-        // Mock security validation
-        $this->mockSecurityUtils
-            ->shouldReceive('sanitizePath')
-            ->with('category')
-            ->andReturn('category');
-        
         // Mock category loader
-        $this->mockCategoryLoader
+        $this->mockPlugin->categoryLoader
             ->shouldReceive('load')
             ->once()
-            ->with(Mockery::type('wabisoft\bonsaitwig\valueobjects\TemplateContext'))
+            ->with(Mockery::type('array'))
             ->andReturn($expectedOutput);
         
-        $result = $this->twigExtension->categoryTemplates($category, 'category');
+        // Test that the function accepts the expected parameters
+        $functions = $this->twigExtension->getFunctions();
+        $categoryFunction = null;
+        
+        foreach ($functions as $function) {
+            if ($function->getName() === 'categoryTemplates') {
+                $categoryFunction = $function;
+                break;
+            }
+        }
+        
+        $this->assertNotNull($categoryFunction, 'categoryTemplates function should be registered');
+        $this->assertTrue($categoryFunction->getOptions()['is_safe']['html'] ?? false, 'categoryTemplates should be HTML safe');
+        
+        // Test function call with category parameter
+        $callable = $categoryFunction->getCallable();
+        $result = call_user_func($callable, ['entry' => $category]);
         
         $this->assertEquals($expectedOutput, $result);
     }
 
-    public function testItemTemplatesFunction(): void
+    public function testItemTemplatesFunctionSignature(): void
     {
         $entry = $this->createMockEntry([
             'sectionHandle' => 'products',
@@ -183,36 +160,35 @@ class TwigFunctionTest extends TestCase
         
         $expectedOutput = '<div class="item">Item content</div>';
         
-        // Mock input validation
-        $this->mockInputValidator
-            ->shouldReceive('validateElement')
-            ->with($entry)
-            ->andReturn(true);
-        
-        $this->mockInputValidator
-            ->shouldReceive('validatePath')
-            ->with('item')
-            ->andReturn('item');
-        
-        // Mock security validation
-        $this->mockSecurityUtils
-            ->shouldReceive('sanitizePath')
-            ->with('item')
-            ->andReturn('item');
-        
         // Mock item loader
-        $this->mockItemLoader
+        $this->mockPlugin->itemLoader
             ->shouldReceive('load')
             ->once()
-            ->with(Mockery::type('wabisoft\bonsaitwig\valueobjects\TemplateContext'))
+            ->with(Mockery::type('array'))
             ->andReturn($expectedOutput);
         
-        $result = $this->twigExtension->itemTemplates($entry, 'item');
+        // Test that the function accepts the expected parameters
+        $functions = $this->twigExtension->getFunctions();
+        $itemFunction = null;
+        
+        foreach ($functions as $function) {
+            if ($function->getName() === 'itemTemplates') {
+                $itemFunction = $function;
+                break;
+            }
+        }
+        
+        $this->assertNotNull($itemFunction, 'itemTemplates function should be registered');
+        $this->assertTrue($itemFunction->getOptions()['is_safe']['html'] ?? false, 'itemTemplates should be HTML safe');
+        
+        // Test function call with entry parameter
+        $callable = $itemFunction->getCallable();
+        $result = call_user_func($callable, ['entry' => $entry]);
         
         $this->assertEquals($expectedOutput, $result);
     }
 
-    public function testMatrixTemplatesFunction(): void
+    public function testMatrixTemplatesFunctionSignature(): void
     {
         $ownerEntry = $this->createMockEntry();
         $matrixBlock = $this->createMockMatrixBlock([
@@ -222,36 +198,35 @@ class TwigFunctionTest extends TestCase
         
         $expectedOutput = '<div class="matrix-block">Matrix content</div>';
         
-        // Mock input validation
-        $this->mockInputValidator
-            ->shouldReceive('validateElement')
-            ->with($matrixBlock)
-            ->andReturn(true);
-        
-        $this->mockInputValidator
-            ->shouldReceive('validatePath')
-            ->with('matrix')
-            ->andReturn('matrix');
-        
-        // Mock security validation
-        $this->mockSecurityUtils
-            ->shouldReceive('sanitizePath')
-            ->with('matrix')
-            ->andReturn('matrix');
-        
         // Mock matrix loader
-        $this->mockMatrixLoader
+        $this->mockPlugin->matrixLoader
             ->shouldReceive('load')
             ->once()
-            ->with(Mockery::type('wabisoft\bonsaitwig\valueobjects\TemplateContext'))
+            ->with(Mockery::type('array'))
             ->andReturn($expectedOutput);
         
-        $result = $this->twigExtension->matrixTemplates($matrixBlock, 'matrix');
+        // Test that the function accepts the expected parameters
+        $functions = $this->twigExtension->getFunctions();
+        $matrixFunction = null;
+        
+        foreach ($functions as $function) {
+            if ($function->getName() === 'matrixTemplates') {
+                $matrixFunction = $function;
+                break;
+            }
+        }
+        
+        $this->assertNotNull($matrixFunction, 'matrixTemplates function should be registered');
+        $this->assertTrue($matrixFunction->getOptions()['is_safe']['html'] ?? false, 'matrixTemplates should be HTML safe');
+        
+        // Test function call with block parameter
+        $callable = $matrixFunction->getCallable();
+        $result = call_user_func($callable, ['block' => $matrixBlock]);
         
         $this->assertEquals($expectedOutput, $result);
     }
 
-    public function testMatrixTemplatesWithStyle(): void
+    public function testMatrixTemplatesWithStyleParameter(): void
     {
         $ownerEntry = $this->createMockEntry();
         $matrixBlock = $this->createMockMatrixBlock([
@@ -261,92 +236,68 @@ class TwigFunctionTest extends TestCase
         
         $expectedOutput = '<div class="matrix-block highlighted">Styled matrix content</div>';
         
-        // Mock input validation
-        $this->mockInputValidator
-            ->shouldReceive('validateElement')
-            ->with($matrixBlock)
-            ->andReturn(true);
-        
-        $this->mockInputValidator
-            ->shouldReceive('validatePath')
-            ->with('matrix')
-            ->andReturn('matrix');
-        
-        $this->mockInputValidator
-            ->shouldReceive('validateStyle')
-            ->with('highlighted')
-            ->andReturn('highlighted');
-        
-        // Mock security validation
-        $this->mockSecurityUtils
-            ->shouldReceive('sanitizePath')
-            ->with('matrix')
-            ->andReturn('matrix');
-        
-        $this->mockSecurityUtils
-            ->shouldReceive('sanitizeString')
-            ->with('highlighted')
-            ->andReturn('highlighted');
-        
         // Mock matrix loader
-        $this->mockMatrixLoader
+        $this->mockPlugin->matrixLoader
             ->shouldReceive('load')
             ->once()
-            ->with(Mockery::on(function($context) {
-                return $context->style === 'highlighted';
+            ->with(Mockery::on(function($params) {
+                return $params['style'] === 'highlighted' && 
+                       isset($params['block']);
             }))
             ->andReturn($expectedOutput);
         
-        $result = $this->twigExtension->matrixTemplates($matrixBlock, 'matrix', 'highlighted');
+        // Test function call with style parameter
+        $functions = $this->twigExtension->getFunctions();
+        $matrixFunction = null;
+        
+        foreach ($functions as $function) {
+            if ($function->getName() === 'matrixTemplates') {
+                $matrixFunction = $function;
+                break;
+            }
+        }
+        
+        $callable = $matrixFunction->getCallable();
+        $result = call_user_func($callable, [
+            'block' => $matrixBlock,
+            'style' => 'highlighted'
+        ]);
         
         $this->assertEquals($expectedOutput, $result);
     }
 
-    public function testFunctionWithDebugMode(): void
+    public function testBtPathFunctionSignature(): void
     {
-        $entry = $this->createMockEntry();
+        // Test that btPath function is registered correctly
+        $functions = $this->twigExtension->getFunctions();
+        $btPathFunction = null;
         
-        $templateOutput = '<article>Content</article>';
-        $debugOutput = '<div class="debug">Debug info</div>';
-        $expectedOutput = $templateOutput . $debugOutput;
+        foreach ($functions as $function) {
+            if ($function->getName() === 'btPath') {
+                $btPathFunction = $function;
+                break;
+            }
+        }
         
-        // Mock input validation
-        $this->mockInputValidator
-            ->shouldReceive('validateElement')
-            ->with($entry)
-            ->andReturn(true);
+        $this->assertNotNull($btPathFunction, 'btPath function should be registered');
+        $this->assertTrue($btPathFunction->getOptions()['is_safe']['html'] ?? false, 'btPath should be HTML safe');
+        $this->assertTrue($btPathFunction->getOptions()['needs_context'] ?? false, 'btPath should need context');
         
-        $this->mockInputValidator
-            ->shouldReceive('validatePath')
-            ->with('entry')
-            ->andReturn('entry');
+        // Test function call with context
+        $context = [
+            '_btTemplates' => ['template1.twig', 'template2.twig'],
+            '_btResolvedTemplate' => 'template1.twig',
+            'entry' => $this->createMockEntry()
+        ];
         
-        $this->mockInputValidator
-            ->shouldReceive('validateDebugMode')
-            ->with('full')
-            ->andReturn(true);
+        $callable = $btPathFunction->getCallable();
+        $result = call_user_func($callable, $context);
         
-        // Mock security validation
-        $this->mockSecurityUtils
-            ->shouldReceive('sanitizePath')
-            ->with('entry')
-            ->andReturn('entry');
-        
-        // Mock entry loader
-        $this->mockEntryLoader
-            ->shouldReceive('load')
-            ->once()
-            ->with(Mockery::on(function($context) {
-                return $context->showDebug === true;
-            }))
-            ->andReturn($expectedOutput);
-        
-        $result = $this->twigExtension->entryTemplates($entry, 'entry', null, 'full');
-        
-        $this->assertEquals($expectedOutput, $result);
+        // Should return HTML output in dev mode or empty string in production
+        $this->assertIsString($result);
     }
 
-    public function testFunctionWithContext(): void
+    public function testMatrixTemplatesWithContextParameter(): void
     {
         $matrixBlock = $this->createMockMatrixBlock();
         $contextEntry = $this->createMockEntry([
@@ -356,38 +307,32 @@ class TwigFunctionTest extends TestCase
         
         $expectedOutput = '<div class="matrix-in-context">Matrix with context</div>';
         
-        // Mock input validation
-        $this->mockInputValidator
-            ->shouldReceive('validateElement')
-            ->with($matrixBlock)
-            ->andReturn(true);
-        
-        $this->mockInputValidator
-            ->shouldReceive('validateElement')
-            ->with($contextEntry)
-            ->andReturn(true);
-        
-        $this->mockInputValidator
-            ->shouldReceive('validatePath')
-            ->with('matrix')
-            ->andReturn('matrix');
-        
-        // Mock security validation
-        $this->mockSecurityUtils
-            ->shouldReceive('sanitizePath')
-            ->with('matrix')
-            ->andReturn('matrix');
-        
         // Mock matrix loader
-        $this->mockMatrixLoader
+        $this->mockPlugin->matrixLoader
             ->shouldReceive('load')
             ->once()
-            ->with(Mockery::on(function($context) use ($contextEntry) {
-                return $context->context === $contextEntry;
+            ->with(Mockery::on(function($params) use ($contextEntry) {
+                return $params['ctx'] === $contextEntry && 
+                       isset($params['block']);
             }))
             ->andReturn($expectedOutput);
         
-        $result = $this->twigExtension->matrixTemplates($matrixBlock, 'matrix', null, $contextEntry);
+        // Test function call with context parameter
+        $functions = $this->twigExtension->getFunctions();
+        $matrixFunction = null;
+        
+        foreach ($functions as $function) {
+            if ($function->getName() === 'matrixTemplates') {
+                $matrixFunction = $function;
+                break;
+            }
+        }
+        
+        $callable = $matrixFunction->getCallable();
+        $result = call_user_func($callable, [
+            'block' => $matrixBlock,
+            'ctx' => $contextEntry
+        ]);
         
         $this->assertEquals($expectedOutput, $result);
     }
@@ -397,7 +342,7 @@ class TwigFunctionTest extends TestCase
         $functions = $this->twigExtension->getFunctions();
         
         $this->assertIsArray($functions);
-        $this->assertCount(4, $functions);
+        $this->assertCount(5, $functions);
         
         $functionNames = array_map(fn($func) => $func->getName(), $functions);
         
@@ -405,57 +350,58 @@ class TwigFunctionTest extends TestCase
         $this->assertContains('categoryTemplates', $functionNames);
         $this->assertContains('itemTemplates', $functionNames);
         $this->assertContains('matrixTemplates', $functionNames);
+        $this->assertContains('btPath', $functionNames);
     }
 
-    public function testInputValidationFailure(): void
+    public function testAllFunctionsAreHtmlSafe(): void
     {
-        $entry = $this->createMockEntry();
+        $functions = $this->twigExtension->getFunctions();
         
-        // Mock validation failure
-        $this->mockInputValidator
-            ->shouldReceive('validateElement')
-            ->with($entry)
-            ->andReturn(false);
-        
-        $this->expectException(\InvalidArgumentException::class);
-        
-        $this->twigExtension->entryTemplates($entry, 'entry');
+        foreach ($functions as $function) {
+            $this->assertTrue(
+                $function->getOptions()['is_safe']['html'] ?? false,
+                "Function {$function->getName()} should be HTML safe"
+            );
+        }
     }
 
-    public function testSecuritySanitization(): void
+    public function testFunctionParameterCompatibility(): void
     {
+        // Test that all functions accept array parameters as expected
         $entry = $this->createMockEntry();
-        $maliciousPath = '../../../etc/passwd';
-        $sanitizedPath = 'etc/passwd';
+        $category = $this->createMockCategory();
+        $matrixBlock = $this->createMockMatrixBlock();
         
-        // Mock input validation
-        $this->mockInputValidator
-            ->shouldReceive('validateElement')
-            ->with($entry)
-            ->andReturn(true);
+        // Mock all loaders to return simple output
+        $this->mockPlugin->entryLoader->shouldReceive('load')->andReturn('<div>entry</div>');
+        $this->mockPlugin->categoryLoader->shouldReceive('load')->andReturn('<div>category</div>');
+        $this->mockPlugin->itemLoader->shouldReceive('load')->andReturn('<div>item</div>');
+        $this->mockPlugin->matrixLoader->shouldReceive('load')->andReturn('<div>matrix</div>');
         
-        $this->mockInputValidator
-            ->shouldReceive('validatePath')
-            ->with($maliciousPath)
-            ->andReturn($maliciousPath);
+        $functions = $this->twigExtension->getFunctions();
         
-        // Mock security sanitization
-        $this->mockSecurityUtils
-            ->shouldReceive('sanitizePath')
-            ->with($maliciousPath)
-            ->andReturn($sanitizedPath);
-        
-        // Mock entry loader
-        $this->mockEntryLoader
-            ->shouldReceive('load')
-            ->once()
-            ->with(Mockery::on(function($context) use ($sanitizedPath) {
-                return $context->path === $sanitizedPath;
-            }))
-            ->andReturn('<div>Safe content</div>');
-        
-        $result = $this->twigExtension->entryTemplates($entry, $maliciousPath);
-        
-        $this->assertStringContainsString('Safe content', $result);
+        // Test entryTemplates accepts entry parameter
+        $entryFunction = array_values(array_filter($functions, fn($f) => $f->getName() === 'entryTemplates'))[0];
+        $callable = $entryFunction->getCallable();
+        $result = call_user_func($callable, ['entry' => $entry]);
+        $this->assertIsString($result);
+
+        // Test categoryTemplates accepts entry parameter (for category)
+        $categoryFunction = array_values(array_filter($functions, fn($f) => $f->getName() === 'categoryTemplates'))[0];
+        $callable = $categoryFunction->getCallable();
+        $result = call_user_func($callable, ['entry' => $category]);
+        $this->assertIsString($result);
+
+        // Test itemTemplates accepts entry parameter
+        $itemFunction = array_values(array_filter($functions, fn($f) => $f->getName() === 'itemTemplates'))[0];
+        $callable = $itemFunction->getCallable();
+        $result = call_user_func($callable, ['entry' => $entry]);
+        $this->assertIsString($result);
+
+        // Test matrixTemplates accepts block parameter
+        $matrixFunction = array_values(array_filter($functions, fn($f) => $f->getName() === 'matrixTemplates'))[0];
+        $callable = $matrixFunction->getCallable();
+        $result = call_user_func($callable, ['block' => $matrixBlock]);
+        $this->assertIsString($result);
     }
 }

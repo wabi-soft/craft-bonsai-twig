@@ -3,11 +3,11 @@
 namespace wabisoft\bonsaitwig\enums;
 
 /**
- * Enum for debug modes supported by the Bonsai Twig plugin.
+ * Simplified enum for debug modes in the Bonsai Twig plugin.
  *
- * This enum defines the different debug modes that can be enabled
- * via the beastmode parameter in development mode. Each mode provides
- * different levels of debugging information and visualization.
+ * This enum defines basic debug modes that can be enabled via the beastmode
+ * parameter in development mode. Simplified to just enabled/disabled without
+ * complex debug levels or performance monitoring modes.
  *
  * @author Wabisoft
  * @since 6.4.0
@@ -15,16 +15,14 @@ namespace wabisoft\bonsaitwig\enums;
 enum DebugMode: string
 {
     case DISABLED = '';
-    case PATH = 'path';
-    case HIERARCHY = 'hierarchy';
-    case FULL = 'full';
-    case ALL = 'all';
+    case ENABLED = 'enabled';
 
     /**
      * Checks if debug mode is enabled.
      *
      * Returns true for any debug mode except DISABLED, indicating
-     * that some form of debug information should be displayed.
+     * that basic debug information should be displayed without
+     * performance metrics or complex styling.
      *
      * @return bool True if debug mode is enabled, false otherwise
      */
@@ -33,59 +31,15 @@ enum DebugMode: string
         return $this !== self::DISABLED;
     }
 
-    /**
-     * Checks if this debug mode should show template paths.
-     *
-     * Returns true for debug modes that include template path information
-     * in their output.
-     *
-     * @return bool True if paths should be shown, false otherwise
-     */
-    public function shouldShowPaths(): bool
-    {
-        return match ($this) {
-            self::PATH, self::HIERARCHY, self::FULL, self::ALL => true,
-            default => false,
-        };
-    }
 
-    /**
-     * Checks if this debug mode should show hierarchy information.
-     *
-     * Returns true for debug modes that include template hierarchy
-     * visualization in their output.
-     *
-     * @return bool True if hierarchy should be shown, false otherwise
-     */
-    public function shouldShowHierarchy(): bool
-    {
-        return match ($this) {
-            self::HIERARCHY, self::FULL, self::ALL => true,
-            default => false,
-        };
-    }
 
-    /**
-     * Checks if this debug mode should show performance information.
-     *
-     * Returns true for debug modes that include performance metrics
-     * and timing information in their output.
-     *
-     * @return bool True if performance info should be shown, false otherwise
-     */
-    public function shouldShowPerformance(): bool
-    {
-        return match ($this) {
-            self::FULL, self::ALL => true,
-            default => false,
-        };
-    }
+
 
     /**
      * Creates a DebugMode from a string value.
      *
-     * Provides a safe way to create DebugMode instances from string
-     * values, with fallback to DISABLED for unknown values.
+     * Simplified approach: any non-empty string enables basic debug mode.
+     * No complex debug level parsing or validation needed for dev-only tool.
      *
      * @param string|null $value The string value to convert
      * @return self The corresponding DebugMode enum case
@@ -96,41 +50,9 @@ enum DebugMode: string
             return self::DISABLED;
         }
 
-        return match ($value) {
-            '' => self::ALL, // Empty string means show all (the ?beastmode case)
-            'path' => self::PATH,
-            'hierarchy' => self::HIERARCHY,
-            'full' => self::FULL,
-            'all' => self::ALL,
-            default => self::DISABLED,
-        };
+        // Any non-empty string enables debug mode
+        return $value !== '' ? self::ENABLED : self::DISABLED;
     }
 
-    /**
-     * Checks if a debug mode value is valid for a specific template type.
-     *
-     * Validates that the debug mode is appropriate for the given template
-     * type, allowing type-specific debug modes like 'entry', 'category', etc.
-     * Now supports cross-template debugging for better development experience.
-     *
-     * @param string $debugValue The debug value to check
-     * @param TemplateType $templateType The template type to validate against
-     * @return bool True if the debug value is valid for the template type
-     */
-    public static function isValidForTemplateType(string $debugValue, TemplateType $templateType): bool
-    {
-        // Empty string (from ?beastmode) means show all
-        if ($debugValue === '') {
-            return true;
-        }
-        
-        // Check if it's a general debug mode
-        $generalModes = ['path', 'hierarchy', 'full', 'all'];
-        if (in_array($debugValue, $generalModes)) {
-            return true;
-        }
 
-        // Check if it matches the template type (entry, category, item, matrix)
-        return $debugValue === $templateType->value;
-    }
 }

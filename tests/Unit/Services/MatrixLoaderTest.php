@@ -6,7 +6,7 @@ use wabisoft\bonsaitwig\tests\TestCase;
 use wabisoft\bonsaitwig\services\MatrixLoader;
 use wabisoft\bonsaitwig\services\HierarchyTemplateLoader;
 use wabisoft\bonsaitwig\valueobjects\TemplateContext;
-use wabisoft\bonsaitwig\exceptions\InvalidElementException;
+
 use craft\elements\MatrixBlock;
 use craft\elements\Entry;
 use Mockery;
@@ -70,7 +70,7 @@ class MatrixLoaderTest extends TestCase
             path: 'matrix'
         );
         
-        $this->expectException(InvalidElementException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Expected MatrixBlock element');
         
         $this->matrixLoader->load($context);

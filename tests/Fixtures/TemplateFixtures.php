@@ -335,7 +335,7 @@ TWIG;
             ],
             'invalid_element' => [
                 'element' => 'string_instead_of_element',
-                'exception' => 'InvalidElementException',
+                'exception' => 'InvalidArgumentException',
                 'message' => 'Expected Entry element'
             ],
             'path_traversal' => [

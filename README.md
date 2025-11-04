@@ -1,15 +1,15 @@
 # Bonsai Twig Plugin
 
-Welcome to the **Bonsai Twig Plugin** README! This plugin is designed to streamline your Twig templating experience by providing hierarchical template loading for various element types in Craft CMS 5.
+Welcome to the **Bonsai Twig Plugin** README! This plugin is designed as a **development-only tool** to streamline your Twig templating experience by providing hierarchical template loading for various element types in Craft CMS 5.
 
 ## Features
 
-- **Hierarchical Template Loading**: Automatically resolve templates for entries, categories, items, and matrix blocks with intelligent fallback mechanisms
-- **PHP 8.2 & Craft CMS 5 Optimized**: Built with modern PHP features including enums, readonly properties, null-safe operators, and union types
-- **Enhanced Debug Tools**: Comprehensive debugging with performance metrics, cache statistics, and template hierarchy visualization
-- **Type Safety**: Full type safety with custom exceptions, value objects, and strict type declarations
-- **Performance Optimized**: Advanced caching strategies, path deduplication, and performance monitoring
-- **Security Enhanced**: Path sanitization, input validation, and protection against traversal attacks
+- **Hierarchical Template Loading**: Automatically resolve templates for entries, categories, items, matrix blocks, and assets with intelligent fallback mechanisms
+- **PHP 8.2 & Craft CMS 5 Optimized**: Built with modern PHP features including null-safe operators and union types
+- **Simple Debug Tools**: Clean, focused debugging that shows template paths and resolution without performance overhead
+- **Development-Focused**: Designed specifically for development workflow - no production features or optimizations
+- **Enhanced btPath() Function**: Returns complete HTML output with styling, eliminating need for manual Twig wrapping
+- **Zero Production Overhead**: Debug features return empty strings in production mode
 
 ## Requirements
 
@@ -20,7 +20,7 @@ Welcome to the **Bonsai Twig Plugin** README! This plugin is designed to streaml
 
 ### Core Template Functions
 
-The plugin provides four main Twig functions for hierarchical template loading:
+The plugin provides five main Twig functions for hierarchical template loading:
 
 #### 1. Entry Templates
 
@@ -195,93 +195,170 @@ You can pass additional variables using either approach:
 
 Both approaches make the variables available in your matrix template. The `variables` parameter is useful for organizing custom data separately from system parameters.
 
-### 5. Template Path Display (`btPath()`)
+#### 5. Asset Templates
 
-The `btPath()` function provides a lightweight way to display template resolution hierarchies directly in your templates. This is particularly useful for item and matrix templates where you need to quickly identify which template is being used and where to place custom overrides.
+```twig
+{{ assetTemplates({ asset }) }}
+```
+
+**Description**: Loads templates for Craft asset elements with intelligent hierarchy based on volume, folder, and filename.
+
+**Parameters**:
+
+- `asset` (Asset): The asset element to render
+- `path` (string, optional): Custom template path override (defaults to 'asset')
+- `baseSite` (string, optional): Base site handle for multi-site setups
+
+**Template Hierarchy**:
+
+The asset loader checks for templates in this order:
+
+1. `asset/{volume}/{folder}/{filename}` - Most specific match for a particular file
+2. `asset/{volume}/{filename}` - For assets in root of volume (no folder)
+3. `asset/{volume}/{folder}/default` - Default template for a specific folder
+4. `asset/{volume}/default` - Default template for the volume
+5. `asset/{volume}` - Volume-level template
+6. `asset/default` - Global fallback
+
+**Example Usage**:
+
+```twig
+{# Basic asset rendering #}
+{{ assetTemplates({ asset: image }) }}
+
+{# Render images in a gallery #}
+{% for image in entry.gallery.all() %}
+    {{ assetTemplates({ asset: image }) }}
+{% endfor %}
+
+{# Custom path #}
+{{ assetTemplates({
+    asset: document,
+    path: 'downloads'
+}) }}
+
+{# Multi-site support #}
+{{ assetTemplates({
+    asset: image,
+    baseSite: 'fr'
+}) }}
+```
+
+**Example Template Structure**:
+
+For an asset with volume `images`, folder `products/featured`, filename `hero.jpg`:
+
+```
+templates/
+  asset/
+    images/
+      products/
+        featured/
+          hero.twig           ← Matches specific file
+          default.twig        ← Folder fallback
+      default.twig            ← Volume fallback
+    default.twig              ← Global fallback
+```
+
+**Use Cases**:
+
+- Custom rendering for different asset types (images, videos, PDFs)
+- Volume-specific templates (e.g., different rendering for "documents" vs "images")
+- Folder-based organization (e.g., "products" vs "blog" assets)
+- File-specific templates for important assets
+
+### 6. Enhanced Template Path Display (`btPath()`)
+
+The `btPath()` function has been enhanced to provide complete HTML output with styling, eliminating the need for manual Twig wrapping. This is particularly useful for item and matrix templates where you need to quickly identify which template is being used.
 
 **Key Features:**
-- **Production Mode**: Returns empty string immediately with zero overhead
-- **Dev Mode**: Shows all attempted template paths with the resolved one marked with a checkmark (✓)
-- **No Configuration**: Works automatically when `devMode` is enabled
+- **Complete HTML Output**: Returns formatted HTML with styling instead of plain text
+- **Automatic Context Detection**: Shows appropriate template type (Matrix, Entry, Category, Item)
+- **Zero Production Overhead**: Returns empty string in production mode
+- **No Manual Wrapping**: No need for conditional blocks or manual HTML
 
-#### Usage Examples
+#### Enhanced Usage Examples
 
-##### Simple HTML Comment (minimal impact)
-Perfect for leaving breadcrumbs without affecting the visual output:
+##### Simple Usage (New - Recommended)
+Just call the function directly - it returns complete HTML:
+
+```twig
+{{ btPath() }}
+```
+
+This automatically outputs styled HTML like:
+```html
+<div class="bt-debug-output" id="bt-debug-abc123">
+<style>
+#bt-debug-abc123 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 12px;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border: 1px solid #454545;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 8px 0;
+}
+/* Additional scoped styles... */
+</style>
+<div class="bt-debug-header">Matrix Block Template</div>
+<ul class="bt-debug-list">
+  <li class="bt-debug-item bt-debug-item--missing">→ matrix/textBlock--hero.twig</li>
+  <li class="bt-debug-item bt-debug-item--resolved">✓ matrix/textBlock.twig</li>
+  <li class="bt-debug-item bt-debug-item--missing">→ matrix/default.twig</li>
+</ul>
+</div>
+```
+
+The output includes:
+- A unique `id` attribute to scope CSS and avoid conflicts
+- Inline `<style>` block with scoped selectors
+- Dark theme styling for developer-friendly display
+- Visual indicators: ✓ for resolved template, → for attempts
+
+##### Legacy Usage (Manual Wrapping)
+You can still manually wrap the output if needed, though it's no longer necessary:
+
+```twig
+{% if btPath() %}
+    <div class="custom-wrapper">
+        {{ btPath() }}
+    </div>
+{% endif %}
+```
+
+**Note**: The legacy `<pre class="bonsai-debug">` output format from earlier versions is no longer used. The current implementation uses the `<div class="bt-debug-output">` wrapper with inline styles shown above.
+
+##### HTML Comment Usage
+For minimal visual impact:
 
 ```twig
 <!-- {{ btPath() }} -->
 ```
 
-##### Visible Debug Box for Items
-Display template hierarchy directly in your item templates:
+#### Output Features
+
+The enhanced `btPath()` automatically includes:
+
+- **Template Type Context**: Shows "Matrix Block Template", "Entry Template", etc.
+- **Resolved Template Marking**: The found template is marked with ✓
+- **Clean Styling**: Simple, unobtrusive CSS styling
+- **Attempted Paths**: All paths checked during resolution
+
+#### Production Mode Behavior
+
+In production mode (`devMode = false`), `btPath()` returns an empty string with zero overhead:
 
 ```twig
-{% if btPath() %}
-    <pre class="text-xs">
-<strong>Item Template</strong>
-<code>
-{{ btPath() }}
-</code>
-</pre>
-{% endif %}
+{{ btPath() }}  <!-- Returns empty string in production -->
 ```
-
-##### Visible Debug Box for Matrix Blocks
-Show which matrix template is being used:
-
-```twig
-{% if btPath() %}
-    <pre class="text-xs">
-<strong>Matrix Default</strong>
-<code>
-{{ btPath() }}
-</code>
-</pre>
-{% endif %}
-```
-
-##### Data Attribute (for DOM inspection)
-Add template info as a data attribute for browser DevTools inspection:
-
-```twig
-<div{% if btPath() %} data-template="{{ btPath()|split('\n')|first }}"{% endif %}>
-    {# Your content #}
-</div>
-```
-
-#### Output Example
-
-In development mode, `btPath()` returns a formatted list of all attempted template paths:
-
-```text
-item-new/features/default/default
-item-new/default/features
-item-new/default/default ✓
-item-new/features/default
-item-new/features
-item-new/default
-```
-
-The checkmark (✓) indicates which template was actually found and rendered. This helps you understand the template resolution hierarchy and identify exactly where to place your template override.
-
-#### Why Use `btPath()` vs Beastmode?
-
-| Feature | `btPath()` | Beastmode (`?beastmode`) |
-|---------|-----------|-------------------------|
-| **Visibility** | Shows only where you place it | Shows on all Bonsai Twig calls |
-| **Overhead** | Zero in production | Zero in production |
-| **Detail Level** | Template paths only | Full debug with performance metrics |
-| **Best For** | Quick identification in specific templates | Comprehensive debugging |
-| **Usage** | Add to individual templates | Add to URL |
-
-**Recommended Pattern**: Use `btPath()` for permanent debug boxes in item and matrix templates, and use `?beastmode` when you need comprehensive debugging across the entire page.
 
 ## Debug Features
 
-The plugin provides comprehensive debugging tools that are only active in development mode (`devMode = true`). Debug information is triggered using the `beastmode` URL parameter.
+The plugin provides simple debugging tools that are only active in development mode (`devMode = true`). Debug information is triggered using the `beastmode` URL parameter.
 
-### Debug Modes
+### Debug Mode
 
 #### Universal Debug Parameter
 
@@ -291,74 +368,19 @@ Add `?beastmode` to any URL to enable debug mode for all template types:
 https://yoursite.test/some-page?beastmode
 ```
 
-This will show debug information for any Bonsai Twig function calls on that page.
-
-#### Specific Debug Modes
-
-You can specify different levels of debug information:
-
-```
-# Show template paths only
-?beastmode=path
-
-# Show template hierarchy
-?beastmode=hierarchy
-
-# Show full debug info with performance metrics
-?beastmode=full
-
-# Show all available debug information
-?beastmode=all
-```
-
-#### Template-Specific Debug
-
-Target specific template types for debugging:
-
-```
-# Debug only entry templates
-?beastmode=entry
-
-# Debug only matrix templates
-?beastmode=matrix
-
-# Debug only category templates
-?beastmode=category
-
-# Debug only item templates
-?beastmode=item
-```
+This will show simple debug information for any Bonsai Twig function calls on that page.
 
 ### Debug Information Display
 
-When debug mode is active, you'll see a hover overlay with detailed information:
+When debug mode is active, you'll see clean debug output showing:
 
-#### Template Resolution Hierarchy
+#### Template Resolution Information
 
 - **Template Paths**: All attempted template paths in priority order
-- **Current Template**: The template that was successfully loaded (highlighted in green)
-- **Missing Templates**: Templates that were checked but not found (crossed out)
-- **Site-Specific Templates**: Templates with site context (highlighted in blue)
+- **Resolved Template**: The template that was successfully loaded (marked with ✓)
+- **Template Type**: Context information (Entry, Matrix, Category, Item)
 
-#### Site Context Information
-
-- **Current Site**: The site context for the current request
-- **Element Site**: The site associated with the element being rendered
-- **Base Site**: The base site for fallback resolution
-- **Fallback Site**: Alternative site for template resolution
-
-#### Performance Metrics
-
-- **Resolution Time**: How long it took to resolve the template
-- **Memory Delta**: Memory usage change during template resolution
-- **Paths Saved**: Number of paths eliminated through optimization
-- **Resolution Checkpoints**: Detailed timing for each resolution step
-
-#### Cache Performance
-
-- **Hit Rate**: Percentage of cache hits vs total requests
-- **Cache Statistics**: Detailed breakdown by cache type
-- **Cache Status**: Whether caching is enabled and why
+The debug output focuses on essential information without performance metrics or complex styling.
 
 ### Debug Examples
 
@@ -366,14 +388,7 @@ When debug mode is active, you'll see a hover overlay with detailed information:
 
 ```twig
 {# Entry template with debug capability #}
-{#
-Entry Handler
-Add URL parameters to render debug info in devMode:
-- Show paths: ?beastmode=path
-- Show hierarchy: ?beastmode=hierarchy
-- Show all entry debug: ?beastmode=entry
-- Show everything: ?beastmode=all
-#}
+{# Add ?beastmode to URL to see template resolution info #}
 {{ entryTemplates({ entry }) }}
 ```
 
@@ -381,14 +396,7 @@ Add URL parameters to render debug info in devMode:
 
 ```twig
 {# Category template with debug capability #}
-{#
-Category Handler
-Add URL parameters to render debug info in devMode:
-- Show paths: ?beastmode=path
-- Show hierarchy: ?beastmode=hierarchy
-- Show all category debug: ?beastmode=category
-- Show everything: ?beastmode=all
-#}
+{# Add ?beastmode to URL to see template resolution info #}
 {{ categoryTemplates({ entry: category }) }}
 ```
 
@@ -396,14 +404,7 @@ Add URL parameters to render debug info in devMode:
 
 ```twig
 {# Item template with debug capability #}
-{#
-Item Handler
-Add URL parameters to render debug info in devMode:
-- Show paths: ?beastmode=path
-- Show hierarchy: ?beastmode=hierarchy
-- Show all item debug: ?beastmode=item
-- Show everything: ?beastmode=all
-#}
+{# Add ?beastmode to URL to see template resolution info #}
 {{ itemTemplates({ entry: item }) }}
 ```
 
@@ -411,17 +412,20 @@ Add URL parameters to render debug info in devMode:
 
 ```twig
 {# Matrix template with debug capability #}
-{#
-Matrix Handler
-Add URL parameters to render debug info in devMode:
-- Show paths: ?beastmode=path
-- Show hierarchy: ?beastmode=hierarchy
-- Show all matrix debug: ?beastmode=matrix
-- Show everything: ?beastmode=all
-#}
+{# Add ?beastmode to URL to see template resolution info #}
 {% for block in entry.matrixField.all() %}
     {{ matrixTemplates({ block: block }) }}
 {% endfor %}
+```
+
+#### Enhanced btPath() Debug Example
+
+```twig
+{# Enhanced btPath() - returns complete HTML output #}
+{{ btPath() }}
+
+{# Or use in HTML comments for minimal impact #}
+<!-- {{ btPath() }} -->
 ```
 
 ### Suggested Minimum Usage
@@ -557,30 +561,22 @@ The plugin works alongside Craft 5's built-in `render()` method. While `render()
 
 You can use both approaches as needed - `render()` for simple cases and Bonsai Twig for complex hierarchical template systems.
 
-## Performance Features
+## Development-Only Focus
 
-### Caching
+This plugin is designed specifically as a development tool and includes:
 
-The plugin includes intelligent caching that:
+### Simplified Architecture
 
-- Caches template path resolution results
-- Invalidates cache when templates change
-- Provides cache statistics in debug mode
-- Can be enabled in development mode via plugin settings
+- **No Caching**: Templates change frequently in development, so no caching overhead
+- **Direct File System Checks**: Simple template existence checking without optimization layers
+- **Minimal Dependencies**: Only essential services for template loading
+- **Straightforward Logic**: Easy to understand and maintain codebase
 
-### Optimization
+### Basic Security
 
-- **Path Deduplication**: Eliminates duplicate template paths before checking
-- **Early Exit**: Stops checking once a template is found
-- **Batch Operations**: Groups file system operations for efficiency
-- **Memory Management**: Uses generators for large template lists
-
-## Security Features
-
-- **Path Sanitization**: Prevents directory traversal attacks
-- **Input Validation**: Validates all user-provided parameters
-- **Safe Property Access**: Uses null-safe operators throughout
-- **Secure Caching**: Uses secure hashing for cache keys
+- **Path Sanitization**: Basic path cleaning to prevent directory traversal
+- **Input Validation**: Simple parameter type checking
+- **Safe Property Access**: Uses null-safe operators for element properties
 
 ## Migration Guide
 
@@ -629,24 +625,22 @@ You can now use additional parameters for enhanced functionality:
 }) }}
 ```
 
-### Performance Improvements
+### Simplified Implementation
 
-The enhanced version provides significant performance improvements:
+The simplified version focuses on reliability and maintainability:
 
-- **Up to 50% faster** template resolution through path optimization
-- **Reduced memory usage** with generator-based path handling
-- **Intelligent caching** reduces file system operations
-- **Early exit strategies** stop checking once templates are found
+- **Straightforward Logic**: Simple template resolution without complex optimization
+- **Reduced Complexity**: Fewer moving parts means fewer potential issues
+- **Enhanced Debug Experience**: Improved btPath() function with complete HTML output
+- **Zero Production Overhead**: Debug features automatically disabled in production
 
-### New PHP 8.2 Features
+### PHP 8.2 Features
 
-The plugin now leverages modern PHP features:
+The plugin leverages essential modern PHP features:
 
-- **Readonly properties** for immutable configuration
 - **Null-safe operators** for safer property access
 - **Union types** for flexible parameter handling
 - **Enums** for type-safe constants
-- **Named parameters** for clearer method calls
 
 ## Troubleshooting
 
@@ -662,24 +656,18 @@ The plugin now leverages modern PHP features:
 2. Verify your template directory structure matches the expected hierarchy
 3. Check file permissions on template directories
 
-### Performance Issues
+### Template Resolution Issues
 
-1. Enable caching in plugin settings for development mode testing
-2. Use debug mode to check resolution times: `?beastmode=full`
+1. Use debug mode to see which paths are being checked: `?beastmode`
+2. Use the enhanced `btPath()` function in your templates to see resolution info
 3. Consider simplifying complex template hierarchies
-
-### Cache Issues
-
-1. Clear Craft's template cache: `./craft clear-caches/compiled-templates`
-2. Check cache statistics in debug mode: `?beastmode=full`
-3. Verify cache permissions in the storage directory
 
 ## Support
 
 For issues, feature requests, or questions:
 
-1. Check the debug information using `?beastmode=full`
-2. Review the template resolution hierarchy
+1. Check the debug information using `?beastmode`
+2. Use `{{ btPath() }}` in your templates to see resolution hierarchy
 3. Verify your template structure matches the expected patterns
 4. Check Craft and PHP version compatibility
 
@@ -688,9 +676,8 @@ For issues, feature requests, or questions:
 ### Version 6.4.0
 
 - Full Craft CMS 5 compatibility
-- PHP 8.2 feature utilization
-- Enhanced debug tools with performance metrics
-- Improved caching strategies
-- Security enhancements
-- Type safety improvements
-- Comprehensive test coverage
+- Simplified architecture focused on development workflow
+- Enhanced btPath() function with complete HTML output
+- Removed performance monitoring and caching complexity
+- Streamlined debug tools for essential information only
+- Development-only tool focus with zero production overhead
