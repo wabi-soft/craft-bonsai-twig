@@ -8,18 +8,16 @@ use wabisoft\bonsaitwig\services\CategoryLoader;
 use wabisoft\bonsaitwig\services\ItemLoader;
 use wabisoft\bonsaitwig\services\MatrixLoader;
 use wabisoft\bonsaitwig\services\HierarchyTemplateLoader;
-use wabisoft\bonsaitwig\services\CacheService;
-use wabisoft\bonsaitwig\services\PerformanceMonitor;
-use wabisoft\bonsaitwig\valueobjects\TemplateContext;
-use wabisoft\bonsaitwig\enums\TemplateType;
 use craft\web\View;
+use Craft;
 use Mockery;
 
 /**
  * Integration tests for template resolution workflows.
  *
  * Tests the complete template resolution process from loader services
- * through the hierarchy template loader to final output.
+ * through the hierarchy template loader to final output, focusing on
+ * hierarchy preservation after simplification.
  *
  * @author Wabisoft
  * @package wabisoft\bonsaitwig\tests\Integration
@@ -28,23 +26,17 @@ use Mockery;
 class TemplateResolutionTest extends TestCase
 {
     private $mockView;
-    private $mockCacheService;
-    private $mockPerformanceMonitor;
-    private HierarchyTemplateLoader $hierarchyLoader;
 
     protected function setUp(): void
     {
         parent::setUp();
         
         $this->mockView = Mockery::mock(View::class);
-        $this->mockCacheService = Mockery::mock(CacheService::class);
-        $this->mockPerformanceMonitor = Mockery::mock(PerformanceMonitor::class);
         
-        $this->hierarchyLoader = new HierarchyTemplateLoader(
-            $this->mockView,
-            $this->mockCacheService,
-            $this->mockPerformanceMonitor
-        );
+        // Mock Craft::$app->view to return our mock
+        $mockApp = Mockery::mock();
+        $mockApp->shouldReceive('getView')->andReturn($this->mockView);
+        Craft::shouldReceive('$app')->andReturn($mockApp);
     }
 
     public function testCompleteEntryTemplateResolution(): void

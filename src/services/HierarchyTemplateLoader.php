@@ -5,6 +5,7 @@ namespace wabisoft\bonsaitwig\services;
 use Craft;
 use craft\helpers\Json;
 
+use craft\helpers\StringHelper;
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
@@ -171,6 +172,12 @@ class HierarchyTemplateLoader extends Component
                 $fieldHandles = null;
                 $elementInfo = null;
                 if ($debugElement) {
+                    try {
+                        $fieldHandles = self::extractFieldHandles($debugElement);
+                    } catch (\Exception $e) {
+                        // Silently fail field extraction to avoid breaking template loading
+                        $fieldHandles = null;
+                    }
 
                     // Extract element information for the header
                     // For matrix blocks (Entry elements in Craft 5), use the entry type handle
@@ -262,13 +269,320 @@ class HierarchyTemplateLoader extends Component
         return is_string($string) && json_decode($string) && json_last_error() === JSON_ERROR_NONE;
     }
 
+    /**
+     * Extracts field handles from an element for debugging purposes.
+     *
+     * Returns an array of field information including handle, name, type, and nested
+     * information for complex fields like Matrix blocks and relational fields.
+     *
+     * @param \craft\base\ElementInterface $element The element to extract field handles from
+     * @return array|null Array of field information or null if no fields found
+     */
+    private static function extractFieldHandles(\craft\base\ElementInterface $element): ?array
+    {
+        try {
+            $fieldLayout = $element->getFieldLayout();
 
+            if (!$fieldLayout) {
+                return null;
+            }
 
+            $fields = $fieldLayout->getCustomFields();
 
+            if (empty($fields)) {
+                return null;
+            }
 
+            $fieldInfo = [];
 
+            foreach ($fields as $field) {
+                $fieldData = [
+                    'handle' => $field->handle,
+                    'name' => $field->name,
+                    'type' => self::getFieldTypeDisplayName($field),
+                ];
 
+                // Add nested information for complex fields
+                $nestedInfo = self::extractNestedFieldInfo($field);
+                if ($nestedInfo) {
+                    $fieldData['nested'] = $nestedInfo;
+                }
 
+                $fieldInfo[] = $fieldData;
+            }
 
+            return $fieldInfo;
+        } catch (\Exception $e) {
+            // Silently fail if we can't get field layout
+            return null;
+        }
+    }
 
+    /**
+     * Gets a user-friendly display name for a field type.
+     *
+     * @param \craft\base\FieldInterface $field The field to get the display name for
+     * @return string The display name for the field type
+     */
+    private static function getFieldTypeDisplayName(\craft\base\FieldInterface $field): string
+    {
+        $className = get_class($field);
+        
+        // Extract the class name without namespace
+        $shortClassName = substr($className, strrpos($className, '\\') + 1);
+        
+        // Convert from CamelCase to readable format
+        return preg_replace('/([a-z])([A-Z])/', '$1 $2', $shortClassName);
+    }
+
+    /**
+     * Extracts nested field information for complex field types.
+     *
+     * @param \craft\base\FieldInterface $field The field to extract nested info from
+     * @return array|null Nested field information or null if not applicable
+     */
+    private static function extractNestedFieldInfo(\craft\base\FieldInterface $field): ?array
+    {
+        try {
+            $className = get_class($field);
+
+            // Handle Matrix fields - show block types and their fields
+            if ($className === 'craft\fields\Matrix') {
+                return self::extractMatrixBlockInfo($field);
+            }
+
+            // Handle Entries field - show allowed sections
+            if ($className === 'craft\fields\Entries') {
+                return self::extractEntriesFieldInfo($field);
+            }
+
+            // Handle Categories field - show allowed groups
+            if ($className === 'craft\fields\Categories') {
+                return self::extractCategoriesFieldInfo($field);
+            }
+
+            // Handle Assets field - show allowed volumes
+            if ($className === 'craft\fields\Assets') {
+                return self::extractAssetsFieldInfo($field);
+            }
+
+            // Handle Users field
+            if ($className === 'craft\fields\Users') {
+                return ['type' => 'users', 'note' => 'User elements'];
+            }
+
+            // Handle option-based fields
+            if (in_array($className, [
+                'craft\fields\Dropdown',
+                'craft\fields\RadioButtons', 
+                'craft\fields\Checkboxes',
+                'craft\fields\MultiSelect'
+            ])) {
+                return self::extractOptionsFieldInfo($field);
+            }
+
+            // Handle Lightswitch field
+            if ($className === 'craft\fields\Lightswitch') {
+                return [
+                    'type' => 'lightswitch',
+                    'note' => 'Boolean (true/false)',
+                ];
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Extracts block type information from a Matrix field.
+     *
+     * @param \craft\fields\Matrix $field The Matrix field
+     * @return array|null Block type information
+     */
+    private static function extractMatrixBlockInfo($field): ?array
+    {
+        try {
+            // Craft 5 uses Entry Types, Craft 4 uses Block Types
+            $usesEntryTypes = method_exists($field, 'getEntryTypes');
+            $blockTypes = $usesEntryTypes
+                ? $field->getEntryTypes()
+                : $field->getBlockTypes();
+
+            if (empty($blockTypes)) {
+                return null;
+            }
+
+            $blockInfo = [];
+            foreach ($blockTypes as $blockType) {
+                $blockFields = [];
+
+                // Get custom fields using the field layout
+                $fieldLayout = $blockType->getFieldLayout();
+                $customFields = $fieldLayout ? $fieldLayout->getCustomFields() : [];
+
+                foreach ($customFields as $blockField) {
+                    $blockFields[] = [
+                        'handle' => $blockField->handle,
+                        'name' => $blockField->name,
+                        'type' => self::getFieldTypeDisplayName($blockField),
+                    ];
+                }
+
+                $blockInfo[] = [
+                    'handle' => $blockType->handle,
+                    'name' => $blockType->name,
+                    'fields' => $blockFields,
+                ];
+            }
+
+            return [
+                'type' => 'matrix',
+                'blocks' => $blockInfo,
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Extracts source information from an Entries field.
+     *
+     * @param \craft\fields\Entries $field The Entries field
+     * @return array|null Source information
+     */
+    private static function extractEntriesFieldInfo($field): ?array
+    {
+        try {
+            $sources = [];
+            $sourcesData = $field->sources ?? [];
+
+            foreach ($sourcesData as $source) {
+                if (is_string($source) && strpos($source, 'section:') === 0) {
+                    $sectionUid = substr($source, 8);
+                    $section = \Craft::$app->sections->getSectionByUid($sectionUid);
+                    if ($section) {
+                        $sources[] = [
+                            'handle' => $section->handle,
+                            'name' => $section->name,
+                        ];
+                    }
+                }
+            }
+
+            return [
+                'type' => 'entries',
+                'sources' => $sources,
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Extracts source information from a Categories field.
+     *
+     * @param \craft\fields\Categories $field The Categories field
+     * @return array|null Source information
+     */
+    private static function extractCategoriesFieldInfo($field): ?array
+    {
+        try {
+            $sources = [];
+            $sourcesData = $field->sources ?? [];
+
+            foreach ($sourcesData as $source) {
+                if (is_string($source) && strpos($source, 'group:') === 0) {
+                    $groupUid = substr($source, 6);
+                    $group = \Craft::$app->categories->getGroupByUid($groupUid);
+                    if ($group) {
+                        $sources[] = [
+                            'handle' => $group->handle,
+                            'name' => $group->name,
+                        ];
+                    }
+                }
+            }
+
+            return [
+                'type' => 'categories',
+                'sources' => $sources,
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Extracts source information from an Assets field.
+     *
+     * @param \craft\fields\Assets $field The Assets field
+     * @return array|null Source information
+     */
+    private static function extractAssetsFieldInfo($field): ?array
+    {
+        try {
+            $sources = [];
+            $sourcesData = $field->sources ?? [];
+
+            foreach ($sourcesData as $source) {
+                if (is_string($source) && strpos($source, 'volume:') === 0) {
+                    $volumeUid = substr($source, 7);
+                    $volume = \Craft::$app->volumes->getVolumeByUid($volumeUid);
+                    if ($volume) {
+                        $sources[] = [
+                            'handle' => $volume->handle,
+                            'name' => $volume->name,
+                        ];
+                    }
+                }
+            }
+
+            return [
+                'type' => 'assets',
+                'sources' => $sources,
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Extracts option information from option-based fields.
+     *
+     * @param \craft\base\FieldInterface $field The field with options
+     * @return array|null Option information
+     */
+    private static function extractOptionsFieldInfo($field): ?array
+    {
+        try {
+            $className = get_class($field);
+            $type = match ($className) {
+                'craft\fields\Dropdown' => 'dropdown',
+                'craft\fields\RadioButtons' => 'radio',
+                'craft\fields\Checkboxes' => 'checkboxes',
+                'craft\fields\MultiSelect' => 'multiselect',
+                default => 'options',
+            };
+
+            $options = [];
+            if (property_exists($field, 'options') && is_array($field->options)) {
+                foreach ($field->options as $option) {
+                    $options[] = [
+                        'label' => $option['label'] ?? '',
+                        'value' => $option['value'] ?? '',
+                        'isDefault' => $option['default'] ?? false,
+                    ];
+                }
+            }
+
+            return [
+                'type' => $type,
+                'options' => $options,
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
 }

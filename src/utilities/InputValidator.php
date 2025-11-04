@@ -46,34 +46,7 @@ class InputValidator
         return $element;
     }
 
-    /**
-     * Validates a MatrixBlock or Entry parameter for backward compatibility.
-     *
-     * @param mixed $element The element to validate
-     * @param string $parameterName Name of the parameter for error messages
-     * @param bool $required Whether the element is required
-     * @return \craft\elements\MatrixBlock|\craft\elements\Entry|null The validated element
-     * @throws \InvalidArgumentException If validation fails
-     */
-    public static function validateMatrixBlockOrEntry(mixed $element, string $parameterName = 'block', bool $required = true): \craft\elements\MatrixBlock|\craft\elements\Entry|null
-    {
-        if ($element === null || $element === '') {
-            if ($required) {
-                throw new \InvalidArgumentException(
-                    sprintf('Parameter "%s" is required and must be a valid MatrixBlock or Entry', $parameterName)
-                );
-            }
-            return null;
-        }
 
-        if ($element instanceof \craft\elements\MatrixBlock || $element instanceof \craft\elements\Entry) {
-            return $element;
-        }
-
-        throw new \InvalidArgumentException(
-            sprintf('Parameter "%s" must be a valid MatrixBlock or Entry, %s given', $parameterName, get_debug_type($element))
-        );
-    }
 
     /**
      * Basic string validation for essential parameters.
@@ -181,14 +154,5 @@ class InputValidator
         return $validatedVars;
     }
 
-    /**
-     * Simple debug mode check - just returns whether debug is enabled.
-     *
-     * @param mixed $value The debug mode value to check
-     * @return bool True if debug should be enabled, false otherwise
-     */
-    public static function isDebugEnabled(mixed $value): bool
-    {
-        return $value !== null;
-    }
+
 }
