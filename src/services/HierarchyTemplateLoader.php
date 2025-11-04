@@ -156,7 +156,7 @@ class HierarchyTemplateLoader extends Component
                     return $path;
                 }, $validatedTemplates);
 
-                // Determine element kind for debug (entry vs category vs asset) when available
+                // Determine element kind for debug (entry vs category vs asset vs product) when available
                 $elementKind = null;
                 $debugElement = null;
 
@@ -166,7 +166,18 @@ class HierarchyTemplateLoader extends Component
                     if (isset($validatedVariables[$varName]) && $validatedVariables[$varName] instanceof \craft\base\Element) {
                         $el = $validatedVariables[$varName];
                         $debugElement = $el;
-                        $elementKind = ($el instanceof \craft\elements\Category) ? 'category' : (($el instanceof \craft\elements\Entry) ? 'entry' : (($el instanceof \craft\elements\Asset) ? 'asset' : null));
+
+                        // Determine element type
+                        if ($el instanceof \craft\elements\Category) {
+                            $elementKind = 'category';
+                        } elseif ($el instanceof \craft\elements\Entry) {
+                            $elementKind = 'entry';
+                        } elseif ($el instanceof \craft\elements\Asset) {
+                            $elementKind = 'asset';
+                        } elseif (class_exists('craft\commerce\elements\Product') && $el instanceof \craft\commerce\elements\Product) {
+                            $elementKind = 'product';
+                        }
+
                         break;
                     }
                 }
@@ -183,7 +194,6 @@ class HierarchyTemplateLoader extends Component
                     }
 
                     // Extract element information for the header
-                    // For matrix blocks (Entry elements in Craft 5), use the entry type handle
                     $elementHandle = null;
                     $sectionHandle = null;
                     if ($debugElement instanceof \craft\elements\Entry) {
@@ -195,11 +205,23 @@ class HierarchyTemplateLoader extends Component
                         if ($debugElement->type) {
                             $elementHandle = $debugElement->type->handle;
                         }
+                    } elseif ($debugElement instanceof \craft\elements\Category) {
+                        // Get group handle for categories
+                        $group = $debugElement->getGroup();
+                        if ($group) {
+                            $elementHandle = $group->handle;
+                        }
                     } elseif ($debugElement instanceof \craft\elements\Asset) {
                         // Get volume handle for assets
                         $volume = $debugElement->getVolume();
                         if ($volume) {
                             $elementHandle = $volume->handle;
+                        }
+                    } elseif (class_exists('craft\commerce\elements\Product') && $debugElement instanceof \craft\commerce\elements\Product) {
+                        // Get product type handle for commerce products
+                        $productType = $debugElement->getType();
+                        if ($productType) {
+                            $elementHandle = $productType->handle;
                         }
                     } else {
                         // Fallback for other element types
