@@ -9,6 +9,7 @@ use craft\helpers\App;
 use craft\web\View;
 
 use wabisoft\bonsaitwig\models\Settings;
+use wabisoft\bonsaitwig\services\AssetLoader;
 use wabisoft\bonsaitwig\services\CategoryLoader;
 use wabisoft\bonsaitwig\services\EntryLoader;
 use wabisoft\bonsaitwig\services\HierarchyTemplateLoader;
@@ -33,6 +34,7 @@ use yii\base\Event;
  * @property-read ItemLoader $itemLoader Service for loading item-based templates
  * @property-read MatrixLoader $matrixLoader Service for loading matrix block templates
  * @property-read ProductLoader $productLoader Service for loading product-based templates
+ * @property-read AssetLoader $assetLoader Service for loading asset-based templates
  * @property-read HierarchyTemplateLoader $hierarchyTemplateLoader Core template resolution service
  */
 class BonsaiTwig extends Plugin
@@ -94,6 +96,7 @@ class BonsaiTwig extends Plugin
                 'itemLoader' => ItemLoader::class,
                 'matrixLoader' => MatrixLoader::class,
                 'productLoader' => ProductLoader::class,
+                'assetLoader' => AssetLoader::class,
             ],
         ];
     }

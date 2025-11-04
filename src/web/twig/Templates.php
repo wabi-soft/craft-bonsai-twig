@@ -29,6 +29,7 @@ class Templates extends AbstractExtension
      * - categoryTemplates(): For Craft category-specific template loading
      * - matrixTemplates(): For Craft matrix block template loading
      * - productTemplates(): For Craft Commerce product template loading
+     * - assetTemplates(): For Craft asset template loading
      * - btPath(): Enhanced function that returns complete HTML debug output with styling
      *
      * All functions are marked as HTML-safe since they return rendered template content.
@@ -65,6 +66,11 @@ class Templates extends AbstractExtension
             new TwigFunction(
                 'productTemplates',
                 [$plugin->productLoader, 'load'],
+                ['is_safe' => ['html']]
+            ),
+            new TwigFunction(
+                'assetTemplates',
+                [$plugin->assetLoader, 'load'],
                 ['is_safe' => ['html']]
             ),
             new TwigFunction(
@@ -391,8 +397,15 @@ class Templates extends AbstractExtension
             return 'Item Template';
         }
 
-        // Check for other common element contexts
+        // Check for asset context (direct asset variable)
         if (isset($context['asset'])) {
+            $asset = $context['asset'];
+            if ($asset instanceof \craft\elements\Asset) {
+                $volumeHandle = $asset->volume?->handle ?? null;
+                if ($volumeHandle) {
+                    return 'Asset Template: ' . ucfirst($volumeHandle);
+                }
+            }
             return 'Asset Template';
         }
 

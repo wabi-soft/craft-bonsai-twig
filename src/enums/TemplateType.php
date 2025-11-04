@@ -20,6 +20,7 @@ enum TemplateType: string
     case ITEM = 'item';
     case MATRIX = 'matrix';
     case PRODUCT = 'product';
+    case ASSET = 'asset';
 
     /**
      * Returns the default path for this template type.
@@ -37,6 +38,7 @@ enum TemplateType: string
             self::ITEM => 'item',
             self::MATRIX => 'matrix',
             self::PRODUCT => 'product',
+            self::ASSET => 'asset',
         };
     }
 
@@ -59,6 +61,7 @@ enum TemplateType: string
             'item' => self::ITEM,
             'matrix' => self::MATRIX,
             'product' => self::PRODUCT,
+            'asset' => self::ASSET,
             default => self::ENTRY,
         };
     }
