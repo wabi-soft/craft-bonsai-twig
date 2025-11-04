@@ -19,6 +19,13 @@
             position: relative;
             display: inline-block;
         }
+        .bonsai-info__hover:hover {
+            z-index: 9999;
+            pointer-events: none;
+        }
+        .bonsai-info__hover:hover > * {
+            pointer-events: auto;
+        }
         .bonsai-info__hover:hover .bonsai-info__text {
             opacity: 1 !important;
             visibility: visible !important;
@@ -33,7 +40,6 @@
             font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
             font-size: 12px;
             padding: 16px;
-            z-index: 10000;
             min-width: 400px;
             max-width: 600px;
             overflow-x: auto;
@@ -125,7 +131,7 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 150ms ease;
-            z-index: 10001;
+            z-index: 1;
         }
         .bonsai-info__copy-tooltip--visible {
             opacity: 1;
