@@ -10,7 +10,6 @@ use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
 use wabisoft\bonsaitwig\BonsaiTwig;
-use wabisoft\bonsaitwig\enums\DebugMode;
 use wabisoft\bonsaitwig\enums\TemplateType;
 
 use wabisoft\bonsaitwig\exceptions\TemplateNotFoundException;

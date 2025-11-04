@@ -4,7 +4,6 @@ namespace wabisoft\bonsaitwig\tests\Fixtures;
 
 use craft\elements\Entry;
 use craft\elements\Category;
-use craft\elements\MatrixBlock;
 use craft\models\Section;
 use craft\models\EntryType;
 use craft\models\CategoryGroup;

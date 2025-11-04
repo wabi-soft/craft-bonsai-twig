@@ -7,7 +7,6 @@ use wabisoft\bonsaitwig\services\EntryLoader;
 use wabisoft\bonsaitwig\services\CategoryLoader;
 use wabisoft\bonsaitwig\services\ItemLoader;
 use wabisoft\bonsaitwig\services\MatrixLoader;
-use wabisoft\bonsaitwig\services\HierarchyTemplateLoader;
 use craft\web\View;
 use Craft;
 use Mockery;

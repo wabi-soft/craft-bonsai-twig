@@ -4,9 +4,6 @@ namespace wabisoft\bonsaitwig\tests\Integration;
 
 use wabisoft\bonsaitwig\tests\TestCase;
 use wabisoft\bonsaitwig\web\twig\Templates;
-use craft\web\View;
-use craft\test\TestCase as CraftTestCase;
-use Craft;
 use Mockery;
 
 /**
