@@ -18,9 +18,11 @@
         .bonsai-info__hover {
             position: relative;
             display: inline-block;
+            isolation: isolate;
         }
         .bonsai-info__hover:hover {
-            z-index: 9999;
+            z-index: 999999;
+            isolation: auto;
             pointer-events: none;
         }
         .bonsai-info__hover:hover > * {
@@ -51,7 +53,7 @@
             line-height: 1.5;
             transition: opacity 200ms ease-in-out, visibility 200ms ease-in-out;
             backdrop-filter: blur(10px);
-            z-index: 9999;
+            z-index: 999999;
         }
         .bonsai-info__header {
             border-bottom: 1px solid #454545;
