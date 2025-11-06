@@ -142,10 +142,16 @@ class HierarchyTemplateLoader extends Component
 
             // Render the template
             $content = Craft::$app->view->renderTemplate($resolvedPath, $validatedVariables);
-                
+
             // In production, return content directly
             if (!$isDev) {
                 return $content;
+            }
+
+            // In dev mode, always add the beastmode keyboard shortcut (once per page load)
+            if (!self::$shortcutScriptAdded) {
+                $content .= Craft::$app->view->renderTemplate('_bonsai-twig/_partials/beastmode-shortcut');
+                self::$shortcutScriptAdded = true;
             }
 
             // Dev mode: Check beastmode parameter and filter by type
@@ -292,21 +298,14 @@ class HierarchyTemplateLoader extends Component
      */
     private static function renderInfo(string $content, string $info, string $type = 'entry'): string
     {
-        // Check if we should include the shortcut script
-        $includeShortcutScript = false;
-        if (!self::$shortcutScriptAdded) {
-            $includeShortcutScript = true;
-            self::$shortcutScriptAdded = true;
-        }
-
         // Render debug info template with content
+        // Note: The beastmode keyboard shortcut is now loaded separately in the main load() method
         return Craft::$app->view->renderTemplate(
             template: '_bonsai-twig/_partials/infobar',
             variables: [
                 'info' => $info,
                 'content' => $content,
                 'type' => $type,
-                'includeShortcutScript' => $includeShortcutScript,
             ]
         );
     }

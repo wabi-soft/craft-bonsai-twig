@@ -1,0 +1,235 @@
+{#
+    Beastmode keyboard shortcut - Always loads in dev mode
+    Allows toggling beastmode with Ctrl+B / Cmd+B
+#}
+<script>
+{% verbatim %}
+(function() {
+    // Beastmode keyboard shortcut (Ctrl+B / Cmd+B)
+    // Only runs once per page load
+    if (window.bonsaiBeastmodeShortcutInitialized) {
+        return;
+    }
+    window.bonsaiBeastmodeShortcutInitialized = true;
+
+    let modal = null;
+
+    function createModal() {
+        modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            backdrop-filter: blur(4px);
+        `;
+
+        const content = document.createElement('div');
+        content.style.cssText = `
+            background: #1e1e1e;
+            border: 1px solid #454545;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+        `;
+
+        const currentUrl = new URL(window.location.href);
+        const beastmodeOptions = [
+            { value: 'all', label: 'All Templates', description: 'Show debug for all template types' },
+            { value: 'entry', label: 'Entries', description: 'Only show debug for entry templates' },
+            { value: 'item', label: 'Items', description: 'Only show debug for item templates' },
+            { value: 'matrix', label: 'Matrix Blocks', description: 'Only show debug for matrix block templates' },
+            { value: 'category', label: 'Categories', description: 'Only show debug for category templates' },
+            { value: 'asset', label: 'Assets', description: 'Only show debug for asset templates' },
+            { value: 'product', label: 'Products', description: 'Only show debug for product templates' }
+        ];
+
+        let html = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="color: #569cd6; margin: 0; font-size: 16px; font-weight: bold;">🔧 Beastmode Options</h3>
+                <button id="bonsai-modal-close" style="background: none; border: none; color: #808080; font-size: 24px; cursor: pointer; padding: 0; line-height: 1; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;" title="Close (Esc)">×</button>
+            </div>
+            <p style="color: #9cdcfe; font-size: 12px; margin-bottom: 16px; line-height: 1.4;">
+                Click a link to reload the page with beastmode filtering:
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+        `;
+
+        beastmodeOptions.forEach(option => {
+            const url = new URL(currentUrl);
+            url.searchParams.set('beastmode', option.value);
+            const isActive = currentUrl.searchParams.get('beastmode') === option.value;
+
+            html += `
+                <a href="${url.href}" style="
+                    display: block;
+                    padding: 12px;
+                    background: ${isActive ? 'rgba(78, 201, 176, 0.15)' : 'rgba(86, 156, 214, 0.1)'};
+                    border: 1px solid ${isActive ? 'rgba(78, 201, 176, 0.3)' : 'rgba(86, 156, 214, 0.2)'};
+                    border-radius: 6px;
+                    color: ${isActive ? '#4ec9b0' : '#9cdcfe'};
+                    text-decoration: none;
+                    transition: all 150ms ease;
+                    font-size: 13px;
+                ">
+                    <div style="font-weight: bold; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                        <span>${option.label}</span>
+                        ${isActive ? '<span style="font-size: 10px; background: rgba(78, 201, 176, 0.3); padding: 2px 6px; border-radius: 3px;">ACTIVE</span>' : ''}
+                    </div>
+                    <div style="font-size: 11px; color: #808080; font-style: italic;">
+                        ${option.description}
+                    </div>
+                </a>
+            `;
+        });
+
+        // Add option to disable beastmode
+        const urlWithoutBeastmode = new URL(currentUrl);
+        urlWithoutBeastmode.searchParams.delete('beastmode');
+        const isDisabled = !currentUrl.searchParams.has('beastmode');
+
+        html += `
+            <a href="${urlWithoutBeastmode.href}" style="
+                display: block;
+                padding: 12px;
+                background: ${isDisabled ? 'rgba(244, 71, 71, 0.15)' : 'rgba(128, 128, 128, 0.1)'};
+                border: 1px solid ${isDisabled ? 'rgba(244, 71, 71, 0.3)' : 'rgba(128, 128, 128, 0.2)'};
+                border-radius: 6px;
+                color: ${isDisabled ? '#f44747' : '#808080'};
+                text-decoration: none;
+                transition: all 150ms ease;
+                font-size: 13px;
+                margin-top: 8px;
+            ">
+                <div style="font-weight: bold; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                    <span>Disable Beastmode</span>
+                    ${isDisabled ? '<span style="font-size: 10px; background: rgba(244, 71, 71, 0.3); padding: 2px 6px; border-radius: 3px;">ACTIVE</span>' : ''}
+                </div>
+                <div style="font-size: 11px; color: #808080; font-style: italic;">
+                    Turn off all debug overlays
+                </div>
+            </a>
+        `;
+
+        html += `
+            </div>
+            <p style="color: #808080; font-size: 10px; margin-top: 16px; margin-bottom: 0; text-align: center; font-style: italic;">
+                Press Ctrl+B (Cmd+B on Mac) to quick-toggle • Ctrl+Shift+B for options
+            </p>
+        `;
+
+        content.innerHTML = html;
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+
+        // Add hover effects
+        const links = content.querySelectorAll('a');
+        links.forEach(link => {
+            link.addEventListener('mouseenter', function() {
+                if (!this.href.includes(currentUrl.searchParams.get('beastmode'))) {
+                    this.style.background = this.href.includes('beastmode=')
+                        ? 'rgba(86, 156, 214, 0.2)'
+                        : 'rgba(128, 128, 128, 0.2)';
+                }
+            });
+            link.addEventListener('mouseleave', function() {
+                const isActive = this.href.includes('beastmode=' + currentUrl.searchParams.get('beastmode'));
+                const isDisableActive = !currentUrl.searchParams.has('beastmode') && !this.href.includes('beastmode=');
+
+                if (isActive) {
+                    this.style.background = 'rgba(78, 201, 176, 0.15)';
+                } else if (isDisableActive) {
+                    this.style.background = 'rgba(244, 71, 71, 0.15)';
+                } else {
+                    this.style.background = this.href.includes('beastmode=')
+                        ? 'rgba(86, 156, 214, 0.1)'
+                        : 'rgba(128, 128, 128, 0.1)';
+                }
+            });
+        });
+
+        // Close button
+        const closeBtn = content.querySelector('#bonsai-modal-close');
+        closeBtn.addEventListener('click', hideModal);
+        closeBtn.addEventListener('mouseenter', function() {
+            this.style.color = '#f44747';
+        });
+        closeBtn.addEventListener('mouseleave', function() {
+            this.style.color = '#808080';
+        });
+
+        // Click outside to close
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                hideModal();
+            }
+        });
+    }
+
+    function showModal() {
+        if (!modal) {
+            createModal();
+        }
+        modal.style.display = 'flex';
+    }
+
+    function hideModal() {
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    // Listen for Ctrl+B / Cmd+B and Ctrl+Shift+B / Cmd+Shift+B
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+Shift+B / Cmd+Shift+B: Always show modal
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'B') {
+            e.preventDefault();
+            if (modal && modal.style.display === 'flex') {
+                hideModal();
+            } else {
+                showModal();
+            }
+            return;
+        }
+
+        // Ctrl+B / Cmd+B: Quick toggle or show modal
+        if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+            e.preventDefault();
+
+            // If modal is open, close it
+            if (modal && modal.style.display === 'flex') {
+                hideModal();
+                return;
+            }
+
+            // Check if beastmode is currently active
+            const currentUrl = new URL(window.location.href);
+            const hasBeastmode = currentUrl.searchParams.has('beastmode');
+
+            if (hasBeastmode) {
+                // Beastmode is active, show modal to change/disable
+                showModal();
+            } else {
+                // Beastmode is not active, instantly enable beastmode=all
+                currentUrl.searchParams.set('beastmode', 'all');
+                window.location.href = currentUrl.href;
+            }
+        }
+
+        // Close on Escape
+        if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
+            hideModal();
+        }
+    });
+})();
+{% endverbatim %}
+</script>
