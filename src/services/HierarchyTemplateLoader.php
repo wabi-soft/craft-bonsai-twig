@@ -161,9 +161,15 @@ class HierarchyTemplateLoader extends Component
             $shouldShowDebug = false;
 
             if ($beastmodeValue !== null) {
-                // Show debug if beastmode=all or if it matches the current template type
-                if ($beastmodeValue === 'all' || $beastmodeValue === '' || $beastmodeValue === $templateType->value) {
+                // Show debug if beastmode=all or empty string
+                if ($beastmodeValue === 'all' || $beastmodeValue === '') {
                     $shouldShowDebug = true;
+                } else {
+                    // Parse comma-separated values and check if current type is included
+                    $requestedTypes = array_map('trim', explode(',', $beastmodeValue));
+                    if (in_array($templateType->value, $requestedTypes, true)) {
+                        $shouldShowDebug = true;
+                    }
                 }
             }
 

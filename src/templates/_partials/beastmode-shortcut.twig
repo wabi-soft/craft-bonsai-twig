@@ -46,14 +46,19 @@
         `;
 
         const currentUrl = new URL(window.location.href);
+        const beastmodeParam = currentUrl.searchParams.get('beastmode') || '';
+
+        // Parse currently active modes (could be comma-separated)
+        const activeModes = beastmodeParam ? beastmodeParam.split(',').map(m => m.trim()) : [];
+        const isAllMode = activeModes.includes('all') || beastmodeParam === '';
+
         const beastmodeOptions = [
-            { value: 'all', label: 'All Templates', description: 'Show debug for all template types' },
-            { value: 'entry', label: 'Entries', description: 'Only show debug for entry templates' },
-            { value: 'item', label: 'Items', description: 'Only show debug for item templates' },
-            { value: 'matrix', label: 'Matrix Blocks', description: 'Only show debug for matrix block templates' },
-            { value: 'category', label: 'Categories', description: 'Only show debug for category templates' },
-            { value: 'asset', label: 'Assets', description: 'Only show debug for asset templates' },
-            { value: 'product', label: 'Products', description: 'Only show debug for product templates' }
+            { value: 'entry', label: 'Entries', description: 'Show debug for entry templates' },
+            { value: 'item', label: 'Items', description: 'Show debug for item templates' },
+            { value: 'matrix', label: 'Matrix Blocks', description: 'Show debug for matrix block templates' },
+            { value: 'category', label: 'Categories', description: 'Show debug for category templates' },
+            { value: 'asset', label: 'Assets', description: 'Show debug for asset templates' },
+            { value: 'product', label: 'Products', description: 'Show debug for product templates' }
         ];
 
         let html = `
@@ -62,70 +67,100 @@
                 <button id="bonsai-modal-close" style="background: none; border: none; color: #808080; font-size: 24px; cursor: pointer; padding: 0; line-height: 1; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;" title="Close (Esc)">×</button>
             </div>
             <p style="color: #9cdcfe; font-size: 12px; margin-bottom: 16px; line-height: 1.4;">
-                Click a link to reload the page with beastmode filtering:
+                Select template types to show debug overlays (multi-select):
             </p>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+                <label style="
+                    display: flex;
+                    align-items: center;
+                    padding: 12px;
+                    background: rgba(86, 156, 214, 0.1);
+                    border: 1px solid rgba(86, 156, 214, 0.2);
+                    border-radius: 6px;
+                    cursor: pointer;
+                    transition: all 150ms ease;
+                    font-size: 13px;
+                " class="beastmode-option beastmode-all-option">
+                    <input type="checkbox" id="beastmode-all" value="all" style="
+                        margin-right: 12px;
+                        width: 16px;
+                        height: 16px;
+                        cursor: pointer;
+                    " ${isAllMode && beastmodeParam !== '' ? 'checked' : ''}>
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; margin-bottom: 4px; color: #9cdcfe;">
+                            All Templates
+                        </div>
+                        <div style="font-size: 11px; color: #808080; font-style: italic;">
+                            Show debug for all template types
+                        </div>
+                    </div>
+                </label>
         `;
 
         beastmodeOptions.forEach(option => {
-            const url = new URL(currentUrl);
-            url.searchParams.set('beastmode', option.value);
-            const isActive = currentUrl.searchParams.get('beastmode') === option.value;
-
+            const isChecked = !isAllMode && activeModes.includes(option.value);
             html += `
-                <a href="${url.href}" style="
-                    display: block;
+                <label style="
+                    display: flex;
+                    align-items: center;
                     padding: 12px;
-                    background: ${isActive ? 'rgba(78, 201, 176, 0.15)' : 'rgba(86, 156, 214, 0.1)'};
-                    border: 1px solid ${isActive ? 'rgba(78, 201, 176, 0.3)' : 'rgba(86, 156, 214, 0.2)'};
+                    background: rgba(86, 156, 214, 0.1);
+                    border: 1px solid rgba(86, 156, 214, 0.2);
                     border-radius: 6px;
-                    color: ${isActive ? '#4ec9b0' : '#9cdcfe'};
-                    text-decoration: none;
+                    cursor: pointer;
                     transition: all 150ms ease;
                     font-size: 13px;
-                ">
-                    <div style="font-weight: bold; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
-                        <span>${option.label}</span>
-                        ${isActive ? '<span style="font-size: 10px; background: rgba(78, 201, 176, 0.3); padding: 2px 6px; border-radius: 3px;">ACTIVE</span>' : ''}
+                " class="beastmode-option">
+                    <input type="checkbox" class="beastmode-type" value="${option.value}" style="
+                        margin-right: 12px;
+                        width: 16px;
+                        height: 16px;
+                        cursor: pointer;
+                    " ${isChecked ? 'checked' : ''}>
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; margin-bottom: 4px; color: #9cdcfe;">
+                            ${option.label}
+                        </div>
+                        <div style="font-size: 11px; color: #808080; font-style: italic;">
+                            ${option.description}
+                        </div>
                     </div>
-                    <div style="font-size: 11px; color: #808080; font-style: italic;">
-                        ${option.description}
-                    </div>
-                </a>
+                </label>
             `;
         });
 
-        // Add option to disable beastmode
-        const urlWithoutBeastmode = new URL(currentUrl);
-        urlWithoutBeastmode.searchParams.delete('beastmode');
-        const isDisabled = !currentUrl.searchParams.has('beastmode');
-
-        html += `
-            <a href="${urlWithoutBeastmode.href}" style="
-                display: block;
-                padding: 12px;
-                background: ${isDisabled ? 'rgba(244, 71, 71, 0.15)' : 'rgba(128, 128, 128, 0.1)'};
-                border: 1px solid ${isDisabled ? 'rgba(244, 71, 71, 0.3)' : 'rgba(128, 128, 128, 0.2)'};
-                border-radius: 6px;
-                color: ${isDisabled ? '#f44747' : '#808080'};
-                text-decoration: none;
-                transition: all 150ms ease;
-                font-size: 13px;
-                margin-top: 8px;
-            ">
-                <div style="font-weight: bold; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
-                    <span>Disable Beastmode</span>
-                    ${isDisabled ? '<span style="font-size: 10px; background: rgba(244, 71, 71, 0.3); padding: 2px 6px; border-radius: 3px;">ACTIVE</span>' : ''}
-                </div>
-                <div style="font-size: 11px; color: #808080; font-style: italic;">
-                    Turn off all debug overlays
-                </div>
-            </a>
-        `;
-
         html += `
             </div>
-            <p style="color: #808080; font-size: 10px; margin-top: 16px; margin-bottom: 0; text-align: center; font-style: italic;">
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                <button id="beastmode-apply" style="
+                    flex: 1;
+                    padding: 12px;
+                    background: rgba(78, 201, 176, 0.15);
+                    border: 1px solid rgba(78, 201, 176, 0.3);
+                    border-radius: 6px;
+                    color: #4ec9b0;
+                    font-weight: bold;
+                    cursor: pointer;
+                    transition: all 150ms ease;
+                    font-size: 13px;
+                    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+                ">Apply</button>
+                <button id="beastmode-disable" style="
+                    flex: 1;
+                    padding: 12px;
+                    background: rgba(244, 71, 71, 0.15);
+                    border: 1px solid rgba(244, 71, 71, 0.3);
+                    border-radius: 6px;
+                    color: #f44747;
+                    font-weight: bold;
+                    cursor: pointer;
+                    transition: all 150ms ease;
+                    font-size: 13px;
+                    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+                ">Disable</button>
+            </div>
+            <p style="color: #808080; font-size: 10px; margin: 0; text-align: center; font-style: italic;">
                 Press Ctrl+B (Cmd+B on Mac) to toggle this menu
             </p>
         `;
@@ -134,34 +169,96 @@
         modal.appendChild(content);
         document.body.appendChild(modal);
 
-        // Add hover effects
-        const links = content.querySelectorAll('a');
-        links.forEach(link => {
-            link.addEventListener('mouseenter', function() {
-                if (!this.href.includes(currentUrl.searchParams.get('beastmode'))) {
-                    this.style.background = this.href.includes('beastmode=')
-                        ? 'rgba(86, 156, 214, 0.2)'
-                        : 'rgba(128, 128, 128, 0.2)';
-                }
-            });
-            link.addEventListener('mouseleave', function() {
-                const isActive = this.href.includes('beastmode=' + currentUrl.searchParams.get('beastmode'));
-                const isDisableActive = !currentUrl.searchParams.has('beastmode') && !this.href.includes('beastmode=');
+        // Get references to checkboxes
+        const allCheckbox = content.querySelector('#beastmode-all');
+        const typeCheckboxes = content.querySelectorAll('.beastmode-type');
+        const applyBtn = content.querySelector('#beastmode-apply');
+        const disableBtn = content.querySelector('#beastmode-disable');
+        const closeBtn = content.querySelector('#bonsai-modal-close');
 
-                if (isActive) {
-                    this.style.background = 'rgba(78, 201, 176, 0.15)';
-                } else if (isDisableActive) {
-                    this.style.background = 'rgba(244, 71, 71, 0.15)';
-                } else {
-                    this.style.background = this.href.includes('beastmode=')
-                        ? 'rgba(86, 156, 214, 0.1)'
-                        : 'rgba(128, 128, 128, 0.1)';
+        // Handle "All" checkbox logic
+        allCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                // Uncheck all individual types when "All" is checked
+                typeCheckboxes.forEach(cb => cb.checked = false);
+            }
+        });
+
+        // Handle individual type checkboxes
+        typeCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    // Uncheck "All" when any individual type is checked
+                    allCheckbox.checked = false;
+
+                    // Check if all individual types are now checked
+                    const allTypesChecked = Array.from(typeCheckboxes).every(cb => cb.checked);
+                    if (allTypesChecked) {
+                        // If all types are checked, switch to "All" mode
+                        typeCheckboxes.forEach(cb => cb.checked = false);
+                        allCheckbox.checked = true;
+                    }
                 }
             });
         });
 
+        // Apply button - build URL and navigate
+        applyBtn.addEventListener('click', function() {
+            const newUrl = new URL(currentUrl);
+
+            if (allCheckbox.checked) {
+                // If "All" is checked, set beastmode=all
+                newUrl.searchParams.set('beastmode', 'all');
+            } else {
+                // Build comma-separated list of checked types
+                const checkedTypes = Array.from(typeCheckboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+
+                if (checkedTypes.length > 0) {
+                    newUrl.searchParams.set('beastmode', checkedTypes.join(','));
+                } else {
+                    newUrl.searchParams.delete('beastmode');
+                }
+            }
+
+            window.location.href = newUrl.href;
+        });
+
+        // Disable button - remove beastmode parameter
+        disableBtn.addEventListener('click', function() {
+            const newUrl = new URL(currentUrl);
+            newUrl.searchParams.delete('beastmode');
+            window.location.href = newUrl.href;
+        });
+
+        // Hover effects for labels
+        const labels = content.querySelectorAll('.beastmode-option');
+        labels.forEach(label => {
+            label.addEventListener('mouseenter', function() {
+                this.style.background = 'rgba(86, 156, 214, 0.2)';
+            });
+            label.addEventListener('mouseleave', function() {
+                this.style.background = 'rgba(86, 156, 214, 0.1)';
+            });
+        });
+
+        // Hover effects for buttons
+        applyBtn.addEventListener('mouseenter', function() {
+            this.style.background = 'rgba(78, 201, 176, 0.25)';
+        });
+        applyBtn.addEventListener('mouseleave', function() {
+            this.style.background = 'rgba(78, 201, 176, 0.15)';
+        });
+
+        disableBtn.addEventListener('mouseenter', function() {
+            this.style.background = 'rgba(244, 71, 71, 0.25)';
+        });
+        disableBtn.addEventListener('mouseleave', function() {
+            this.style.background = 'rgba(244, 71, 71, 0.15)';
+        });
+
         // Close button
-        const closeBtn = content.querySelector('#bonsai-modal-close');
         closeBtn.addEventListener('click', hideModal);
         closeBtn.addEventListener('mouseenter', function() {
             this.style.color = '#f44747';
