@@ -4,6 +4,15 @@
 All notable changes to this project will be documented in this file.
 <!--- END HEADER -->
 
+## [7.2.1](https://github.com/wabi-soft/craft-bonsai-twig/compare/v7.2.0...v7.2.1) (2025-11-06)
+
+### Bug Fixes
+
+* UX of overlay ([e72723](https://github.com/wabi-soft/craft-bonsai-twig/commit/e72723325a4fa5da29ed441dcdeea95d291e1e92))
+
+
+---
+
 ## [7.2.0](https://github.com/wabi-soft/craft-bonsai-twig/compare/v7.1.1...v7.2.0) (2025-11-04)
 
 
