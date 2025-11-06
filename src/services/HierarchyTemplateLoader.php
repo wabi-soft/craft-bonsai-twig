@@ -149,8 +149,10 @@ class HierarchyTemplateLoader extends Component
             }
 
             // In dev mode, always add the beastmode keyboard shortcut (once per page load)
+            // Register at end of body to ensure it loads after other scripts
             if (!self::$shortcutScriptAdded) {
-                $content .= Craft::$app->view->renderTemplate('_bonsai-twig/_partials/beastmode-shortcut');
+                $shortcutScript = Craft::$app->view->renderTemplate('_bonsai-twig/_partials/beastmode-shortcut');
+                Craft::$app->view->registerScript($shortcutScript, \yii\web\View::POS_END);
                 self::$shortcutScriptAdded = true;
             }
 

@@ -1,8 +1,9 @@
 {#
     Beastmode keyboard shortcut - Always loads in dev mode
     Allows toggling beastmode with Ctrl+B / Cmd+B
+    Note: No <script> tags needed - registerScript() adds them automatically
 #}
-<script>
+{% apply spaceless %}
 {% verbatim %}
 (function() {
     // Beastmode keyboard shortcut (Ctrl+B / Cmd+B)
@@ -123,7 +124,7 @@
         html += `
             </div>
             <p style="color: #808080; font-size: 10px; margin-top: 16px; margin-bottom: 0; text-align: center; font-style: italic;">
-                Press Ctrl+B (Cmd+B on Mac) to quick-toggle • Ctrl+Shift+B for options
+                Press Ctrl+B (Cmd+B on Mac) to toggle this menu
             </p>
         `;
 
@@ -188,40 +189,15 @@
         }
     }
 
-    // Listen for Ctrl+B / Cmd+B and Ctrl+Shift+B / Cmd+Shift+B
+    // Listen for Ctrl+B / Cmd+B
     document.addEventListener('keydown', function(e) {
-        // Ctrl+Shift+B / Cmd+Shift+B: Always show modal
-        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'B') {
+        // Ctrl+B / Cmd+B: Toggle modal
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
             e.preventDefault();
             if (modal && modal.style.display === 'flex') {
                 hideModal();
             } else {
                 showModal();
-            }
-            return;
-        }
-
-        // Ctrl+B / Cmd+B: Quick toggle or show modal
-        if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-            e.preventDefault();
-
-            // If modal is open, close it
-            if (modal && modal.style.display === 'flex') {
-                hideModal();
-                return;
-            }
-
-            // Check if beastmode is currently active
-            const currentUrl = new URL(window.location.href);
-            const hasBeastmode = currentUrl.searchParams.has('beastmode');
-
-            if (hasBeastmode) {
-                // Beastmode is active, show modal to change/disable
-                showModal();
-            } else {
-                // Beastmode is not active, instantly enable beastmode=all
-                currentUrl.searchParams.set('beastmode', 'all');
-                window.location.href = currentUrl.href;
             }
         }
 
@@ -232,4 +208,4 @@
     });
 })();
 {% endverbatim %}
-</script>
+{% endapply %}
