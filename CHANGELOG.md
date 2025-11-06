@@ -4,6 +4,15 @@
 All notable changes to this project will be documented in this file.
 <!--- END HEADER -->
 
+## [7.3.1](https://github.com/wabi-soft/craft-bonsai-twig/compare/v7.3.0...v7.3.1) (2025-11-06)
+
+### Bug Fixes
+
+* Stacking order through isolation ([5632e9](https://github.com/wabi-soft/craft-bonsai-twig/commit/5632e99b6170b77b3239098057f25cfd9df35953))
+
+
+---
+
 ## [7.3.0](https://github.com/wabi-soft/craft-bonsai-twig/compare/v7.2.1...v7.3.0) (2025-11-06)
 
 
