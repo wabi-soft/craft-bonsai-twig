@@ -5,12 +5,7 @@ How to replicate the `itemTemplates()` function using native Twig if you remove 
 ## With Plugin
 
 ```twig
-{#
-While in devMode:
-
-To see full path: ?showItemHierarchy=1
-To see applied template: ?showItemPath=1
-#}
+{# Debug: add ?beastmode to URL, then Cmd+B / Ctrl+B for overlay #}
 
 {{ itemTemplates({ entry, style }) }}
 ```
@@ -44,7 +39,8 @@ The include checks templates in order (first match wins):
 
 ## What You Lose
 
-- Debug output (`?showItemHierarchy=1`, `?showItemPath=1`)
+- Debug overlay (Cmd+B / Ctrl+B) with `?beastmode` parameter
+- Visual template path resolution display
 - `ctx` context-aware path resolution
 - `options` and `overridableSettings` support
 - Multi-site `baseSite` prefix support

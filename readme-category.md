@@ -5,12 +5,7 @@ How to replicate the `categoryTemplates()` function using native Twig if you rem
 ## With Plugin
 
 ```twig
-{#
-While in devMode:
-
-To see full path: ?showCategoryHierarchy=1
-To see applied template: ?showCategoryPath=1
-#}
+{# Debug: add ?beastmode to URL, then Cmd+B / Ctrl+B for overlay #}
 
 {{ categoryTemplates({ entry: category }) }}
 ```
@@ -39,5 +34,6 @@ The include checks templates in order (first match wins):
 
 ## What You Lose
 
-- Debug output (`?showCategoryHierarchy=1`, `?showCategoryPath=1`)
+- Debug overlay (Cmd+B / Ctrl+B) with `?beastmode` parameter
+- Visual template path resolution display
 - Multi-site `baseSite` prefix support

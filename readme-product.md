@@ -5,12 +5,7 @@ How to replicate the `productTemplates()` function using native Twig if you remo
 ## With Plugin
 
 ```twig
-{#
-While in devMode:
-
-To see full path: ?showProductHierarchy=1
-To see applied template: ?showProductPath=1
-#}
+{# Debug: add ?beastmode to URL, then Cmd+B / Ctrl+B for overlay #}
 
 {{ productTemplates({ product }) }}
 ```
@@ -39,5 +34,6 @@ The include checks templates in order (first match wins):
 
 ## What You Lose
 
-- Debug output (`?showProductHierarchy=1`, `?showProductPath=1`)
+- Debug overlay (Cmd+B / Ctrl+B) with `?beastmode` parameter
+- Visual template path resolution display
 - Multi-site `baseSite` prefix support

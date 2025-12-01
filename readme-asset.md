@@ -5,12 +5,7 @@ How to replicate the `assetTemplates()` function using native Twig if you remove
 ## With Plugin
 
 ```twig
-{#
-While in devMode:
-
-To see full path: ?showAssetHierarchy=1
-To see applied template: ?showAssetPath=1
-#}
+{# Debug: add ?beastmode to URL, then Cmd+B / Ctrl+B for overlay #}
 
 {{ assetTemplates({ asset }) }}
 ```
@@ -45,5 +40,6 @@ The include checks templates in order (first match wins):
 
 ## What You Lose
 
-- Debug output (`?showAssetHierarchy=1`, `?showAssetPath=1`)
+- Debug overlay (Cmd+B / Ctrl+B) with `?beastmode` parameter
+- Visual template path resolution display
 - Multi-site `baseSite` prefix support

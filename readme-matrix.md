@@ -5,6 +5,8 @@ How to replicate the `matrixTemplates()` function using native Twig if you remov
 ## With Plugin
 
 ```twig
+{# Debug: add ?beastmode to URL, then Cmd+B / Ctrl+B for overlay #}
+
 {% if matrix|length %}
     {% set style = style ?? null %}
     {% for block in matrix.collect() ?? null %}
@@ -56,7 +58,8 @@ The include checks templates in order (first match wins):
 
 ## What You Lose
 
-- Debug output (`?showMatrixHierarchy=1`, `?showMatrixPath=1`)
+- Debug overlay (Cmd+B / Ctrl+B) with `?beastmode` parameter
+- Visual template path resolution display
 - `ctx` context-aware path resolution
 - `overridableSettings` support
 - Additional hierarchical path options (handle, position, nested)

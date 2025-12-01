@@ -5,12 +5,7 @@ How to replicate the `entryTemplates()` function using native Twig if you remove
 ## With Plugin
 
 ```twig
-{#
-While in devMode:
-
-To see full path: ?showEntryHierarchy=1
-To see applied template: ?showEntryPath=1
-#}
+{# Debug: add ?beastmode to URL, then Cmd+B / Ctrl+B for overlay #}
 
 {{ entryTemplates({ entry }) }}
 ```
@@ -45,6 +40,7 @@ The include checks templates in order (first match wins):
 
 ## What You Lose
 
-- Debug output (`?showEntryHierarchy=1`, `?showEntryPath=1`)
+- Debug overlay (Cmd+B / Ctrl+B) with `?beastmode` parameter
+- Visual template path resolution display
 - Multi-site `baseSite` prefix support
 - `_entry` fallback path (plugin adds `entry/{section}/{type}/_entry`)
