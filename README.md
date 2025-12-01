@@ -11,6 +11,17 @@ Welcome to the **Bonsai Twig Plugin** README! This plugin is designed as a **dev
 - **Enhanced btPath() Function**: Returns complete HTML output with styling, eliminating need for manual Twig wrapping
 - **Zero Production Overhead**: Debug features return empty strings in production mode
 
+## Pure Twig Equivalents
+
+If you need to remove the plugin, see these guides for native Twig replacements:
+
+- [Entry Templates](readme-entry.md) - `entryTemplates()`
+- [Category Templates](readme-category.md) - `categoryTemplates()`
+- [Item Templates](readme-item.md) - `itemTemplates()`
+- [Matrix Templates](readme-matrix.md) - `matrixTemplates()`
+- [Asset Templates](readme-asset.md) - `assetTemplates()`
+- [Product Templates](readme-product.md) - `productTemplates()`
+
 ## Requirements
 
 - **PHP**: 8.2.0 or higher
