@@ -367,11 +367,15 @@ In production mode (`devMode = false`), `btPath()` returns an empty string with 
 
 ## Debug Features
 
-The plugin provides simple debugging tools that are only active in development mode (`devMode = true`). Debug information is triggered using the `beastmode` URL parameter.
+The plugin provides debugging tools that are only active in development mode (`devMode = true`).
 
 ### Debug Mode
 
-#### Universal Debug Parameter
+#### Keyboard Shortcut (Recommended)
+
+Press **Cmd+B** (Mac) or **Ctrl+B** (Windows/Linux) to open the Beastmode options modal. This lets you select which template types to debug without manually editing the URL.
+
+#### URL Parameter
 
 Add `?beastmode` to any URL to enable debug mode for all template types:
 
@@ -379,7 +383,13 @@ Add `?beastmode` to any URL to enable debug mode for all template types:
 https://yoursite.test/some-page?beastmode
 ```
 
-This will show simple debug information for any Bonsai Twig function calls on that page.
+Or filter by specific types (comma-separated):
+
+```
+https://yoursite.test/some-page?beastmode=entry,matrix
+```
+
+Valid types: `entry`, `category`, `item`, `matrix`, `asset`, `product`, or `all`
 
 ### Debug Information Display
 
@@ -495,58 +505,40 @@ Template Resolution
 
 The plugin uses intelligent hierarchical template resolution that checks multiple paths in priority order:
 
-1. **Site-Specific Templates**: Templates in site-specific directories (e.g., `_site1/entry/`)
-2. **Type-Specific Templates**: Templates based on element type and handle (e.g., `entry/blog/`)
-3. **Style Variants**: Templates with style suffixes (e.g., `entry/blog--featured.twig`)
-4. **Fallback Templates**: Generic templates (e.g., `entry/default.twig`)
+1. **Type-Specific Templates**: Templates based on element type and handle (e.g., `entry/blog/article`)
+2. **Style Variants**: Style-based paths for items and matrix blocks (e.g., `item/{section}/{style}`, `matrix/style/{style}/{blockType}`)
+3. **Fallback Templates**: Generic templates (e.g., `entry/default.twig`)
 
 ### Template Path Examples
 
 For an entry with section handle `blog` and type handle `article`:
 
 ```
-
 # Checked in this order:
-
-templates/\_site1/entry/blog/article.twig
-templates/entry/blog/article.twig
-templates/\_site1/entry/blog/default.twig
-templates/entry/blog/default.twig
-templates/\_site1/entry/default.twig
-templates/entry/default.twig
-
+entry/blog/article/{slug}
+entry/blog/article/_entry
+entry/blog/{slug}
+entry/blog/article
+entry/blog/default
+entry/blog
+entry/article
+entry/default
 ```
 
-With a style parameter:
-
-```twig
-{{ entryTemplates({ entry: entry, style: 'featured' }) }}
-```
-
-Additional paths are checked:
-
-```
-templates/_site1/entry/blog/article--featured.twig
-templates/entry/blog/article--featured.twig
-templates/_site1/entry/blog/default--featured.twig
-templates/entry/blog/default--featured.twig
-```
+Note: The `style` parameter is passed to the template as a variable but does not change the entry path resolution. For style-aware path resolution, use `itemTemplates()` or `matrixTemplates()` instead.
 
 ### Matrix Block Resolution
 
-Matrix blocks have enhanced resolution with context awareness:
+Matrix blocks have style-aware path resolution:
 
 ```
 # For a matrix block of type 'textBlock' with style 'hero':
-templates/_site1/matrix/textBlock--hero.twig
-templates/matrix/textBlock--hero.twig
-templates/_site1/matrix/textBlock.twig
-templates/matrix/textBlock.twig
-templates/_site1/matrix/default--hero.twig
-templates/matrix/default--hero.twig
-templates/_site1/matrix/default.twig
-templates/matrix/default.twig
+matrix/style/hero/textBlock
+matrix/textBlock
+matrix/default
 ```
+
+Additional context-aware paths are available when using `ctx`, `handle`, or position parameters.
 
 ## Integration with Craft 5
 
@@ -606,9 +598,12 @@ The plugin maintains full backward compatibility, but you can take advantage of 
 **New way (recommended):**
 
 ```
+?beastmode
 ?beastmode=entry
-?beastmode=full
+?beastmode=entry,matrix
 ```
+
+Or use the keyboard shortcut: **Cmd+B** / **Ctrl+B**
 
 #### Template Function Signatures
 
@@ -663,13 +658,13 @@ The plugin leverages essential modern PHP features:
 
 ### Templates Not Found
 
-1. Use debug mode to see which paths are being checked: `?beastmode=hierarchy`
+1. Use debug mode to see which paths are being checked: `?beastmode`
 2. Verify your template directory structure matches the expected hierarchy
 3. Check file permissions on template directories
 
 ### Template Resolution Issues
 
-1. Use debug mode to see which paths are being checked: `?beastmode`
+1. Use debug mode to see which paths are being checked: `?beastmode` or `?beastmode=entry,matrix`
 2. Use the enhanced `btPath()` function in your templates to see resolution info
 3. Consider simplifying complex template hierarchies
 
