@@ -4,6 +4,15 @@
 All notable changes to this project will be documented in this file.
 <!--- END HEADER -->
 
+## [8.0.0](https://github.com/wabi-soft/craft-bonsai-twig/compare/v7.3.3...v8.0.0) (2026-03-12)
+
+### Bug Fixes
+
+* Gate _btStrategy behind devMode in loaders ([9dba08](https://github.com/wabi-soft/craft-bonsai-twig/commit/9dba08b4264eb3689402819554f5358f3197b049))
+
+
+---
+
 ## [7.3.3](https://github.com/wabi-soft/craft-bonsai-twig/compare/v7.3.2...v7.3.3) (2025-11-06)
 
 
