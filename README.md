@@ -27,6 +27,75 @@ If you need to remove the plugin, see these guides for native Twig replacements:
 - **PHP**: 8.2.0 or higher
 - **Craft CMS**: 5.0.0 or higher
 
+## Template Resolution Strategy (v8.0)
+
+By default, templates resolve **section-first** (`entry/{section}/{type}/...`). In v8.0, you can opt into **type-first** resolution (`entry/{type}/{section}/...`), aligning with Craft 5's standalone entry types.
+
+### Setting the Strategy
+
+Three levels of configuration (highest to lowest precedence):
+
+**1. Per-template (highest priority):**
+
+```twig
+{{ entryTemplates({ entry: entry, strategy: 'type' }) }}
+{{ itemTemplates({ entry: item, strategy: 'type' }) }}
+```
+
+**2. Config file:**
+
+```php
+// config/_bonsai-twig.php
+return [
+    'strategy' => 'type',
+];
+```
+
+**3. Control Panel:**
+
+Radio buttons in Settings > Bonsai Twig > Template Resolution Strategy.
+
+If unset at all levels, defaults to `'section'` — identical behavior to v7.
+
+### Path Resolution Comparison
+
+For an entry with section `blog` and type `article`:
+
+| Priority | Section-first (default) | Type-first |
+|----------|------------------------|------------|
+| 1 | `entry/blog/article/{slug}` | `entry/article/blog/{slug}` |
+| 2 | `entry/blog/article/_entry` | `entry/article/blog/_entry` |
+| 3 | `entry/blog/{slug}` | `entry/article/{slug}` |
+| 4 | `entry/blog/article` | `entry/article/blog` |
+| 5 | `entry/blog/default` | `entry/article/default` |
+| 6 | `entry/blog` | `entry/article` |
+| 7 | `entry/article` | `entry/blog` |
+| 8 | `entry/default` | `entry/default` |
+
+### Mixed Strategies
+
+You can use both strategies in the same project. Set a global default via config, then override per-template:
+
+```twig
+{# Most templates use global strategy (e.g., 'type') #}
+{{ entryTemplates({ entry: entry }) }}
+
+{# This one overrides to section-first #}
+{{ entryTemplates({ entry: entry, strategy: 'section' }) }}
+```
+
+### Which Loaders Support Strategy?
+
+| Loader | Strategy support |
+|--------|-----------------|
+| `entryTemplates()` | Yes |
+| `itemTemplates()` | Yes (item + ctx dimensions) |
+| `matrixTemplates()` | No (already type-centric) |
+| `categoryTemplates()` | No (legacy, no entry types) |
+| `assetTemplates()` | No (volume/folder based) |
+
+---
+
 ## Usage Guide
 
 ### Core Template Functions
@@ -45,6 +114,7 @@ The plugin provides five main Twig functions for hierarchical template loading:
 
 - `entry` (Entry): The entry element to render
 - `path` (string, optional): Custom template path override
+- `strategy` (string, optional): `'section'` (default) or `'type'` for type-first resolution
 - `style` (string, optional): Style variant (forwarded to the template; does not alter Entry path resolution)
 - `context` (Element, optional): Additional context element
 - `baseSite` (string, optional): Base site handle for multi-site setups
@@ -60,6 +130,12 @@ The plugin provides five main Twig functions for hierarchical template loading:
     entry: entry,
     path: 'custom/path',
     style: 'featured'
+}) }}
+
+{# With type-first strategy #}
+{{ entryTemplates({
+    entry: entry,
+    strategy: 'type'
 }) }}
 
 {# With additional context #}
@@ -116,6 +192,12 @@ The plugin provides five main Twig functions for hierarchical template loading:
     entry: item,
     context: parentEntry,
     style: 'compact'
+}) }}
+
+{# Item with type-first strategy #}
+{{ itemTemplates({
+    entry: item,
+    strategy: 'type'
 }) }}
 ```
 
@@ -678,6 +760,13 @@ For issues, feature requests, or questions:
 4. Check Craft and PHP version compatibility
 
 ## Changelog
+
+### Version 8.0.0
+
+- **Type-first template resolution strategy** — opt-in `strategy: 'type'` parameter for EntryLoader and ItemLoader
+- Three-level configuration: per-template, config file, or CP settings
+- Strategy displayed in beastmode overlay and `btPath()` debug output
+- Version bump to 8.0.0 (no breaking changes when strategy is unset)
 
 ### Version 6.4.0
 
