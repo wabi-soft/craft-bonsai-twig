@@ -118,6 +118,7 @@ class HierarchyTemplateLoader extends Component
             // Zero overhead in production mode.
             if ($isDev) {
                 $validatedVariables['_btTemplates'] = $validatedTemplates;
+                $validatedVariables['_btStrategy'] = $validatedVariables['_btStrategy'] ?? 'section';
 
                 // Find which original template corresponds to the resolved path
                 // The resolvedPath comes from optimizedPaths (with basePath prepended),
@@ -268,6 +269,7 @@ class HierarchyTemplateLoader extends Component
                         'templates' => $displayTemplates,
                         'currentTemplate' => $resolvedPath,
                         'type' => $templateType->value,
+                        'strategy' => $validatedVariables['_btStrategy'] ?? 'section',
                         'element_kind' => $elementKind,
                         'element_info' => $elementInfo,
                         'field_handles' => $fieldHandles,

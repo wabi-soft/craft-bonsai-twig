@@ -3,6 +3,8 @@
 namespace wabisoft\bonsaitwig\services;
 
 use craft\base\Element;
+use wabisoft\bonsaitwig\BonsaiTwig;
+use wabisoft\bonsaitwig\enums\Strategy;
 
 /**
  * Service class for loading template paths based on Craft elements and context.
@@ -55,6 +57,12 @@ class ItemLoader
         $type = $entry->type?->handle ?? false;
         $slug = $entry->slug ?? '';
 
+        // Resolve strategy: per-template > config/CP > default
+        $strategy = Strategy::tryFrom($variables['strategy'] ?? BonsaiTwig::getInstance()?->getSettings()->strategy ?? '') ?? Strategy::SECTION;
+        if ($strategy === Strategy::TYPE) {
+            [$section, $type] = [$type, $section];
+        }
+
         // Build template paths in order of specificity
         $checkTemplates = [];
 
@@ -71,6 +79,10 @@ class ItemLoader
             if ($ctx) {
                 $contextSection = $ctx->section?->handle ?? $ctx->group?->handle ?? '';
                 $contextType = $ctx->type?->handle ?? '';
+
+                if ($strategy === Strategy::TYPE) {
+                    [$contextSection, $contextType] = [$contextType, $contextSection];
+                }
 
                 if ($style && $contextSection && $contextType) {
                     $checkTemplates[] = $prefix . '/' . $section . '/' . $ctxPath . '/' . $contextSection . '/' . $contextType . '/' . $style;
@@ -116,6 +128,9 @@ class ItemLoader
             $checkTemplates[] = $prefix . '/' . $section;
             $checkTemplates[] = $prefix . '/' . $default;
         }
+
+        // Pass strategy to debug pipeline
+        $variables['_btStrategy'] = $strategy->value;
 
         return HierarchyTemplateLoader::load(
             $checkTemplates,

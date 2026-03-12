@@ -3,6 +3,7 @@
 namespace wabisoft\bonsaitwig\models;
 
 use craft\base\Model;
+use wabisoft\bonsaitwig\enums\Strategy;
 
 /**
  * Bonsai Twig plugin settings model.
@@ -13,6 +14,12 @@ use craft\base\Model;
  */
 class Settings extends Model
 {
+    /**
+     * @var string Template resolution strategy: 'section' (default) or 'type' (type-first).
+     * @since 8.0.0
+     */
+    public string $strategy = 'section';
+
     /**
      * @var bool Whether to nest item template paths by element type when no explicit mapping is provided
      *           This acts as a fallback when itemsTemplateElementPaths is false.
@@ -33,6 +40,7 @@ class Settings extends Model
     public function rules(): array
     {
         return [
+            [['strategy'], 'in', 'range' => array_column(Strategy::cases(), 'value')],
             [['nestByElementType'], 'boolean'],
             // itemsTemplateElementPaths can be false or an associative array of strings
             [['itemsTemplateElementPaths'], function($attribute): void {

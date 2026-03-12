@@ -2,14 +2,24 @@
 
 <div class="field">
     <div class="heading">
-        <label>{{ "Performance Settings"|t('bonsai-twig') }}</label>
+        <label>{{ "Template Resolution Strategy"|t('bonsai-twig') }}</label>
         <div class="instructions">
-            <p>{{ "Configure performance monitoring and debugging features."|t('bonsai-twig') }}</p>
+            <p>{{ "Controls how template paths are organized. Can be overridden per-template call or in config/_bonsai-twig.php."|t('bonsai-twig') }}</p>
         </div>
     </div>
 </div>
 
-{# Performance monitoring and error reporting settings removed in simplification #}
+{{ forms.radioGroupField({
+    label: "Strategy"|t('bonsai-twig'),
+    instructions: "<strong>Section-first</strong> uses section as the primary folder (default). <strong>Type-first</strong> uses entry type as the primary folder, aligning with Craft 5's standalone entry types."|t('bonsai-twig'),
+    id: 'strategy',
+    name: 'strategy',
+    value: settings.strategy,
+    options: [
+        { label: 'Section-first (default)', value: 'section' },
+        { label: 'Type-first (Craft 5)', value: 'type' },
+    ],
+}) }}
 
 <hr>
 

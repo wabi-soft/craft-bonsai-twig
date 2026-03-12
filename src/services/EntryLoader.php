@@ -3,6 +3,8 @@
 namespace wabisoft\bonsaitwig\services;
 
 use craft\base\Element;
+use wabisoft\bonsaitwig\BonsaiTwig;
+use wabisoft\bonsaitwig\enums\Strategy;
 
 /**
  * Service class for loading template paths based on Craft entries.
@@ -44,6 +46,12 @@ class EntryLoader
         $type = $entry->type?->handle ?? '';
         $slug = $entry->slug ?? '';
 
+        // Resolve strategy: per-template > config/CP > default
+        $strategy = Strategy::tryFrom($variables['strategy'] ?? BonsaiTwig::getInstance()?->getSettings()->strategy ?? '') ?? Strategy::SECTION;
+        if ($strategy === Strategy::TYPE) {
+            [$section, $type] = [$type, $section];
+        }
+
         // Build template paths in order of specificity
         $checkTemplates = [];
 
@@ -76,6 +84,9 @@ class EntryLoader
             // Default fallback for this prefix
             $checkTemplates[] = $prefix . '/default';
         }
+
+        // Pass strategy to debug pipeline
+        $variables['_btStrategy'] = $strategy->value;
 
         return HierarchyTemplateLoader::load(
             $checkTemplates,

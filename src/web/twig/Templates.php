@@ -163,9 +163,15 @@ class Templates extends AbstractExtension
             // Get template data from context
             $templates = $context['_btTemplates'];
             $resolvedTemplate = $context['_btResolvedTemplate'] ?? null;
-            
+
             // Detect template type from context or element
             $templateType = $this->detectTemplateType($context);
+
+            // Append strategy to header when non-default
+            $strategy = $context['_btStrategy'] ?? 'section';
+            if ($strategy !== 'section') {
+                $templateType .= ' [strategy: ' . $strategy . ']';
+            }
 
             return $this->renderDebugOutput($templates, $resolvedTemplate, $templateType);
         } catch (\Throwable $e) {
