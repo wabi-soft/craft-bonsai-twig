@@ -72,6 +72,45 @@ How to replicate the `entryTemplates()` function using native Twig if you remove
 7. `entry/{section}` - Section only
 8. `entry/default` - Global fallback
 
+## Per-Section Strategy
+
+You can vary the strategy by section so that some sections resolve type-first while others stay section-first:
+
+```twig
+{% set strategy = entry.section.handle in ['blog', 'resources'] ? 'type' : 'section' %}
+{{ entryTemplates({ entry: entry, strategy: strategy }) }}
+```
+
+Pure Twig equivalent:
+
+```twig
+{% set entryPath = 'entry/' %}
+{% if entry.section.handle in ['blog', 'resources'] %}
+    {# type-first #}
+    {% include [
+        entryPath ~ entry.type.handle ~ '/' ~ entry.section.handle ~ '/' ~ entry.slug,
+        entryPath ~ entry.type.handle ~ '/' ~ entry.section.handle ~ '/_entry',
+        entryPath ~ entry.type.handle ~ '/' ~ entry.slug,
+        entryPath ~ entry.type.handle ~ '/' ~ entry.section.handle,
+        entryPath ~ entry.type.handle ~ '/default',
+        entryPath ~ entry.type.handle,
+        entryPath ~ entry.section.handle,
+        entryPath ~ 'default'
+    ] %}
+{% else %}
+    {# section-first #}
+    {% include [
+        entryPath ~ entry.section.handle ~ '/' ~ entry.type.handle ~ '/' ~ entry.slug,
+        entryPath ~ entry.section.handle ~ '/' ~ entry.slug,
+        entryPath ~ entry.section.handle ~ '/' ~ entry.type.handle,
+        entryPath ~ entry.section.handle ~ '/default',
+        entryPath ~ entry.section.handle,
+        entryPath ~ entry.type.handle,
+        entryPath ~ 'default'
+    ] %}
+{% endif %}
+```
+
 ## What You Lose
 
 - Debug overlay (Cmd+B / Ctrl+B) with `?beastmode` parameter

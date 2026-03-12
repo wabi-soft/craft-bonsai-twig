@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ## [8.0.0](https://github.com/wabi-soft/craft-bonsai-twig/compare/v7.3.3...v8.0.0) (2026-03-12)
 
+### Features
+
+* Type-first template resolution strategy — opt-in `strategy: 'type'` parameter for EntryLoader and ItemLoader
+* Three-level configuration: per-template override, config file (`config/_bonsai-twig.php`), or Control Panel settings
+* Strategy displayed in beastmode overlay and `btPath()` debug output
+
 ### Bug Fixes
 
 * Gate _btStrategy behind devMode in loaders ([9dba08](https://github.com/wabi-soft/craft-bonsai-twig/commit/9dba08b4264eb3689402819554f5358f3197b049))

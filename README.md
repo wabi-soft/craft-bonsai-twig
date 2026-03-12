@@ -84,6 +84,23 @@ You can use both strategies in the same project. Set a global default via config
 {{ entryTemplates({ entry: entry, strategy: 'section' }) }}
 ```
 
+#### Per-Section Strategy
+
+Use a conditional to pick the strategy based on the current section:
+
+```twig
+{# Sections with shared entry types use type-first; the rest use section-first #}
+{% set strategy = entry.section.handle in ['blog', 'resources'] ? 'type' : 'section' %}
+{{ entryTemplates({ entry: entry, strategy: strategy }) }}
+```
+
+The same pattern works with `itemTemplates()`:
+
+```twig
+{% set strategy = item.section.handle in ['blog', 'resources'] ? 'type' : 'section' %}
+{{ itemTemplates({ entry: item, strategy: strategy }) }}
+```
+
 ### Which Loaders Support Strategy?
 
 | Loader | Strategy support |

@@ -47,7 +47,7 @@ class EntryLoader
         $slug = $entry->slug ?? '';
 
         // Resolve strategy: per-template > config/CP > default
-        $strategy = Strategy::tryFrom($variables['strategy'] ?? BonsaiTwig::getInstance()?->getSettings()->strategy ?? '') ?? Strategy::SECTION;
+        $strategy = Strategy::tryFrom($variables['strategy'] ?? BonsaiTwig::getInstance()->getSettings()->strategy ?? '') ?? Strategy::SECTION;
         if ($strategy === Strategy::TYPE) {
             [$section, $type] = [$type, $section];
         }

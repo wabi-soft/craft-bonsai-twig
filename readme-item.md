@@ -76,6 +76,43 @@ When using `ctx`, the context element's dimensions also flip:
 
 **Type-first:** `item/{type}/ctx/{contextType}/{contextSection}/...`
 
+## Per-Section Strategy
+
+You can vary the strategy by section so that some sections resolve type-first while others stay section-first:
+
+```twig
+{% set strategy = item.section.handle in ['blog', 'resources'] ? 'type' : 'section' %}
+{{ itemTemplates({ entry: item, strategy: strategy }) }}
+```
+
+Pure Twig equivalent:
+
+```twig
+{% set itemPath = 'item/' %}
+{% set style = style is defined ? style : 'none' %}
+{% if entry.section.handle in ['blog', 'resources'] %}
+    {# type-first #}
+    {% include [
+        itemPath ~ entry.type.handle ~ '/' ~ style,
+        itemPath ~ style,
+        itemPath ~ entry.type.handle ~ '/' ~ entry.section.handle ~ '/' ~ entry.slug,
+        itemPath ~ entry.type.handle ~ '/' ~ entry.section.handle,
+        itemPath ~ entry.type.handle ~ '/default',
+        itemPath ~ 'default'
+    ] ignore missing %}
+{% else %}
+    {# section-first #}
+    {% include [
+        itemPath ~ entry.section.handle ~ '/' ~ style,
+        itemPath ~ style,
+        itemPath ~ entry.section.handle ~ '/' ~ entry.type.handle ~ '/' ~ entry.slug,
+        itemPath ~ entry.section.handle ~ '/' ~ entry.type.handle,
+        itemPath ~ entry.section.handle ~ '/default',
+        itemPath ~ 'default'
+    ] ignore missing %}
+{% endif %}
+```
+
 ## What You Lose
 
 - Debug overlay (Cmd+B / Ctrl+B) with `?beastmode` parameter

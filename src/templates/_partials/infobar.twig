@@ -81,6 +81,10 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
+        .bonsai-info__type-badge--strategy {
+            background: #4e3a1e;
+            color: #dcdcaa;
+        }
         .bonsai-info__element-info {
             display: flex;
             align-items: center;
@@ -632,7 +636,7 @@
                 </div>
                 <div class="bonsai-info__type-badge">{{ data.type|default('template') }}</div>
                 {% if data.strategy is defined and data.strategy != 'section' %}
-                    <div class="bonsai-info__type-badge" style="background: #4e3a1e; color: #dcdcaa;">{{ data.strategy }}</div>
+                    <div class="bonsai-info__type-badge bonsai-info__type-badge--strategy">{{ data.strategy }}</div>
                 {% endif %}
             </div>
         </div>

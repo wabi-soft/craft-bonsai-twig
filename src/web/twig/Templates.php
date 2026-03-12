@@ -176,6 +176,9 @@ class Templates extends AbstractExtension
             return $this->renderDebugOutput($templates, $resolvedTemplate, $templateType);
         } catch (\Throwable $e) {
             // Gracefully handle any errors without breaking template rendering
+            if (\Craft::$app->getConfig()->general->devMode) {
+                \Craft::warning('btPath() error: ' . $e->getMessage(), __METHOD__);
+            }
             return '';
         }
     }
