@@ -129,8 +129,10 @@ class ItemLoader
             $checkTemplates[] = $prefix . '/' . $default;
         }
 
-        // Pass strategy to debug pipeline
-        $variables['_btStrategy'] = $strategy->value;
+        // Pass strategy to debug pipeline (devMode only to avoid leaking into template scope)
+        if (\Craft::$app->getConfig()->general->devMode) {
+            $variables['_btStrategy'] = $strategy->value;
+        }
 
         return HierarchyTemplateLoader::load(
             $checkTemplates,
