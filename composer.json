@@ -25,7 +25,7 @@
         }
     },
     "extra": {
-        "handle": "_bonsai-twig",
+        "handle": "bonsai-twig",
         "name": "Bonsai Twig",
         "developer": "Wabisoft",
         "documentationUrl": "",

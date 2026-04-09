@@ -14,7 +14,7 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 * Type-first template resolution strategy — opt-in `strategy: 'type'` parameter for EntryLoader and ItemLoader
-* Three-level configuration: per-template override, config file (`config/_bonsai-twig.php`), or Control Panel settings
+* Three-level configuration: per-template override, config file (`config/bonsai-twig.php`), or Control Panel settings
 * Strategy displayed in beastmode overlay and `btPath()` debug output
 
 ### Bug Fixes

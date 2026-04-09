@@ -42,7 +42,7 @@ class BonsaiTwig extends Plugin
     /**
      * @var string The plugin's schema version
      */
-    public string $schemaVersion = '1.0.0';
+    public string $schemaVersion = '9.0.0';
 
     /**
      * @var bool Whether the plugin has a CP section

@@ -45,7 +45,7 @@ Three levels of configuration (highest to lowest precedence):
 **2. Config file:**
 
 ```php
-// config/_bonsai-twig.php
+// config/bonsai-twig.php
 return [
     'strategy' => 'type',
 ];
