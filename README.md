@@ -51,6 +51,22 @@ return [
 ];
 ```
 
+**Upgrading from v8?** To keep your existing template directories working without renaming them:
+
+```php
+// config/bonsai-twig.php
+return [
+    'paths' => [
+        'entry'    => 'entry',
+        'item'     => 'item',
+        'category' => 'category',
+        'matrix'   => 'matrix',
+        'asset'    => 'asset',
+        'product'  => 'product',
+    ],
+];
+```
+
 **3. Control Panel:**
 
 Radio buttons in Settings > Bonsai Twig > Template Resolution Strategy.
