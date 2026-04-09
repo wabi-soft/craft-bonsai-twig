@@ -4,6 +4,21 @@
 All notable changes to this project will be documented in this file.
 <!--- END HEADER -->
 
+## [9.0.0](https://github.com/wabi-soft/craft-bonsai-twig/compare/v8.0.1...v9.0.0) (2026-04-09)
+
+### BREAKING CHANGES
+
+* Default template paths now use underscore prefix (`_entry`, `_item`, `_category`, `_matrix`, `_asset`, `_product`) to prevent direct URL routing. Rename your template directories or add a `paths` config to preserve old paths.
+* Plugin handle renamed from `_bonsai-twig` to `bonsai-twig`. Rename your config file from `config/_bonsai-twig.php` to `config/bonsai-twig.php`.
+
+### Features
+
+* Configurable `paths` map in `config/bonsai-twig.php` to override base paths per element type
+* `Settings::getPathForType()` method for shared path resolution across all loaders
+* Database migration to update plugin handle automatically
+
+---
+
 ## [8.0.1](https://github.com/wabi-soft/craft-bonsai-twig/compare/v8.0.0...v8.0.1) (2026-03-12)
 
 

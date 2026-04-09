@@ -28,7 +28,7 @@ How to replicate the `matrixTemplates()` function using native Twig if you remov
 ## Pure Twig Equivalent
 
 ```twig
-{% set matrixPath = 'matrix/' %}
+{% set matrixPath = '_matrix/' %}
 {% if matrix|length %}
     {% set style = style ?? null %}
     {% for block in matrix.all() ?? null %}
@@ -52,9 +52,9 @@ How to replicate the `matrixTemplates()` function using native Twig if you remov
 
 The include checks templates in order (first match wins):
 
-1. `matrix/style/{style}/{blockType}` - Style variation
-2. `matrix/{blockType}` - Default for type
-3. `matrix/default` - Fallback
+1. `_matrix/style/{style}/{blockType}` - Style variation
+2. `_matrix/{blockType}` - Default for type
+3. `_matrix/default` - Fallback
 
 ## What You Lose
 

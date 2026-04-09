@@ -614,14 +614,14 @@ For an entry with section handle `blog` and type handle `article`:
 
 ```
 # Checked in this order:
-entry/blog/article/{slug}
-entry/blog/article/_entry
-entry/blog/{slug}
-entry/blog/article
-entry/blog/default
-entry/blog
-entry/article
-entry/default
+_entry/blog/article/{slug}
+_entry/blog/article/_entry
+_entry/blog/{slug}
+_entry/blog/article
+_entry/blog/default
+_entry/blog
+_entry/article
+_entry/default
 ```
 
 Note: The `style` parameter is passed to the template as a variable but does not change the entry path resolution. For style-aware path resolution, use `itemTemplates()` or `matrixTemplates()` instead.
@@ -632,9 +632,9 @@ Matrix blocks have style-aware path resolution:
 
 ```
 # For a matrix block of type 'textBlock' with style 'hero':
-matrix/style/hero/textBlock
-matrix/textBlock
-matrix/default
+_matrix/style/hero/textBlock
+_matrix/textBlock
+_matrix/default
 ```
 
 Additional context-aware paths are available when using `ctx`, `handle`, or position parameters.

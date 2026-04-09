@@ -13,7 +13,7 @@ How to replicate the `categoryTemplates()` function using native Twig if you rem
 ## Pure Twig Equivalent
 
 ```twig
-{% set path = 'category/' %}
+{% set path = '_category/' %}
 
 {% include [
     path ~ category.group.handle ~ '/' ~ category.slug,
@@ -27,10 +27,10 @@ How to replicate the `categoryTemplates()` function using native Twig if you rem
 
 The include checks templates in order (first match wins):
 
-1. `category/{group}/{slug}` - Exact category match
-2. `category/{group}/default` - Group fallback
-3. `category/{group}` - Group only
-4. `category/default` - Global fallback
+1. `_category/{group}/{slug}` - Exact category match
+2. `_category/{group}/default` - Group fallback
+3. `_category/{group}` - Group only
+4. `_category/default` - Global fallback
 
 ## What You Lose
 
