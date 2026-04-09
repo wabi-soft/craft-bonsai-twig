@@ -54,8 +54,15 @@ class CategoryLoader
             $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $group . '/default';
             $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $group;
             $checkTemplates[] = $baseSite . '/' . $basePath . '/default';
+            $primarySite = \Craft::$app->sites->primarySite->handle;
+            if ($baseSite !== $primarySite) {
+                $checkTemplates[] = $primarySite . '/' . $basePath . '/' . $group . '/' . $slug;
+                $checkTemplates[] = $primarySite . '/' . $basePath . '/' . $group . '/default';
+                $checkTemplates[] = $primarySite . '/' . $basePath . '/' . $group;
+                $checkTemplates[] = $primarySite . '/' . $basePath . '/default';
+            }
         }
-        
+
         $checkTemplates[] = $basePath . '/' . $group . '/' . $slug;
         $checkTemplates[] = $basePath . '/' . $group . '/default';
         $checkTemplates[] = $basePath . '/' . $group;

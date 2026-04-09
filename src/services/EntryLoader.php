@@ -59,6 +59,10 @@ class EntryLoader
         $prefixes = [];
         if ($baseSite) {
             $prefixes[] = $baseSite . '/' . $path;
+            $primarySite = \Craft::$app->sites->primarySite->handle;
+            if ($baseSite !== $primarySite) {
+                $prefixes[] = $primarySite . '/' . $path;
+            }
         }
         $prefixes[] = $path;
 

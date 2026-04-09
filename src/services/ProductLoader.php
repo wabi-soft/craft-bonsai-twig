@@ -62,6 +62,13 @@ class ProductLoader
             $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $productType . '/default';
             $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $productType;
             $checkTemplates[] = $baseSite . '/' . $basePath . '/default';
+            $primarySite = \Craft::$app->sites->primarySite->handle;
+            if ($baseSite !== $primarySite) {
+                $checkTemplates[] = $primarySite . '/' . $basePath . '/' . $productType . '/' . $slug;
+                $checkTemplates[] = $primarySite . '/' . $basePath . '/' . $productType . '/default';
+                $checkTemplates[] = $primarySite . '/' . $basePath . '/' . $productType;
+                $checkTemplates[] = $primarySite . '/' . $basePath . '/default';
+            }
         }
 
         $checkTemplates[] = $basePath . '/' . $productType . '/' . $slug;
