@@ -33,12 +33,12 @@ enum TemplateType: string
     public function getDefaultPath(): string
     {
         return match ($this) {
-            self::ENTRY => 'entry',
-            self::CATEGORY => 'category',
-            self::ITEM => 'item',
-            self::MATRIX => 'matrix',
-            self::PRODUCT => 'product',
-            self::ASSET => 'asset',
+            self::ENTRY => '_entry',
+            self::CATEGORY => '_category',
+            self::ITEM => '_item',
+            self::MATRIX => '_matrix',
+            self::PRODUCT => '_product',
+            self::ASSET => '_asset',
         };
     }
 
