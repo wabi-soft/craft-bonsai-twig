@@ -54,8 +54,10 @@ class Settings extends Model
      */
     public function getPathForType(string $type): string
     {
-        $path = $this->paths[$type] ?? TemplateType::fromString($type)->getDefaultPath();
-        return SecurityUtils::sanitizeTemplatePath($path);
+        $path = SecurityUtils::sanitizeTemplatePath(
+            $this->paths[$type] ?? TemplateType::fromString($type)->getDefaultPath()
+        );
+        return $path !== '' ? $path : TemplateType::fromString($type)->getDefaultPath();
     }
 
     /**
@@ -73,8 +75,8 @@ class Settings extends Model
                         $this->addError($attribute, "Invalid key '$k'. Must be one of: " . implode(', ', $validKeys));
                         break;
                     }
-                    if (!is_string($v)) {
-                        $this->addError($attribute, 'Values must be strings.');
+                    if (!is_string($v) || SecurityUtils::sanitizeTemplatePath($v) === '') {
+                        $this->addError($attribute, "Invalid path for key '$k'. Value must be a non-empty string after sanitization.");
                         break;
                     }
                 }
