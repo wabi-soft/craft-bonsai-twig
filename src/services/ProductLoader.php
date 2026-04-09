@@ -43,7 +43,7 @@ class ProductLoader
         }
 
         // Extract parameters with defaults
-        $path = $variables['path'] ?? BonsaiTwig::getInstance()->getSettings()->getPathForType('product');
+        $path = trim($variables['path'] ?? BonsaiTwig::getInstance()->getSettings()->getPathForType('product'), '/');
         $baseSite = $variables['baseSite'] ?? false;
 
         // Get product properties for path building

@@ -25,7 +25,7 @@ The plugin handle changed from `_bonsai-twig` to `bonsai-twig`. A database migra
 
 Rename your config file:
 
-```
+```text
 config/_bonsai-twig.php  ->  config/bonsai-twig.php
 ```
 

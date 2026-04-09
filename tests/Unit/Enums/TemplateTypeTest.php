@@ -53,11 +53,13 @@ class TemplateTypeTest extends TestCase
     {
         $cases = TemplateType::cases();
         
-        $this->assertCount(4, $cases);
+        $this->assertCount(6, $cases);
         $this->assertContains(TemplateType::ENTRY, $cases);
         $this->assertContains(TemplateType::CATEGORY, $cases);
         $this->assertContains(TemplateType::ITEM, $cases);
         $this->assertContains(TemplateType::MATRIX, $cases);
+        $this->assertContains(TemplateType::PRODUCT, $cases);
+        $this->assertContains(TemplateType::ASSET, $cases);
     }
 
     public function testEnumInArrays(): void

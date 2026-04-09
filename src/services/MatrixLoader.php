@@ -49,7 +49,7 @@ class MatrixLoader
         }
         
         // Extract parameters with defaults
-        $path = $variables['path'] ?? BonsaiTwig::getInstance()->getSettings()->getPathForType('matrix');
+        $path = trim($variables['path'] ?? BonsaiTwig::getInstance()->getSettings()->getPathForType('matrix'), '/');
         $style = $variables['style'] ?? null;
         $handle = $variables['handle'] ?? null;
         $ctx = $variables['ctx'] ?? null;

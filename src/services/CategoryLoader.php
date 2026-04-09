@@ -37,7 +37,7 @@ class CategoryLoader
         }
         
         // Extract parameters with defaults
-        $path = $variables['path'] ?? BonsaiTwig::getInstance()->getSettings()->getPathForType('category');
+        $path = trim($variables['path'] ?? BonsaiTwig::getInstance()->getSettings()->getPathForType('category'), '/');
         $baseSite = $variables['baseSite'] ?? false;
 
         // Get category properties for path building
