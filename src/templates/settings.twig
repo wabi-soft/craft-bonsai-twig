@@ -4,7 +4,7 @@
     <div class="heading">
         <label>{{ "Template Resolution Strategy"|t('bonsai-twig') }}</label>
         <div class="instructions">
-            <p>{{ "Controls how template paths are organized. Can be overridden per-template call or in config/_bonsai-twig.php."|t('bonsai-twig') }}</p>
+            <p>{{ "Controls how template paths are organized. Can be overridden per-template call or in config/bonsai-twig.php."|t('bonsai-twig') }}</p>
         </div>
     </div>
 </div>
@@ -44,7 +44,7 @@
 
     <div class="instructions">
         <p><strong>{{ "Custom Element Path Mapping"|t('bonsai-twig') }}</strong></p>
-        <p>{{ "For more control, configure custom path mappings in your project config file (config/_bonsai-twig.php). This overrides the toggle above."|t('bonsai-twig') }}</p>
+        <p>{{ "For more control, configure custom path mappings in your project config file (config/bonsai-twig.php). This overrides the toggle above."|t('bonsai-twig') }}</p>
         {% if settings.itemsTemplateElementPaths is iterable %}
             <p>{{ "Current mapping:"|t('bonsai-twig') }}</p>
             <pre style="background:#e8f5e9; padding:8px; border-radius:4px; font-size: 11px; font-family: monospace;">{{ settings.itemsTemplateElementPaths|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
@@ -53,7 +53,16 @@
         {% endif %}
         <details style="margin-top: 12px;">
             <summary style="cursor: pointer; color: #0d78f2;">{{ "Show example configuration"|t('bonsai-twig') }}</summary>
-            <pre style="background:#f5f5f5; padding:8px; border-radius:4px; font-size: 10px; margin-top: 8px;">return [
+            <pre style="background:#f5f5f5; padding:8px; border-radius:4px; font-size: 10px; margin-top: 8px;">// config/bonsai-twig.php
+return [
+    'paths' => [
+        'entry' => '_entry',
+        'item' => '_item',
+        'category' => '_category',
+        'matrix' => '_matrix',
+        'asset' => '_asset',
+        'product' => '_product',
+    ],
     'itemsTemplateElementPaths' => [
         'entry' => 'entry',
         'category' => 'category',

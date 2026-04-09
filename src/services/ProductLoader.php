@@ -3,6 +3,7 @@
 namespace wabisoft\bonsaitwig\services;
 
 use craft\base\Element;
+use wabisoft\bonsaitwig\BonsaiTwig;
 
 /**
  * Service class for loading template paths based on Craft Commerce products.
@@ -42,7 +43,7 @@ class ProductLoader
         }
 
         // Extract parameters with defaults
-        $path = $variables['path'] ?? 'product';
+        $path = trim($variables['path'] ?? BonsaiTwig::getInstance()->getSettings()->getPathForType('product'), '/');
         $baseSite = $variables['baseSite'] ?? false;
 
         // Get product properties for path building

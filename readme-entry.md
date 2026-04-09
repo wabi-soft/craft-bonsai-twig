@@ -19,7 +19,7 @@ How to replicate the `entryTemplates()` function using native Twig if you remove
 ### Section-first (default)
 
 ```twig
-{% set entryPath = 'entry/' %}
+{% set entryPath = '_entry/' %}
 
 {% include [
     entryPath ~ entry.section.handle ~ '/' ~ entry.type.handle ~ '/' ~ entry.slug,
@@ -35,7 +35,7 @@ How to replicate the `entryTemplates()` function using native Twig if you remove
 ### Type-first (v8.0)
 
 ```twig
-{% set entryPath = 'entry/' %}
+{% set entryPath = '_entry/' %}
 
 {% include [
     entryPath ~ entry.type.handle ~ '/' ~ entry.section.handle ~ '/' ~ entry.slug,
@@ -53,24 +53,24 @@ How to replicate the `entryTemplates()` function using native Twig if you remove
 
 ### Section-first (default: `strategy: 'section'`)
 
-1. `entry/{section}/{type}/{slug}` - Exact entry match
-2. `entry/{section}/{slug}` - Section + slug
-3. `entry/{section}/{type}` - Entry type
-4. `entry/{section}/default` - Section fallback
-5. `entry/{section}` - Section only
-6. `entry/{type}` - Type only
-7. `entry/default` - Global fallback
+1. `_entry/{section}/{type}/{slug}` - Exact entry match
+2. `_entry/{section}/{slug}` - Section + slug
+3. `_entry/{section}/{type}` - Entry type
+4. `_entry/{section}/default` - Section fallback
+5. `_entry/{section}` - Section only
+6. `_entry/{type}` - Type only
+7. `_entry/default` - Global fallback
 
 ### Type-first (`strategy: 'type'`)
 
-1. `entry/{type}/{section}/{slug}` - Exact entry match
-2. `entry/{type}/{section}/_entry` - Type + section fallback
-3. `entry/{type}/{slug}` - Type + slug
-4. `entry/{type}/{section}` - Type + section
-5. `entry/{type}/default` - Type fallback
-6. `entry/{type}` - Type only
-7. `entry/{section}` - Section only
-8. `entry/default` - Global fallback
+1. `_entry/{type}/{section}/{slug}` - Exact entry match
+2. `_entry/{type}/{section}/_entry` - Type + section fallback
+3. `_entry/{type}/{slug}` - Type + slug
+4. `_entry/{type}/{section}` - Type + section
+5. `_entry/{type}/default` - Type fallback
+6. `_entry/{type}` - Type only
+7. `_entry/{section}` - Section only
+8. `_entry/default` - Global fallback
 
 ## Per-Section Strategy
 
@@ -84,7 +84,7 @@ You can vary the strategy by section so that some sections resolve type-first wh
 Pure Twig equivalent:
 
 ```twig
-{% set entryPath = 'entry/' %}
+{% set entryPath = '_entry/' %}
 {% if entry.section.handle in ['blog', 'resources'] %}
     {# type-first #}
     {% include [
@@ -116,5 +116,5 @@ Pure Twig equivalent:
 - Debug overlay (Cmd+B / Ctrl+B) with `?beastmode` parameter
 - Visual template path resolution display
 - Multi-site `baseSite` prefix support
-- `_entry` fallback path (plugin adds `entry/{section}/{type}/_entry`)
+- `_entry` fallback path (plugin adds `_entry/{section}/{type}/_entry`)
 - Strategy parameter with three-level configuration (per-template, config file, CP)

@@ -45,9 +45,25 @@ Three levels of configuration (highest to lowest precedence):
 **2. Config file:**
 
 ```php
-// config/_bonsai-twig.php
+// config/bonsai-twig.php
 return [
-    'strategy' => 'type',
+    'strategy' => 'type', // default is 'section'
+];
+```
+
+**Upgrading from v8?** To keep your existing template directories working without renaming them:
+
+```php
+// config/bonsai-twig.php
+return [
+    'paths' => [
+        'entry'    => 'entry',
+        'item'     => 'item',
+        'category' => 'category',
+        'matrix'   => 'matrix',
+        'asset'    => 'asset',
+        'product'  => 'product',
+    ],
 ];
 ```
 
@@ -63,14 +79,14 @@ For an entry with section `blog` and type `article`:
 
 | Priority | Section-first (default) | Type-first |
 |----------|------------------------|------------|
-| 1 | `entry/blog/article/{slug}` | `entry/article/blog/{slug}` |
-| 2 | `entry/blog/article/_entry` | `entry/article/blog/_entry` |
-| 3 | `entry/blog/{slug}` | `entry/article/{slug}` |
-| 4 | `entry/blog/article` | `entry/article/blog` |
-| 5 | `entry/blog/default` | `entry/article/default` |
-| 6 | `entry/blog` | `entry/article` |
-| 7 | `entry/article` | `entry/blog` |
-| 8 | `entry/default` | `entry/default` |
+| 1 | `_entry/blog/article/{slug}` | `_entry/article/blog/{slug}` |
+| 2 | `_entry/blog/article/_entry` | `_entry/article/blog/_entry` |
+| 3 | `_entry/blog/{slug}` | `_entry/article/{slug}` |
+| 4 | `_entry/blog/article` | `_entry/article/blog` |
+| 5 | `_entry/blog/default` | `_entry/article/default` |
+| 6 | `_entry/blog` | `_entry/article` |
+| 7 | `_entry/article` | `_entry/blog` |
+| 8 | `_entry/default` | `_entry/default` |
 
 ### Mixed Strategies
 
@@ -614,14 +630,14 @@ For an entry with section handle `blog` and type handle `article`:
 
 ```
 # Checked in this order:
-entry/blog/article/{slug}
-entry/blog/article/_entry
-entry/blog/{slug}
-entry/blog/article
-entry/blog/default
-entry/blog
-entry/article
-entry/default
+_entry/blog/article/{slug}
+_entry/blog/article/_entry
+_entry/blog/{slug}
+_entry/blog/article
+_entry/blog/default
+_entry/blog
+_entry/article
+_entry/default
 ```
 
 Note: The `style` parameter is passed to the template as a variable but does not change the entry path resolution. For style-aware path resolution, use `itemTemplates()` or `matrixTemplates()` instead.
@@ -632,9 +648,9 @@ Matrix blocks have style-aware path resolution:
 
 ```
 # For a matrix block of type 'textBlock' with style 'hero':
-matrix/style/hero/textBlock
-matrix/textBlock
-matrix/default
+_matrix/style/hero/textBlock
+_matrix/textBlock
+_matrix/default
 ```
 
 Additional context-aware paths are available when using `ctx`, `handle`, or position parameters.

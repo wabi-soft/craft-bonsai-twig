@@ -2,7 +2,7 @@
     "name": "wabisoft/craft-bonsai-twig",
     "description": "Internal use template helper",
     "type": "craft-plugin",
-    "version": "8.0.1",
+    "version": "9.0.1",
     "require": {
         "php": ">=8.2.0",
         "craftcms/cms": "^4.4|^5.0"
@@ -10,22 +10,16 @@
     "require-dev": {
         "craftcms/ecs": "dev-main",
         "craftcms/phpstan": "dev-main",
-        "marcocesarato/php-conventional-changelog": "^1.16",
-        "phpunit/phpunit": "^10.0",
-        "mockery/mockery": "^1.6"
+        "marcocesarato/php-conventional-changelog": "^1.16"
     },
     "autoload": {
         "psr-4": {
             "wabisoft\\bonsaitwig\\": "src/"
         }
     },
-    "autoload-dev": {
-        "psr-4": {
-            "wabisoft\\bonsaitwig\\tests\\": "tests/"
-        }
-    },
+    "autoload-dev": {},
     "extra": {
-        "handle": "_bonsai-twig",
+        "handle": "bonsai-twig",
         "name": "Bonsai Twig",
         "developer": "Wabisoft",
         "documentationUrl": "",
@@ -43,11 +37,10 @@
         "check-cs": "ecs check --ansi",
         "fix-cs": "ecs check --ansi --fix",
         "phpstan": "phpstan --memory-limit=1G",
-        "test": "phpunit",
-        "test:unit": "phpunit --testsuite=unit",
-        "test:integration": "phpunit --testsuite=integration",
-        "test:performance": "phpunit --testsuite=performance",
-        "test:coverage": "phpunit --coverage-html coverage"
+        "test": [
+            "@check-cs",
+            "@phpstan"
+        ]
     },
     "config": {
         "sort-packages": true,

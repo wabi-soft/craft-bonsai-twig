@@ -38,7 +38,7 @@ class EntryLoader
         }
         
         // Extract parameters with defaults
-        $path = $variables['path'] ?? 'entry';
+        $path = trim($variables['path'] ?? BonsaiTwig::getInstance()->getSettings()->getPathForType('entry'), '/');
         $baseSite = $variables['baseSite'] ?? false;
 
         // Get entry properties for path building

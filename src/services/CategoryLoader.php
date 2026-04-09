@@ -3,6 +3,7 @@
 namespace wabisoft\bonsaitwig\services;
 
 use craft\base\Element;
+use wabisoft\bonsaitwig\BonsaiTwig;
 
 /**
  * Service class for loading template paths based on Craft categories.
@@ -36,7 +37,7 @@ class CategoryLoader
         }
         
         // Extract parameters with defaults
-        $path = $variables['path'] ?? 'category';
+        $path = trim($variables['path'] ?? BonsaiTwig::getInstance()->getSettings()->getPathForType('category'), '/');
         $baseSite = $variables['baseSite'] ?? false;
 
         // Get category properties for path building

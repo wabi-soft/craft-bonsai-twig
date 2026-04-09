@@ -3,6 +3,7 @@
 namespace wabisoft\bonsaitwig\services;
 
 use craft\elements\Asset;
+use wabisoft\bonsaitwig\BonsaiTwig;
 
 /**
  * Service class for loading template paths based on Craft assets.
@@ -42,7 +43,7 @@ class AssetLoader
         }
 
         // Extract parameters with defaults
-        $path = trim($variables['path'] ?? 'asset', '/');
+        $path = trim($variables['path'] ?? BonsaiTwig::getInstance()->getSettings()->getPathForType('asset'), '/');
         $baseSite = $variables['baseSite'] ?? false;
         if ($baseSite) {
             $baseSite = trim($baseSite, '/');

@@ -19,7 +19,7 @@ How to replicate the `itemTemplates()` function using native Twig if you remove 
 ### Section-first (default)
 
 ```twig
-{% set itemPath = 'item/' %}
+{% set itemPath = '_item/' %}
 {% set style = style is defined ? style : 'none' %}
 
 {% include [
@@ -35,7 +35,7 @@ How to replicate the `itemTemplates()` function using native Twig if you remove 
 ### Type-first (v8.0)
 
 ```twig
-{% set itemPath = 'item/' %}
+{% set itemPath = '_item/' %}
 {% set style = style is defined ? style : 'none' %}
 
 {% include [
@@ -52,29 +52,29 @@ How to replicate the `itemTemplates()` function using native Twig if you remove 
 
 ### Section-first (default: `strategy: 'section'`)
 
-1. `item/{section}/{style}` - Section + style
-2. `item/{style}` - Style only
-3. `item/{section}/{type}/{slug}` - Exact entry match
-4. `item/{section}/{type}` - Entry type
-5. `item/{section}/default` - Section fallback
-6. `item/default` - Global fallback
+1. `_item/{section}/{style}` - Section + style
+2. `_item/{style}` - Style only
+3. `_item/{section}/{type}/{slug}` - Exact entry match
+4. `_item/{section}/{type}` - Entry type
+5. `_item/{section}/default` - Section fallback
+6. `_item/default` - Global fallback
 
 ### Type-first (`strategy: 'type'`)
 
-1. `item/{type}/{style}` - Type + style
-2. `item/{style}` - Style only
-3. `item/{type}/{section}/{slug}` - Exact entry match
-4. `item/{type}/{section}` - Type + section
-5. `item/{type}/default` - Type fallback
-6. `item/default` - Global fallback
+1. `_item/{type}/{style}` - Type + style
+2. `_item/{style}` - Style only
+3. `_item/{type}/{section}/{slug}` - Exact entry match
+4. `_item/{type}/{section}` - Type + section
+5. `_item/{type}/default` - Type fallback
+6. `_item/default` - Global fallback
 
 ### Context Paths with Strategy
 
 When using `ctx`, the context element's dimensions also flip:
 
-**Section-first:** `item/{section}/ctx/{contextSection}/{contextType}/...`
+**Section-first:** `_item/{section}/ctx/{contextSection}/{contextType}/...`
 
-**Type-first:** `item/{type}/ctx/{contextType}/{contextSection}/...`
+**Type-first:** `_item/{type}/ctx/{contextType}/{contextSection}/...`
 
 ## Per-Section Strategy
 
@@ -88,7 +88,7 @@ You can vary the strategy by section so that some sections resolve type-first wh
 Pure Twig equivalent:
 
 ```twig
-{% set itemPath = 'item/' %}
+{% set itemPath = '_item/' %}
 {% set style = style is defined ? style : 'none' %}
 {% if entry.section.handle in ['blog', 'resources'] %}
     {# type-first #}

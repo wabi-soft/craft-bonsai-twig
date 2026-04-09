@@ -42,7 +42,7 @@ class ItemLoader
         }
         
         // Extract parameters with defaults
-        $path = trim($variables['path'] ?? 'item', '/');
+        $path = trim($variables['path'] ?? BonsaiTwig::getInstance()->getSettings()->getPathForType('item'), '/');
         $style = $variables['style'] ?? null;
         $ctx = $variables['ctx'] ?? null;
         $default = $variables['default'] ?? 'default';

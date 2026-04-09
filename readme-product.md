@@ -13,7 +13,7 @@ How to replicate the `productTemplates()` function using native Twig if you remo
 ## Pure Twig Equivalent
 
 ```twig
-{% set productPath = 'product/' %}
+{% set productPath = '_product/' %}
 
 {% include [
     productPath ~ product.type.handle ~ '/' ~ product.slug,
@@ -27,10 +27,10 @@ How to replicate the `productTemplates()` function using native Twig if you remo
 
 The include checks templates in order (first match wins):
 
-1. `product/{productType}/{slug}` - Exact product match
-2. `product/{productType}/default` - Product type fallback
-3. `product/{productType}` - Product type only
-4. `product/default` - Global fallback
+1. `_product/{productType}/{slug}` - Exact product match
+2. `_product/{productType}/default` - Product type fallback
+3. `_product/{productType}` - Product type only
+4. `_product/default` - Global fallback
 
 ## What You Lose
 

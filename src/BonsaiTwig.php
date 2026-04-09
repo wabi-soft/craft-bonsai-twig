@@ -42,7 +42,7 @@ class BonsaiTwig extends Plugin
     /**
      * @var string The plugin's schema version
      */
-    public string $schemaVersion = '1.0.0';
+    public string $schemaVersion = '9.0.0';
 
     /**
      * @var bool Whether the plugin has a CP section
@@ -177,6 +177,8 @@ class BonsaiTwig extends Plugin
                 View::class,
                 View::EVENT_REGISTER_SITE_TEMPLATE_ROOTS,
                 function(RegisterTemplateRootsEvent $event): void {
+                    // Underscore prefix is intentional — prevents direct URL access to plugin templates.
+                    // This is distinct from the plugin handle ('bonsai-twig').
                     $event->roots['_bonsai-twig'] = __DIR__ . '/templates';
                 }
             );
