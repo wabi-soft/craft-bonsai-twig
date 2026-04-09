@@ -896,6 +896,10 @@
                     </div>
                 </div>
             {% endif %}
+
+            <div style="text-align: right; padding-top: 6px;">
+                <a href="#" class="bonsai-info__close" style="color: #555; font-size: 11px; text-decoration: none; opacity: 0.6; transition: opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'" onclick="event.preventDefault(); var u = new URL(window.location); u.searchParams.delete('beastmode'); window.location = u.toString();">&#x2715; close beastmode</a>
+            </div>
         </div>
 
         <script>
