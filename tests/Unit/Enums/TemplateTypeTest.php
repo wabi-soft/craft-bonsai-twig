@@ -24,10 +24,12 @@ class TemplateTypeTest extends TestCase
 
     public function testGetDefaultPath(): void
     {
-        $this->assertEquals('entry', TemplateType::ENTRY->getDefaultPath());
-        $this->assertEquals('category', TemplateType::CATEGORY->getDefaultPath());
-        $this->assertEquals('item', TemplateType::ITEM->getDefaultPath());
-        $this->assertEquals('matrix', TemplateType::MATRIX->getDefaultPath());
+        $this->assertEquals('_entry', TemplateType::ENTRY->getDefaultPath());
+        $this->assertEquals('_category', TemplateType::CATEGORY->getDefaultPath());
+        $this->assertEquals('_item', TemplateType::ITEM->getDefaultPath());
+        $this->assertEquals('_matrix', TemplateType::MATRIX->getDefaultPath());
+        $this->assertEquals('_product', TemplateType::PRODUCT->getDefaultPath());
+        $this->assertEquals('_asset', TemplateType::ASSET->getDefaultPath());
     }
 
     public function testFromString(): void

@@ -177,10 +177,10 @@ TWIG;
     public static function createEntryTemplatePaths(): array
     {
         return [
-            'entry/blog/article/my-awesome-post',
-            'entry/blog/article/_entry',
-            'entry/blog/_entry',
-            'entry/_entry'
+            '_entry/blog/article/my-awesome-post',
+            '_entry/blog/article/_entry',
+            '_entry/blog/_entry',
+            '_entry/_entry'
         ];
     }
 
@@ -192,9 +192,9 @@ TWIG;
     public static function createCategoryTemplatePaths(): array
     {
         return [
-            'category/topics/technology',
-            'category/topics/_category',
-            'category/_category'
+            '_category/topics/technology',
+            '_category/topics/_category',
+            '_category/_category'
         ];
     }
 
@@ -206,13 +206,13 @@ TWIG;
     public static function createMatrixTemplatePaths(): array
     {
         return [
-            'matrix/pages/page/textBlock/highlighted',
-            'matrix/pages/textBlock/highlighted',
-            'matrix/textBlock/highlighted',
-            'matrix/pages/page/textBlock',
-            'matrix/pages/textBlock',
-            'matrix/textBlock',
-            'matrix/_matrix'
+            '_matrix/pages/page/textBlock/highlighted',
+            '_matrix/pages/textBlock/highlighted',
+            '_matrix/textBlock/highlighted',
+            '_matrix/pages/page/textBlock',
+            '_matrix/pages/textBlock',
+            '_matrix/textBlock',
+            '_matrix/_matrix'
         ];
     }
 
@@ -224,10 +224,10 @@ TWIG;
     public static function createMultiSiteTemplatePaths(): array
     {
         return [
-            'entry/fr/blog/article/_entry',
-            'entry/blog/article/_entry',
-            'entry/blog/_entry',
-            'entry/_entry'
+            '_entry/fr/blog/article/_entry',
+            '_entry/blog/article/_entry',
+            '_entry/blog/_entry',
+            '_entry/_entry'
         ];
     }
 
@@ -239,10 +239,10 @@ TWIG;
     public static function createItemTemplatePaths(): array
     {
         return [
-            'item/products/product/premium-headphones',
-            'item/products/product/_item',
-            'item/products/_item',
-            'item/_item'
+            '_item/products/product/premium-headphones',
+            '_item/products/product/_item',
+            '_item/products/_item',
+            '_item/_item'
         ];
     }
 
@@ -284,7 +284,7 @@ TWIG;
     public static function createExpectedDebugOutput(): string
     {
         $template = self::createExpectedEntryOutput();
-        $debug = '<div class="bonsai-debug">Debug info: entry/blog/article/_entry (2.5ms)</div>';
+        $debug = '<div class="bonsai-debug">Debug info: _entry/blog/article/_entry (2.5ms)</div>';
         
         return $template . $debug;
     }
@@ -329,7 +329,7 @@ TWIG;
     {
         return [
             'template_not_found' => [
-                'paths' => ['entry/nonexistent/_entry'],
+                'paths' => ['_entry/nonexistent/_entry'],
                 'exception' => 'TemplateNotFoundException',
                 'message' => 'No template found for entry'
             ],
