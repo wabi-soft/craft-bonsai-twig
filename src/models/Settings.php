@@ -5,6 +5,7 @@ namespace wabisoft\bonsaitwig\models;
 use craft\base\Model;
 use wabisoft\bonsaitwig\enums\Strategy;
 use wabisoft\bonsaitwig\enums\TemplateType;
+use wabisoft\bonsaitwig\utilities\SecurityUtils;
 
 /**
  * Bonsai Twig plugin settings model.
@@ -53,7 +54,8 @@ class Settings extends Model
      */
     public function getPathForType(string $type): string
     {
-        return $this->paths[$type] ?? TemplateType::fromString($type)->getDefaultPath();
+        $path = $this->paths[$type] ?? TemplateType::fromString($type)->getDefaultPath();
+        return SecurityUtils::sanitizeTemplatePath($path);
     }
 
     /**
@@ -65,13 +67,8 @@ class Settings extends Model
             [['strategy'], 'in', 'range' => array_column(Strategy::cases(), 'value')],
             [['nestByElementType'], 'boolean'],
             [['paths'], function($attribute): void {
-                $value = $this->$attribute;
-                if (!is_array($value)) {
-                    $this->addError($attribute, 'Must be an array.');
-                    return;
-                }
                 $validKeys = array_column(TemplateType::cases(), 'value');
-                foreach ($value as $k => $v) {
+                foreach ($this->$attribute as $k => $v) {
                     if (!is_string($k) || !in_array($k, $validKeys, true)) {
                         $this->addError($attribute, "Invalid key '$k'. Must be one of: " . implode(', ', $validKeys));
                         break;

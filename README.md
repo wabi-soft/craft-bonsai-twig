@@ -79,14 +79,14 @@ For an entry with section `blog` and type `article`:
 
 | Priority | Section-first (default) | Type-first |
 |----------|------------------------|------------|
-| 1 | `entry/blog/article/{slug}` | `entry/article/blog/{slug}` |
-| 2 | `entry/blog/article/_entry` | `entry/article/blog/_entry` |
-| 3 | `entry/blog/{slug}` | `entry/article/{slug}` |
-| 4 | `entry/blog/article` | `entry/article/blog` |
-| 5 | `entry/blog/default` | `entry/article/default` |
-| 6 | `entry/blog` | `entry/article` |
-| 7 | `entry/article` | `entry/blog` |
-| 8 | `entry/default` | `entry/default` |
+| 1 | `_entry/blog/article/{slug}` | `_entry/article/blog/{slug}` |
+| 2 | `_entry/blog/article/_entry` | `_entry/article/blog/_entry` |
+| 3 | `_entry/blog/{slug}` | `_entry/article/{slug}` |
+| 4 | `_entry/blog/article` | `_entry/article/blog` |
+| 5 | `_entry/blog/default` | `_entry/article/default` |
+| 6 | `_entry/blog` | `_entry/article` |
+| 7 | `_entry/article` | `_entry/blog` |
+| 8 | `_entry/default` | `_entry/default` |
 
 ### Mixed Strategies
 
