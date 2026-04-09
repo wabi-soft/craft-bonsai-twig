@@ -5,6 +5,7 @@ namespace wabisoft\bonsaitwig\services;
 use craft\base\Element;
 use craft\elements\Entry;
 use craft\elements\MatrixBlock;
+use wabisoft\bonsaitwig\BonsaiTwig;
 
 /**
  * Service class for loading template paths based on Craft matrix blocks.
@@ -48,7 +49,7 @@ class MatrixLoader
         }
         
         // Extract parameters with defaults
-        $path = $variables['path'] ?? 'matrix';
+        $path = $variables['path'] ?? BonsaiTwig::getInstance()->getSettings()->getPathForType('matrix');
         $style = $variables['style'] ?? null;
         $handle = $variables['handle'] ?? null;
         $ctx = $variables['ctx'] ?? null;
