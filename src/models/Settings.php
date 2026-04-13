@@ -23,20 +23,6 @@ class Settings extends Model
     public string $strategy = 'section';
 
     /**
-     * @var bool Whether to nest item template paths by element type when no explicit mapping is provided
-     *           This acts as a fallback when itemsTemplateElementPaths is false.
-     */
-    public bool $nestByElementType = false;
-
-    // Performance monitoring and error reporting settings removed in simplification
-
-    /**
-     * @var array<string,string>|false Mapping for Item templates to nest paths by element kind.
-     * Example: {"entry": "entry", "category": "category"}. Set to false to disable.
-     */
-    public array|false $itemsTemplateElementPaths = false;
-
-    /**
      * @var array<string,string> Override base paths for each element type.
      * Keys are element types (entry, item, category, matrix, asset, product).
      * Values are the base path to use instead of the default.
@@ -81,23 +67,6 @@ class Settings extends Model
                     }
                 }
             }],
-            // itemsTemplateElementPaths can be false or an associative array of strings
-            [['itemsTemplateElementPaths'], function($attribute): void {
-                $value = $this->$attribute;
-                if ($value === false) {
-                    return; // allowed
-                }
-                if (!is_array($value)) {
-                    $this->addError($attribute, 'Must be an associative array or false.');
-                    return;
-                }
-                foreach ($value as $k => $v) {
-                    if (!is_string($k) || !is_string($v)) {
-                        $this->addError($attribute, 'Keys and values must be strings when provided as an array.');
-                        break;
-                    }
-                }
-            }],
         ];
     }
 
@@ -106,11 +75,7 @@ class Settings extends Model
      */
     public function attributeLabels(): array
     {
-        return [
-
-            'itemsTemplateElementPaths' => 'Item Templates: Element Path Prefixes',
-            'nestByElementType' => 'Item Templates: Nest Paths by Element Type (fallback)',
-        ];
+        return [];
     }
 
     /**
@@ -118,10 +83,6 @@ class Settings extends Model
      */
     public function attributeHints(): array
     {
-        return [
-
-            'itemsTemplateElementPaths' => 'Optional mapping used by the Item loader to nest paths by element type. Example: {"entry": "entry", "category": "category"}. Set to false to bypass. This replaces the older nestByElementType toggle.',
-            'nestByElementType' => 'When enabled, item templates will be nested under item/entry or item/category automatically. Only used when itemsTemplateElementPaths is false.',
-        ];
+        return [];
     }
 }

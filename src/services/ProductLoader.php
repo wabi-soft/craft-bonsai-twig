@@ -47,39 +47,33 @@ class ProductLoader
         $baseSite = $variables['baseSite'] ?? false;
 
         // Get product properties for path building
-        // Commerce products have a 'type' which is the ProductType
         $productType = $product->type?->handle ?? '';
         $slug = $product->slug ?? '';
 
         // Build template paths in order of specificity
         $checkTemplates = [];
 
-        // Simple path generation without complex optimization
-        $basePath = $path;
-
+        // Build prefixes: $baseSite/$path (site-first) and $path (global)
+        $prefixes = [];
         if ($baseSite) {
-            $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $productType . '/' . $slug;
-            $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $productType . '/default';
-            $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $productType;
-            $checkTemplates[] = $baseSite . '/' . $basePath . '/default';
+            $prefixes[] = $baseSite . '/' . $path;
             $primarySite = \Craft::$app->sites->primarySite->handle;
             if ($baseSite !== $primarySite) {
-                $checkTemplates[] = $primarySite . '/' . $basePath . '/' . $productType . '/' . $slug;
-                $checkTemplates[] = $primarySite . '/' . $basePath . '/' . $productType . '/default';
-                $checkTemplates[] = $primarySite . '/' . $basePath . '/' . $productType;
-                $checkTemplates[] = $primarySite . '/' . $basePath . '/default';
+                $prefixes[] = $primarySite . '/' . $path;
             }
         }
+        $prefixes[] = $path;
 
-        $checkTemplates[] = $basePath . '/' . $productType . '/' . $slug;
-        $checkTemplates[] = $basePath . '/' . $productType . '/default';
-        $checkTemplates[] = $basePath . '/' . $productType;
-        $checkTemplates[] = $basePath . '/default';
+        foreach ($prefixes as $prefix) {
+            $checkTemplates[] = $prefix . '/' . $productType . '/' . $slug;
+            $checkTemplates[] = $prefix . '/' . $productType . '/default';
+            $checkTemplates[] = $prefix . '/' . $productType;
+            $checkTemplates[] = $prefix . '/default';
+        }
 
         return HierarchyTemplateLoader::load(
             $checkTemplates,
             $variables,
-            '',
             'product'
         );
     }

@@ -42,7 +42,8 @@ class ItemLoader
         }
         
         // Extract parameters with defaults
-        $path = trim($variables['path'] ?? BonsaiTwig::getInstance()->getSettings()->getPathForType('item'), '/');
+        $settings = BonsaiTwig::getInstance()->getSettings();
+        $path = trim($variables['path'] ?? $settings->getPathForType('item'), '/');
         $style = $variables['style'] ?? null;
         $ctx = $variables['ctx'] ?? null;
         $default = $variables['default'] ?? 'default';
@@ -58,7 +59,7 @@ class ItemLoader
         $slug = $entry->slug ?? '';
 
         // Resolve strategy: per-template > config/CP > default
-        $strategy = Strategy::tryFrom($variables['strategy'] ?? BonsaiTwig::getInstance()->getSettings()->strategy ?? '') ?? Strategy::SECTION;
+        $strategy = Strategy::tryFrom($variables['strategy'] ?? $settings->strategy ?? '') ?? Strategy::SECTION;
         if ($strategy === Strategy::TYPE && $type) {
             [$section, $type] = [$type, $section];
         }
@@ -77,61 +78,67 @@ class ItemLoader
         }
         $prefixes[] = $path;
 
-        // For each prefix, add paths in order of specificity
-        foreach ($prefixes as $prefix) {
-            // Add context-specific paths if context element exists
-            if ($ctx) {
-                $contextSection = $ctx->section?->handle ?? $ctx->group?->handle ?? '';
-                $contextType = $ctx->type?->handle ?? '';
-
-                if ($strategy === Strategy::TYPE && $contextType !== '') {
-                    [$contextSection, $contextType] = [$contextType, $contextSection];
-                }
-
-                if ($style && $contextSection && $contextType) {
-                    $checkTemplates[] = $prefix . '/' . $section . '/' . $ctxPath . '/' . $contextSection . '/' . $contextType . '/' . $style;
-                }
-                if ($type && $contextSection && $contextType) {
-                    $checkTemplates[] = $prefix . '/' . $section . '/' . $ctxPath . '/' . $contextSection . '/' . $contextType . '/' . $type;
-                    $checkTemplates[] = $prefix . '/' . $section . '/' . $ctxPath . '/' . $contextSection . '/' . $contextType . '/' . $default;
-                }
-                if ($style && $contextSection) {
-                    $checkTemplates[] = $prefix . '/' . $section . '/' . $ctxPath . '/' . $contextSection . '/' . $style;
-                }
-                if ($type && $contextSection) {
-                    $checkTemplates[] = $prefix . '/' . $section . '/' . $ctxPath . '/' . $contextSection . '/' . $type;
-                }
-                if ($contextSection) {
-                    $checkTemplates[] = $prefix . '/' . $section . '/' . $ctxPath . '/' . $contextSection . '/' . $default;
-                    $checkTemplates[] = $prefix . '/' . $section . '/' . $ctxPath . '/' . $contextSection;
+        // Add paths interleaved by specificity: all prefixes per level before dropping down
+        $addPath = function (string $templatePath) use (&$checkTemplates, $prefixes) {
+            foreach ($prefixes as $prefix) {
+                $candidate = $prefix . '/' . $templatePath;
+                if (!in_array($candidate, $checkTemplates)) {
+                    $checkTemplates[] = $candidate;
                 }
             }
+        };
 
-            // Add non-context template paths
-            if ($style) {
-                if ($type) {
-                    $checkTemplates[] = $prefix . '/' . $section . '/' . $type . '/' . $style;
-                }
-                $checkTemplates[] = $prefix . '/' . $section . '/' . $style;
-                $checkTemplates[] = $prefix . '/' . $style;
+        // Context-specific paths
+        if ($ctx) {
+            $contextSection = $ctx->section?->handle ?? $ctx->group?->handle ?? '';
+            $contextType = $ctx->type?->handle ?? '';
+
+            if ($strategy === Strategy::TYPE && $contextType !== '') {
+                [$contextSection, $contextType] = [$contextType, $contextSection];
             }
 
-            if ($type) {
-                $checkTemplates[] = $prefix . '/' . $section . '/' . $type . '/' . $slug;
-                $checkTemplates[] = $prefix . '/' . $section . '/' . $type;
-                $checkTemplates[] = $prefix . '/' . $section . '/' . $type . '/' . $default;
-            } else {
-                // Category (no type): include group/slug path
-                if (!empty($slug)) {
-                    $checkTemplates[] = $prefix . '/' . $section . '/' . $slug;
-                }
+            if ($style && $contextSection && $contextType) {
+                $addPath($section . '/' . $ctxPath . '/' . $contextSection . '/' . $contextType . '/' . $style);
             }
-
-            // Add general fallback paths
-            $checkTemplates[] = $prefix . '/' . $section . '/' . $default;
-            $checkTemplates[] = $prefix . '/' . $section;
-            $checkTemplates[] = $prefix . '/' . $default;
+            if ($type && $contextSection && $contextType) {
+                $addPath($section . '/' . $ctxPath . '/' . $contextSection . '/' . $contextType . '/' . $type);
+                $addPath($section . '/' . $ctxPath . '/' . $contextSection . '/' . $contextType . '/' . $default);
+            }
+            if ($style && $contextSection) {
+                $addPath($section . '/' . $ctxPath . '/' . $contextSection . '/' . $style);
+            }
+            if ($type && $contextSection) {
+                $addPath($section . '/' . $ctxPath . '/' . $contextSection . '/' . $type);
+            }
+            if ($contextSection) {
+                $addPath($section . '/' . $ctxPath . '/' . $contextSection . '/' . $default);
+                $addPath($section . '/' . $ctxPath . '/' . $contextSection);
+            }
         }
+
+        // Non-context template paths
+        if ($style) {
+            if ($type) {
+                $addPath($section . '/' . $type . '/' . $style);
+            }
+            $addPath($section . '/' . $style);
+            $addPath($style);
+        }
+
+        if ($type) {
+            $addPath($section . '/' . $type . '/' . $slug);
+            $addPath($section . '/' . $type);
+            $addPath($section . '/' . $type . '/' . $default);
+        } else {
+            if (!empty($slug)) {
+                $addPath($section . '/' . $slug);
+            }
+        }
+
+        // General fallback paths
+        $addPath($section . '/' . $default);
+        $addPath($section);
+        $addPath('default');
 
         // Pass strategy to debug pipeline (devMode only to avoid leaking into template scope)
         if (\Craft::$app->getConfig()->general->devMode) {
@@ -141,7 +148,6 @@ class ItemLoader
         return HierarchyTemplateLoader::load(
             $checkTemplates,
             $variables,
-            '',
             'item'
         );
     }

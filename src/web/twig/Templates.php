@@ -189,97 +189,38 @@ class Templates extends AbstractExtension
      * @param string $templateType The type of template (Matrix Default, Entry Template, etc.)
      * @return string Complete HTML debug output
      */
+    private static bool $debugCssRegistered = false;
+
     private function renderDebugOutput(array $templates, ?string $resolvedTemplate, string $templateType): string
     {
-        $templateList = [];
+        // Register debug CSS once per page load
+        if (!self::$debugCssRegistered) {
+            Craft::$app->view->registerCss(
+                '.bt-debug-output { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 12px; line-height: 1.4; background: #1e1e1e; color: #d4d4d4; border: 1px solid #454545; border-radius: 6px; padding: 12px; margin: 8px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.2); max-width: 600px; } '
+                . '.bt-debug-output .bt-debug-header { color: #569cd6; font-weight: 600; font-size: 13px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #454545; } '
+                . '.bt-debug-output .bt-debug-list { margin: 0; padding: 0; list-style: none; } '
+                . '.bt-debug-output .bt-debug-item { padding: 3px 0 3px 16px; position: relative; font-family: "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 11px; } '
+                . '.bt-debug-output .bt-debug-item::before { content: "\2192"; position: absolute; left: 0; color: #808080; font-weight: bold; } '
+                . '.bt-debug-output .bt-debug-item--resolved { color: #4ec9b0; font-weight: 600; } '
+                . '.bt-debug-output .bt-debug-item--resolved::before { content: "\2713"; color: #4ec9b0; } '
+                . '.bt-debug-output .bt-debug-item--missing { color: #808080; }'
+            );
+            self::$debugCssRegistered = true;
+        }
+
+        $html = '<div class="bt-debug-output">';
+        $html .= '<div class="bt-debug-header">' . htmlspecialchars($templateType) . '</div>';
+        $html .= '<ul class="bt-debug-list">';
+
         foreach ($templates as $template) {
             $isResolved = $resolvedTemplate && $template === $resolvedTemplate;
-            $templateList[] = [
-                'path' => $template,
-                'resolved' => $isResolved
-            ];
-        }
-
-        // Generate unique ID for this debug output to avoid CSS conflicts
-        $debugId = 'bt-debug-' . uniqid();
-
-        $html = '<div class="bt-debug-output" id="' . $debugId . '">';
-        
-        // Add CSS styles (scoped to this debug output)
-        $html .= '<style>';
-        $html .= '#' . $debugId . ' { ';
-        $html .= 'font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; ';
-        $html .= 'font-size: 12px; ';
-        $html .= 'line-height: 1.4; ';
-        $html .= 'background: #1e1e1e; ';
-        $html .= 'color: #d4d4d4; ';
-        $html .= 'border: 1px solid #454545; ';
-        $html .= 'border-radius: 6px; ';
-        $html .= 'padding: 12px; ';
-        $html .= 'margin: 8px 0; ';
-        $html .= 'box-shadow: 0 2px 8px rgba(0,0,0,0.2); ';
-        $html .= 'max-width: 600px; ';
-        $html .= '} ';
-        
-        $html .= '#' . $debugId . ' .bt-debug-header { ';
-        $html .= 'color: #569cd6; ';
-        $html .= 'font-weight: 600; ';
-        $html .= 'font-size: 13px; ';
-        $html .= 'margin-bottom: 8px; ';
-        $html .= 'padding-bottom: 6px; ';
-        $html .= 'border-bottom: 1px solid #454545; ';
-        $html .= '} ';
-        
-        $html .= '#' . $debugId . ' .bt-debug-list { ';
-        $html .= 'margin: 0; ';
-        $html .= 'padding: 0; ';
-        $html .= 'list-style: none; ';
-        $html .= '} ';
-        
-        $html .= '#' . $debugId . ' .bt-debug-item { ';
-        $html .= 'padding: 3px 0 3px 16px; ';
-        $html .= 'position: relative; ';
-        $html .= 'font-family: "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace; ';
-        $html .= 'font-size: 11px; ';
-        $html .= '} ';
-        
-        $html .= '#' . $debugId . ' .bt-debug-item::before { ';
-        $html .= 'content: "→"; ';
-        $html .= 'position: absolute; ';
-        $html .= 'left: 0; ';
-        $html .= 'color: #808080; ';
-        $html .= 'font-weight: bold; ';
-        $html .= '} ';
-        
-        $html .= '#' . $debugId . ' .bt-debug-item--resolved { ';
-        $html .= 'color: #4ec9b0; ';
-        $html .= 'font-weight: 600; ';
-        $html .= '} ';
-        
-        $html .= '#' . $debugId . ' .bt-debug-item--resolved::before { ';
-        $html .= 'content: "✓"; ';
-        $html .= 'color: #4ec9b0; ';
-        $html .= '} ';
-        
-        $html .= '#' . $debugId . ' .bt-debug-item--missing { ';
-        $html .= 'color: #808080; ';
-        $html .= '} ';
-        
-        $html .= '</style>';
-
-        // Add header with template type
-        $html .= '<div class="bt-debug-header">' . htmlspecialchars($templateType) . '</div>';
-
-        // Add template list
-        $html .= '<ul class="bt-debug-list">';
-        foreach ($templateList as $template) {
-            $cssClass = $template['resolved'] ? 'bt-debug-item--resolved' : 'bt-debug-item--missing';
+            $cssClass = $isResolved ? 'bt-debug-item--resolved' : 'bt-debug-item--missing';
             $html .= '<li class="bt-debug-item ' . $cssClass . '">';
-            $html .= htmlspecialchars($template['path']);
+            $html .= htmlspecialchars($template);
             $html .= '</li>';
         }
-        $html .= '</ul>';
 
+        $html .= '</ul>';
         $html .= '</div>';
 
         return $html;

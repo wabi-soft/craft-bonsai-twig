@@ -177,7 +177,6 @@ class MatrixLoader
         return HierarchyTemplateLoader::load(
             $checkTemplates,
             $templateVariables,
-            '',
             'matrix'
         );
     }

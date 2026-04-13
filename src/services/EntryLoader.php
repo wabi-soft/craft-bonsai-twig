@@ -38,7 +38,8 @@ class EntryLoader
         }
         
         // Extract parameters with defaults
-        $path = trim($variables['path'] ?? BonsaiTwig::getInstance()->getSettings()->getPathForType('entry'), '/');
+        $settings = BonsaiTwig::getInstance()->getSettings();
+        $path = trim($variables['path'] ?? $settings->getPathForType('entry'), '/');
         $baseSite = $variables['baseSite'] ?? false;
 
         // Get entry properties for path building
@@ -47,7 +48,7 @@ class EntryLoader
         $slug = $entry->slug ?? '';
 
         // Resolve strategy: per-template > config/CP > default
-        $strategy = Strategy::tryFrom($variables['strategy'] ?? BonsaiTwig::getInstance()->getSettings()->strategy ?? '') ?? Strategy::SECTION;
+        $strategy = Strategy::tryFrom($variables['strategy'] ?? $settings->strategy ?? '') ?? Strategy::SECTION;
         if ($strategy === Strategy::TYPE && $type) {
             [$section, $type] = [$type, $section];
         }
@@ -66,28 +67,24 @@ class EntryLoader
         }
         $prefixes[] = $path;
 
-        // For each prefix, add paths in order of specificity
-        foreach ($prefixes as $prefix) {
-            // Slug-specific paths
-            $checkTemplates[] = $prefix . '/' . $section . '/' . $type . '/' . $slug;
+        // Add paths interleaved by specificity: all prefixes per level before dropping down
+        $addPath = function (string $templatePath) use (&$checkTemplates, $prefixes) {
+            foreach ($prefixes as $prefix) {
+                $candidate = $prefix . '/' . $templatePath;
+                if (!in_array($candidate, $checkTemplates)) {
+                    $checkTemplates[] = $candidate;
+                }
+            }
+        };
 
-            // _entry fallback after slug-specific path
-            $checkTemplates[] = $prefix . '/' . $section . '/' . $type . '/_entry';
-
-            // Section/slug direct match (for entries without type)
-            $checkTemplates[] = $prefix . '/' . $section . '/' . $slug;
-
-            // Type and section fallbacks
-            $checkTemplates[] = $prefix . '/' . $section . '/' . $type;
-            $checkTemplates[] = $prefix . '/' . $section . '/default';
-            $checkTemplates[] = $prefix . '/' . $section;
-
-            // Type-only fallback
-            $checkTemplates[] = $prefix . '/' . $type;
-
-            // Default fallback for this prefix
-            $checkTemplates[] = $prefix . '/default';
-        }
+        $addPath($section . '/' . $type . '/' . $slug);
+        $addPath($section . '/' . $type . '/_entry');
+        $addPath($section . '/' . $slug);
+        $addPath($section . '/' . $type);
+        $addPath($section . '/default');
+        $addPath($section);
+        $addPath($type);
+        $addPath('default');
 
         // Pass strategy to debug pipeline (devMode only to avoid leaking into template scope)
         if (\Craft::$app->getConfig()->general->devMode) {
@@ -97,7 +94,6 @@ class EntryLoader
         return HierarchyTemplateLoader::load(
             $checkTemplates,
             $variables,
-            '',
             'entry'
         );
     }

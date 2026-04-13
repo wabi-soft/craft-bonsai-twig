@@ -79,37 +79,34 @@ class AssetLoader
         }
         $prefixes[] = $path;
 
-        // For each prefix, add paths in order of specificity
-        foreach ($prefixes as $prefix) {
-            // Most specific: volume/folder/filename
-            if ($volume && $folderPath && $filename) {
-                $checkTemplates[] = $prefix . '/' . $volume . '/' . $folderPath . '/' . $filename;
+        // Add paths interleaved by specificity: all prefixes per level before dropping down
+        $addPath = function (string $templatePath) use (&$checkTemplates, $prefixes) {
+            foreach ($prefixes as $prefix) {
+                $candidate = $prefix . '/' . $templatePath;
+                if (!in_array($candidate, $checkTemplates)) {
+                    $checkTemplates[] = $candidate;
+                }
             }
+        };
 
-            // Volume/folder with filename (no folder path)
-            if ($volume && $filename && !$folderPath) {
-                $checkTemplates[] = $prefix . '/' . $volume . '/' . $filename;
-            }
-
-            // Folder-level default
-            if ($volume && $folderPath) {
-                $checkTemplates[] = $prefix . '/' . $volume . '/' . $folderPath . '/default';
-            }
-
-            // Volume-level default
-            if ($volume) {
-                $checkTemplates[] = $prefix . '/' . $volume . '/default';
-                $checkTemplates[] = $prefix . '/' . $volume;
-            }
-
-            // Global default for this prefix
-            $checkTemplates[] = $prefix . '/default';
+        if ($volume && $folderPath && $filename) {
+            $addPath($volume . '/' . $folderPath . '/' . $filename);
         }
+        if ($volume && $filename && !$folderPath) {
+            $addPath($volume . '/' . $filename);
+        }
+        if ($volume && $folderPath) {
+            $addPath($volume . '/' . $folderPath . '/default');
+        }
+        if ($volume) {
+            $addPath($volume . '/default');
+            $addPath($volume);
+        }
+        $addPath('default');
 
         return HierarchyTemplateLoader::load(
             $checkTemplates,
             $variables,
-            '',
             'asset'
         );
     }

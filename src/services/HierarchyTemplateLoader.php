@@ -5,7 +5,6 @@ namespace wabisoft\bonsaitwig\services;
 use Craft;
 use craft\helpers\Json;
 
-use craft\helpers\StringHelper;
 use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
@@ -57,10 +56,7 @@ class HierarchyTemplateLoader extends Component
      *
      * @param array<string> $templates Array of template paths to try loading in priority order
      * @param array<string, mixed> $variables Variables to pass to the template for rendering
-     * @param string $basePath Base path to prepend to template paths (legacy parameter)
      * @param TemplateType|string $type Type of template being loaded (entry, category, item, matrix)
-     * @param array<string> $allowedBeastmodeValues Array of allowed beastmode debug values (unused in simplified version)
-     *
      * @return string The rendered template content or empty string if no template found
      *
      * @throws SyntaxError If template syntax is invalid
@@ -69,7 +65,7 @@ class HierarchyTemplateLoader extends Component
      * @throws LoaderError If template cannot be loaded by Twig
      * @throws InvalidArgumentException If invalid parameters are provided
      */
-    public static function load(array $templates, array $variables, string $basePath, TemplateType|string $type = 'entry', array $allowedBeastmodeValues = []): string
+    public static function load(array $templates, array $variables, TemplateType|string $type = 'entry'): string
     {
         // Convert string type to enum if needed
         $templateType = $type instanceof TemplateType ? $type : TemplateType::fromString((string) $type);
@@ -77,11 +73,16 @@ class HierarchyTemplateLoader extends Component
         // Validate and sanitize input parameters
         $validatedTemplates = InputValidator::validateTemplatePaths($templates);
         $validatedVariables = InputValidator::validateTemplateVariables($variables);
-        $validatedBasePath = InputValidator::validateString($basePath, 'basePath', false, 255);
 
         // Initialize env flags and services before any early exit
         $isDev = Craft::$app->getConfig()->general->devMode;
         $plugin = BonsaiTwig::getInstance();
+
+        // Deduplicate and filter paths with empty segments (from empty handles/slugs)
+        $validatedTemplates = array_values(array_unique(array_filter(
+            $validatedTemplates,
+            static fn(string $t) => !str_contains($t, '//')
+        )));
 
         if (empty($validatedTemplates)) {
             throw new TemplateNotFoundException([], 'template');
@@ -94,16 +95,15 @@ class HierarchyTemplateLoader extends Component
 
         // Simple template resolution - check each template path in order
         $resolvedPath = null;
+        $matchedOriginalTemplate = null;
         $finalAttemptedPaths = [];
-        
+
         foreach ($validatedTemplates as $template) {
-            // Generate full path
-            $fullPath = $validatedBasePath ? trim($validatedBasePath . '/' . $template, '/') : trim($template, '/');
-            $finalAttemptedPaths[] = $fullPath;
-            
-            // Check if template exists
-            if (Craft::$app->view->doesTemplateExist($fullPath)) {
-                $resolvedPath = $fullPath;
+            $finalAttemptedPaths[] = $template;
+
+            if (Craft::$app->view->doesTemplateExist($template)) {
+                $resolvedPath = $template;
+                $matchedOriginalTemplate = $template;
                 break;
             }
         }
@@ -119,25 +119,6 @@ class HierarchyTemplateLoader extends Component
             if ($isDev) {
                 $validatedVariables['_btTemplates'] = $validatedTemplates;
                 $validatedVariables['_btStrategy'] = $validatedVariables['_btStrategy'] ?? 'section';
-
-                // Find which original template corresponds to the resolved path
-                // The resolvedPath comes from optimizedPaths (with basePath prepended),
-                // but we need to find the matching original template from validatedTemplates
-                $matchedOriginalTemplate = null;
-
-                // Try to match by checking if the resolved path ends with each original template
-                foreach ($validatedTemplates as $originalTemplate) {
-                    // Build the full path for comparison (same logic as optimizeTemplatePaths)
-                    $fullPath = $validatedBasePath
-                        ? StringHelper::trim($validatedBasePath . '/' . $originalTemplate, '/')
-                        : StringHelper::trim($originalTemplate, '/');
-
-                    if ($fullPath === $resolvedPath) {
-                        $matchedOriginalTemplate = $originalTemplate;
-                        break;
-                    }
-                }
-
                 $validatedVariables['_btResolvedTemplate'] = $matchedOriginalTemplate ?? $resolvedPath;
             }
 
@@ -177,11 +158,7 @@ class HierarchyTemplateLoader extends Component
             // If debug is enabled, prepare debug info
             if ($shouldShowDebug) {
                     
-                // Process templates to remove directory prefix for display
-                $displayTemplates = array_map(function(string $path) use ($directory): string {
-                    // Don't modify paths that already have the directory prefix
-                    return $path;
-                }, $validatedTemplates);
+                $displayTemplates = $validatedTemplates;
 
                 // Determine element kind for debug (entry vs category vs asset vs product) when available
                 $elementKind = null;
@@ -321,21 +298,6 @@ class HierarchyTemplateLoader extends Component
     }
 
 
-
-    /**
-     * Validates if a string contains valid JSON data.
-     *
-     * This utility method checks if the provided string is valid JSON by attempting
-     * to decode it and checking for JSON parsing errors. Used for validating debug
-     * information before processing.
-     *
-     * @param mixed $string String to validate for JSON format
-     * @return bool True if the string contains valid JSON, false otherwise
-     */
-    private static function isJson(mixed $string): bool
-    {
-        return is_string($string) && json_decode($string) && json_last_error() === JSON_ERROR_NONE;
-    }
 
     /**
      * Extracts field handles from an element for debugging purposes.

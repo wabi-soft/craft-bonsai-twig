@@ -119,9 +119,6 @@ class BonsaiTwig extends Plugin
             return; // Fail silently for unsupported versions
         }
 
-        // Initialize services (on-demand through Yii)
-        $this->initializeServices();
-
         // Register Twig extension
         Craft::$app->onInit(function(): void {
             $this->registerTwigExtension();
@@ -130,20 +127,6 @@ class BonsaiTwig extends Plugin
     }
 
 
-
-    /**
-     * Initializes plugin services using direct instantiation.
-     *
-     * Services are initialized on-demand through Yii's component system.
-     * No complex dependency injection required for simplified architecture.
-     *
-     * @return void
-     */
-    private function initializeServices(): void
-    {
-        // Services are initialized automatically by Yii when accessed
-        // No manual initialization required for simplified architecture
-    }
 
     /**
      * Registers the Twig extension that provides template loading functions.

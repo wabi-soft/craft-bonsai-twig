@@ -46,32 +46,36 @@ class CategoryLoader
 
         // Build template paths in order of specificity
         $checkTemplates = [];
-        $basePath = $path;
 
-        // Simple path generation without complex optimization
+        // Build prefixes: $baseSite/$path (site-first) and $path (global)
+        $prefixes = [];
         if ($baseSite) {
-            $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $group . '/' . $slug;
-            $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $group . '/default';
-            $checkTemplates[] = $baseSite . '/' . $basePath . '/' . $group;
-            $checkTemplates[] = $baseSite . '/' . $basePath . '/default';
+            $prefixes[] = $baseSite . '/' . $path;
             $primarySite = \Craft::$app->sites->primarySite->handle;
             if ($baseSite !== $primarySite) {
-                $checkTemplates[] = $primarySite . '/' . $basePath . '/' . $group . '/' . $slug;
-                $checkTemplates[] = $primarySite . '/' . $basePath . '/' . $group . '/default';
-                $checkTemplates[] = $primarySite . '/' . $basePath . '/' . $group;
-                $checkTemplates[] = $primarySite . '/' . $basePath . '/default';
+                $prefixes[] = $primarySite . '/' . $path;
             }
         }
+        $prefixes[] = $path;
 
-        $checkTemplates[] = $basePath . '/' . $group . '/' . $slug;
-        $checkTemplates[] = $basePath . '/' . $group . '/default';
-        $checkTemplates[] = $basePath . '/' . $group;
-        $checkTemplates[] = $basePath . '/default';
+        // Add paths interleaved by specificity: all prefixes per level before dropping down
+        $addPath = function (string $templatePath) use (&$checkTemplates, $prefixes) {
+            foreach ($prefixes as $prefix) {
+                $candidate = $prefix . '/' . $templatePath;
+                if (!in_array($candidate, $checkTemplates)) {
+                    $checkTemplates[] = $candidate;
+                }
+            }
+        };
+
+        $addPath($group . '/' . $slug);
+        $addPath($group . '/default');
+        $addPath($group);
+        $addPath('default');
 
         return HierarchyTemplateLoader::load(
             $checkTemplates,
             $variables,
-            '',
             'category'
         );
     }
