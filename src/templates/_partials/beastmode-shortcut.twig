@@ -3,6 +3,8 @@
     Allows toggling beastmode with Ctrl+B / Cmd+B
     Note: No <script> tags needed - registerScript() adds them automatically
 #}
+{% set commerceInstalled = craft.app.plugins.isPluginInstalled('commerce') %}
+{% set hasCategories = craft.app.categories.allGroups|length > 0 %}
 {% apply spaceless %}
 {% verbatim %}
 (function() {
@@ -56,10 +58,16 @@
             { value: 'entry', label: 'Entries', description: 'Show debug for entry templates' },
             { value: 'item', label: 'Items', description: 'Show debug for item templates' },
             { value: 'matrix', label: 'Matrix Blocks', description: 'Show debug for matrix block templates' },
-            { value: 'category', label: 'Categories', description: 'Show debug for category templates' },
             { value: 'asset', label: 'Assets', description: 'Show debug for asset templates' },
-            { value: 'product', label: 'Products', description: 'Show debug for product templates' }
         ];
+        {% endverbatim %}
+        {% if hasCategories %}
+        beastmodeOptions.push({ value: 'category', label: 'Categories', description: 'Show debug for category templates' });
+        {% endif %}
+        {% if commerceInstalled %}
+        beastmodeOptions.push({ value: 'product', label: 'Products', description: 'Show debug for product templates' });
+        {% endif %}
+        {% verbatim %}
 
         let html = `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
