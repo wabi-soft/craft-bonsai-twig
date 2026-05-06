@@ -4,10 +4,11 @@ namespace wabisoft\bonsaitwig;
 
 use Craft;
 use craft\base\Plugin;
+use craft\events\CreateTwigEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\App;
-use craft\web\View;
 
+use craft\web\View;
 use wabisoft\bonsaitwig\models\Settings;
 use wabisoft\bonsaitwig\services\AssetLoader;
 use wabisoft\bonsaitwig\services\CategoryLoader;
@@ -16,6 +17,7 @@ use wabisoft\bonsaitwig\services\HierarchyTemplateLoader;
 use wabisoft\bonsaitwig\services\ItemLoader;
 use wabisoft\bonsaitwig\services\MatrixLoader;
 use wabisoft\bonsaitwig\services\ProductLoader;
+use wabisoft\bonsaitwig\web\twig\SiteAwareTemplateLoader;
 use wabisoft\bonsaitwig\web\twig\Templates;
 use yii\base\Event;
 
@@ -119,14 +121,30 @@ class BonsaiTwig extends Plugin
             return; // Fail silently for unsupported versions
         }
 
-        // Register Twig extension
+        // Register Twig extension and site-aware loader
         Craft::$app->onInit(function(): void {
             $this->registerTwigExtension();
+            $this->registerSiteAwareLoader();
             $this->attachEventHandlers();
         });
     }
 
 
+
+    private function registerSiteAwareLoader(): void
+    {
+        Event::on(
+            View::class,
+            View::EVENT_AFTER_CREATE_TWIG,
+            function(CreateTwigEvent $event): void {
+                if ($event->templateMode === View::TEMPLATE_MODE_SITE) {
+                    $event->twig->setLoader(
+                        new SiteAwareTemplateLoader($event->twig->getLoader())
+                    );
+                }
+            }
+        );
+    }
 
     /**
      * Registers the Twig extension that provides template loading functions.
