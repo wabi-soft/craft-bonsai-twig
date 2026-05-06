@@ -112,6 +112,7 @@ class HierarchyTemplateLoader extends Component
         if (ResolutionCollector::isActive()) {
             $strategy = (string) ($validatedVariables['_btStrategy'] ?? 'section');
             $element = $validatedVariables['entry'] ?? $validatedVariables['category'] ?? $validatedVariables['asset'] ?? $validatedVariables['product'] ?? null;
+            $elementHandle = $element?->type?->handle ?? $element?->group?->handle ?? null;
             ResolutionCollector::log(
                 $templateType->value,
                 $strategy,
@@ -119,7 +120,7 @@ class HierarchyTemplateLoader extends Component
                 $matchedOriginalTemplate,
                 $resolvedPath,
                 $element?->id ?? null,
-                $element?->type?->handle ?? null,
+                $elementHandle,
             );
         }
 
