@@ -8,7 +8,14 @@ $hasCategories = $panel->data['hasCategories'] ?? false;
 $hasCommerce = $panel->data['hasCommerce'] ?? false;
 
 $pageUrl = $panel->data['pageUrl'] ?? '';
+$siteHandle = $panel->data['siteHandle'] ?? null;
 $activeModes = $beastmodeParam !== '' ? array_map('trim', explode(',', $beastmodeParam)) : [];
+
+$typeCounts = [];
+foreach ($resolutions as $r) {
+    $type = $r['type'] ?? 'unknown';
+    $typeCounts[$type] = ($typeCounts[$type] ?? 0) + 1;
+}
 ?>
 <style>
     .bonsai-panel { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -36,10 +43,21 @@ $activeModes = $beastmodeParam !== '' ? array_map('trim', explode(',', $beastmod
     .bonsai-panel .bonsai-expand { cursor: pointer; color: #1976d2; text-decoration: underline; font-size: 12px; }
     .bonsai-panel .bonsai-empty { padding: 20px; text-align: center; color: #888; font-style: italic; }
     .bonsai-panel .bonsai-notice { padding: 8px 12px; background: #fff3e0; border: 1px solid #ffe0b2; border-radius: 4px; font-size: 12px; color: #e65100; margin-top: 10px; }
+    .bonsai-panel .bonsai-meta { display: flex; gap: 16px; margin-bottom: 16px; font-size: 13px; color: #555; }
+    .bonsai-panel .bonsai-meta strong { color: #333; }
 </style>
 
 <div class="bonsai-panel">
     <h1>TPL Routing</h1>
+
+    <div class="bonsai-meta">
+        <?php if ($siteHandle): ?>
+            <span><strong>Site:</strong> <?= htmlspecialchars($siteHandle) ?></span>
+        <?php endif; ?>
+        <?php if (!empty($typeCounts)): ?>
+            <span><strong>Resolved:</strong> <?= implode(', ', array_map(fn($type, $count) => "$count $type", array_keys($typeCounts), $typeCounts)) ?></span>
+        <?php endif; ?>
+    </div>
 
     <h2>Beast Mode</h2>
     <div class="bonsai-toggles" id="bonsai-toggles">

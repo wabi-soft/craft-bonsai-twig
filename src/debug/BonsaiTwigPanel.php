@@ -41,11 +41,18 @@ class BonsaiTwigPanel extends Panel implements ViewContextInterface
         $request = Craft::$app->getRequest();
         $isConsole = $request->getIsConsoleRequest();
 
+        $siteHandle = null;
+        try {
+            $siteHandle = Craft::$app->getSites()->getCurrentSite()->handle;
+        } catch (\Throwable) {
+        }
+
         return [
             'resolutions' => ResolutionCollector::getLog(),
             'droppedCount' => ResolutionCollector::getDroppedCount(),
             'beastmodeParam' => $isConsole ? '' : ($request->getParam('beastmode') ?? ''),
             'pageUrl' => $isConsole ? '' : $request->getUrl(),
+            'siteHandle' => $siteHandle,
             'hasCategories' => !empty(Craft::$app->categories->getAllGroups()),
             'hasCommerce' => Craft::$app->plugins->isPluginInstalled('commerce'),
         ];
