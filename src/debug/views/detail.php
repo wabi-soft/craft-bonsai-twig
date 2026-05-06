@@ -150,7 +150,7 @@ $activeModes = $beastmodeParam !== '' ? array_map('trim', explode(',', $beastmod
     });
 
     document.getElementById('bonsai-apply').addEventListener('click', function() {
-        var url = new URL(pageUrl, window.location.origin);
+        var url = new URL(pageUrl, window.top.location.origin);
         if (allCb.checked) {
             url.searchParams.set('beastmode', 'all');
         } else {
@@ -162,13 +162,13 @@ $activeModes = $beastmodeParam !== '' ? array_map('trim', explode(',', $beastmod
                 url.searchParams.delete('beastmode');
             }
         }
-        window.location.href = url.href;
+        window.top.location.href = url.href;
     });
 
     document.getElementById('bonsai-disable').addEventListener('click', function() {
-        var url = new URL(pageUrl, window.location.origin);
+        var url = new URL(pageUrl, window.top.location.origin);
         url.searchParams.delete('beastmode');
-        window.location.href = url.href;
+        window.top.location.href = url.href;
     });
 })();
 </script>
