@@ -127,9 +127,19 @@ class BonsaiTwig extends Plugin
         Craft::$app->onInit(function(): void {
             $this->registerTwigExtension();
             $this->registerSiteAwareLoader();
-            $this->registerDebugPanel();
             $this->attachEventHandlers();
         });
+
+        // Debug panel must register after Craft's debugBootstrap() which runs post-init
+        if (Craft::$app->getConfig()->general->devMode) {
+            Event::on(
+                \yii\base\Application::class,
+                \yii\base\Application::EVENT_BEFORE_REQUEST,
+                function(): void {
+                    $this->registerDebugPanel();
+                }
+            );
+        }
     }
 
 
