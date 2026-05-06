@@ -4,10 +4,13 @@ namespace wabisoft\bonsaitwig;
 
 use Craft;
 use craft\base\Plugin;
+use craft\events\CreateTwigEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\App;
-use craft\web\View;
 
+use craft\web\View;
+use wabisoft\bonsaitwig\debug\BonsaiTwigPanel;
+use wabisoft\bonsaitwig\debug\ResolutionCollector;
 use wabisoft\bonsaitwig\models\Settings;
 use wabisoft\bonsaitwig\services\AssetLoader;
 use wabisoft\bonsaitwig\services\CategoryLoader;
@@ -16,6 +19,7 @@ use wabisoft\bonsaitwig\services\HierarchyTemplateLoader;
 use wabisoft\bonsaitwig\services\ItemLoader;
 use wabisoft\bonsaitwig\services\MatrixLoader;
 use wabisoft\bonsaitwig\services\ProductLoader;
+use wabisoft\bonsaitwig\web\twig\SiteAwareTemplateLoader;
 use wabisoft\bonsaitwig\web\twig\Templates;
 use yii\base\Event;
 
@@ -119,14 +123,55 @@ class BonsaiTwig extends Plugin
             return; // Fail silently for unsupported versions
         }
 
-        // Register Twig extension
+        // Register Twig extension and site-aware loader
         Craft::$app->onInit(function(): void {
             $this->registerTwigExtension();
+            $this->registerSiteAwareLoader();
             $this->attachEventHandlers();
         });
+
+        // Debug panel must register after Craft's debugBootstrap() which runs post-init
+        if (Craft::$app->getConfig()->general->devMode) {
+            Event::on(
+                \yii\base\Application::class,
+                \yii\base\Application::EVENT_BEFORE_REQUEST,
+                function(): void {
+                    $this->registerDebugPanel();
+                }
+            );
+        }
     }
 
 
+
+    private function registerSiteAwareLoader(): void
+    {
+        Event::on(
+            View::class,
+            View::EVENT_AFTER_CREATE_TWIG,
+            function(CreateTwigEvent $event): void {
+                if ($event->templateMode === View::TEMPLATE_MODE_SITE) {
+                    $event->twig->setLoader(
+                        new SiteAwareTemplateLoader($event->twig->getLoader())
+                    );
+                }
+            }
+        );
+    }
+
+    private function registerDebugPanel(): void
+    {
+        $debugModule = Craft::$app->getModule('debug');
+        if (!$debugModule instanceof \yii\debug\Module || !Craft::$app->getConfig()->general->devMode) {
+            return;
+        }
+
+        ResolutionCollector::setActive(true);
+        $debugModule->panels['bonsai-twig'] = new BonsaiTwigPanel([
+            'id' => 'bonsai-twig',
+            'module' => $debugModule,
+        ]);
+    }
 
     /**
      * Registers the Twig extension that provides template loading functions.

@@ -59,7 +59,7 @@ class CategoryLoader
         $prefixes[] = $path;
 
         // Add paths interleaved by specificity: all prefixes per level before dropping down
-        $addPath = function (string $templatePath) use (&$checkTemplates, $prefixes) {
+        $addPath = function(string $templatePath) use (&$checkTemplates, $prefixes) {
             foreach ($prefixes as $prefix) {
                 $candidate = $prefix . '/' . $templatePath;
                 if (!in_array($candidate, $checkTemplates)) {

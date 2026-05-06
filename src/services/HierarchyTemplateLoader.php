@@ -9,8 +9,9 @@ use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
 use wabisoft\bonsaitwig\BonsaiTwig;
-use wabisoft\bonsaitwig\enums\TemplateType;
+use wabisoft\bonsaitwig\debug\ResolutionCollector;
 
+use wabisoft\bonsaitwig\enums\TemplateType;
 use wabisoft\bonsaitwig\exceptions\TemplateNotFoundException;
 use wabisoft\bonsaitwig\utilities\InputValidator;
 
@@ -107,7 +108,22 @@ class HierarchyTemplateLoader extends Component
                 break;
             }
         }
-            
+
+        if (ResolutionCollector::isActive()) {
+            $strategy = (string) ($validatedVariables['_btStrategy'] ?? 'section');
+            $element = $validatedVariables['entry'] ?? $validatedVariables['category'] ?? $validatedVariables['asset'] ?? $validatedVariables['product'] ?? null;
+            $elementHandle = $element?->type?->handle ?? $element?->group?->handle ?? null;
+            ResolutionCollector::log(
+                $templateType->value,
+                $strategy,
+                $finalAttemptedPaths,
+                $matchedOriginalTemplate,
+                $resolvedPath,
+                $element?->id ?? null,
+                $elementHandle,
+            );
+        }
+
         if ($resolvedPath !== null) {
 
             // ============================================================
@@ -157,7 +173,6 @@ class HierarchyTemplateLoader extends Component
 
             // If debug is enabled, prepare debug info
             if ($shouldShowDebug) {
-                    
                 $displayTemplates = $validatedTemplates;
 
                 // Determine element kind for debug (entry vs category vs asset vs product) when available
@@ -404,9 +419,9 @@ class HierarchyTemplateLoader extends Component
             // Handle option-based fields
             if (in_array($className, [
                 'craft\fields\Dropdown',
-                'craft\fields\RadioButtons', 
+                'craft\fields\RadioButtons',
                 'craft\fields\Checkboxes',
-                'craft\fields\MultiSelect'
+                'craft\fields\MultiSelect',
             ])) {
                 return self::extractOptionsFieldInfo($field);
             }
