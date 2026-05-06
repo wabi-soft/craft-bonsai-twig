@@ -15,6 +15,10 @@ class ResolutionCollector
 
     public static function setActive(bool $active): void
     {
+        if ($active) {
+            self::reset();
+        }
+
         self::$active = $active;
     }
 

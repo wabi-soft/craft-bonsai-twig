@@ -6,6 +6,7 @@ use Craft;
 use Twig\Loader\LoaderInterface;
 use Twig\Source;
 use wabisoft\bonsaitwig\BonsaiTwig;
+use wabisoft\bonsaitwig\debug\ResolutionCollector;
 use wabisoft\bonsaitwig\enums\TemplateType;
 
 class SiteAwareTemplateLoader implements LoaderInterface
@@ -17,6 +18,9 @@ class SiteAwareTemplateLoader implements LoaderInterface
 
     /** @var list<string> */
     private array $siteHandles;
+
+    /** @var array<string, string> */
+    private array $resolved = [];
 
     private ?string $currentSiteHandle;
     private string $primarySiteHandle;
@@ -64,11 +68,15 @@ class SiteAwareTemplateLoader implements LoaderInterface
 
     private function resolve(string $name): string
     {
-        if ($this->inner->exists($name)) {
-            return $name;
+        if (array_key_exists($name, $this->resolved)) {
+            return $this->resolved[$name];
         }
 
-        return $this->resolveWithCascade($name) ?? $name;
+        if ($this->inner->exists($name)) {
+            return $this->resolved[$name] = $name;
+        }
+
+        return $this->resolved[$name] = $this->resolveWithCascade($name) ?? $name;
     }
 
     private function resolveWithCascade(string $name): ?string
@@ -168,11 +176,15 @@ class SiteAwareTemplateLoader implements LoaderInterface
             return;
         }
 
+        if (ResolutionCollector::isActive()) {
+            ResolutionCollector::log('cascade', 'site-cascade', $tried, $resolved, $resolved);
+        }
+
         if ($resolved) {
             Craft::info("Bonsai resolved '$original' → '$resolved'", __METHOD__);
         } else {
             $paths = implode(', ', $tried);
-            Craft::warning("Bonsai cascade failed for '$original' (tried: $paths)", __METHOD__);
+            Craft::info("Bonsai cascade: no site override for '$original' (tried: $paths)", __METHOD__);
         }
     }
 }

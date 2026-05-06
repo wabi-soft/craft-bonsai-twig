@@ -115,7 +115,7 @@ $pageUrl = Craft::$app->getRequest()->getIsConsoleRequest() ? '' : Craft::$app->
 
 <script>
 (function() {
-    var pageUrl = <?= json_encode($pageUrl) ?>;
+    var pageUrl = <?= json_encode($pageUrl, JSON_HEX_TAG | JSON_HEX_AMP) ?>;
 
     document.querySelectorAll('.bonsai-expand').forEach(function(el) {
         el.addEventListener('click', function() {
