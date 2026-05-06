@@ -16,8 +16,8 @@ class SiteAwareTemplateLoader implements LoaderInterface
     /** @var list<string> */
     private array $bonsaiPrefixes;
 
-    /** @var list<string> */
-    private array $siteHandles;
+    /** @var array<string, true> */
+    private array $siteHandlePrefixes;
 
     /** @var array<string, string> */
     private array $resolved = [];
@@ -31,7 +31,7 @@ class SiteAwareTemplateLoader implements LoaderInterface
         $this->inner = $inner;
         $this->devMode = Craft::$app->getConfig()->general->devMode;
         $this->bonsaiPrefixes = $this->buildPrefixList();
-        $this->siteHandles = $this->buildSiteHandleList();
+        $this->siteHandlePrefixes = $this->buildSiteHandlePrefixMap();
         $this->primarySiteHandle = Craft::$app->getSites()->getPrimarySite()->handle;
         $this->currentSiteHandle = $this->resolveCurrentSiteHandle();
     }
@@ -113,7 +113,7 @@ class SiteAwareTemplateLoader implements LoaderInterface
     private function hasBonsaiPrefix(string $name): bool
     {
         foreach ($this->bonsaiPrefixes as $prefix) {
-            if (str_starts_with($name, $prefix . '/')) {
+            if (str_starts_with($name, $prefix)) {
                 return true;
             }
         }
@@ -123,13 +123,12 @@ class SiteAwareTemplateLoader implements LoaderInterface
 
     private function hasSiteHandlePrefix(string $name): bool
     {
-        foreach ($this->siteHandles as $handle) {
-            if (str_starts_with($name, $handle . '/')) {
-                return true;
-            }
+        $slashPos = strpos($name, '/');
+        if ($slashPos === false) {
+            return false;
         }
 
-        return false;
+        return isset($this->siteHandlePrefixes[substr($name, 0, $slashPos + 1)]);
     }
 
     /** @return list<string> */
@@ -141,23 +140,25 @@ class SiteAwareTemplateLoader implements LoaderInterface
 
         foreach (TemplateType::cases() as $type) {
             $path = $settings->getPathForType($type->value);
-            $prefixes[$path] = true;
+            $prefixes[$path . '/'] = true;
             $default = $type->getDefaultPath();
             if ($default !== $path) {
-                $prefixes[$default] = true;
+                $prefixes[$default . '/'] = true;
             }
         }
 
         return array_keys($prefixes);
     }
 
-    /** @return list<string> */
-    private function buildSiteHandleList(): array
+    /** @return array<string, true> */
+    private function buildSiteHandlePrefixMap(): array
     {
-        return array_map(
-            fn($site) => $site->handle,
-            Craft::$app->getSites()->getAllSites()
-        );
+        $map = [];
+        foreach (Craft::$app->getSites()->getAllSites() as $site) {
+            $map[$site->handle . '/'] = true;
+        }
+
+        return $map;
     }
 
     private function resolveCurrentSiteHandle(): ?string
