@@ -3,7 +3,6 @@
 namespace wabisoft\bonsaitwig\utilities;
 
 use craft\base\Element;
-use wabisoft\bonsaitwig\utilities\SecurityUtils;
 
 /**
  * Simplified input validation utility for basic parameter checking.
@@ -167,6 +166,4 @@ class InputValidator
 
         return $validatedVars;
     }
-
-
 }

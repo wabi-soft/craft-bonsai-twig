@@ -12,7 +12,7 @@ namespace wabisoft\bonsaitwig\enums;
  * @author Wabisoft
  * @since 6.4.0
  */
-enum DebugMode: string
+enum DebugMode : string
 {
     case DISABLED = '';
     case ENABLED = 'enabled';
@@ -53,6 +53,4 @@ enum DebugMode: string
         // Any non-empty string enables debug mode
         return $value !== '' ? self::ENABLED : self::DISABLED;
     }
-
-
 }

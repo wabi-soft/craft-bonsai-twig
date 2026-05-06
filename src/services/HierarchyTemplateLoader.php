@@ -157,7 +157,6 @@ class HierarchyTemplateLoader extends Component
 
             // If debug is enabled, prepare debug info
             if ($shouldShowDebug) {
-                    
                 $displayTemplates = $validatedTemplates;
 
                 // Determine element kind for debug (entry vs category vs asset vs product) when available
@@ -404,9 +403,9 @@ class HierarchyTemplateLoader extends Component
             // Handle option-based fields
             if (in_array($className, [
                 'craft\fields\Dropdown',
-                'craft\fields\RadioButtons', 
+                'craft\fields\RadioButtons',
                 'craft\fields\Checkboxes',
-                'craft\fields\MultiSelect'
+                'craft\fields\MultiSelect',
             ])) {
                 return self::extractOptionsFieldInfo($field);
             }
