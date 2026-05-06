@@ -9,8 +9,9 @@ use Twig\Error\LoaderError;
 use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
 use wabisoft\bonsaitwig\BonsaiTwig;
-use wabisoft\bonsaitwig\enums\TemplateType;
+use wabisoft\bonsaitwig\debug\ResolutionCollector;
 
+use wabisoft\bonsaitwig\enums\TemplateType;
 use wabisoft\bonsaitwig\exceptions\TemplateNotFoundException;
 use wabisoft\bonsaitwig\utilities\InputValidator;
 
@@ -107,7 +108,21 @@ class HierarchyTemplateLoader extends Component
                 break;
             }
         }
-            
+
+        if (ResolutionCollector::isActive()) {
+            $strategy = (string) ($validatedVariables['_btStrategy'] ?? 'section');
+            $element = $validatedVariables['entry'] ?? $validatedVariables['category'] ?? $validatedVariables['asset'] ?? $validatedVariables['product'] ?? null;
+            ResolutionCollector::log(
+                $templateType->value,
+                $strategy,
+                $finalAttemptedPaths,
+                $matchedOriginalTemplate,
+                $resolvedPath,
+                $element?->id ?? null,
+                $element?->type?->handle ?? null,
+            );
+        }
+
         if ($resolvedPath !== null) {
 
             // ============================================================

@@ -9,6 +9,8 @@ use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\App;
 
 use craft\web\View;
+use wabisoft\bonsaitwig\debug\BonsaiTwigPanel;
+use wabisoft\bonsaitwig\debug\ResolutionCollector;
 use wabisoft\bonsaitwig\models\Settings;
 use wabisoft\bonsaitwig\services\AssetLoader;
 use wabisoft\bonsaitwig\services\CategoryLoader;
@@ -125,6 +127,7 @@ class BonsaiTwig extends Plugin
         Craft::$app->onInit(function(): void {
             $this->registerTwigExtension();
             $this->registerSiteAwareLoader();
+            $this->registerDebugPanel();
             $this->attachEventHandlers();
         });
     }
@@ -144,6 +147,20 @@ class BonsaiTwig extends Plugin
                 }
             }
         );
+    }
+
+    private function registerDebugPanel(): void
+    {
+        $debugModule = Craft::$app->getModule('debug');
+        if (!$debugModule instanceof \yii\debug\Module || !Craft::$app->getConfig()->general->devMode) {
+            return;
+        }
+
+        ResolutionCollector::setActive(true);
+        $debugModule->panels['bonsai-twig'] = new BonsaiTwigPanel([
+            'id' => 'bonsai-twig',
+            'module' => $debugModule,
+        ]);
     }
 
     /**
