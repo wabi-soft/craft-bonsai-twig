@@ -10,7 +10,7 @@ class BonsaiTwigPanel extends Panel implements ViewContextInterface
 {
     public function getName(): string
     {
-        return 'Bonsai Twig';
+        return 'TPL Routing';
     }
 
     public function getViewPath(): string
@@ -38,12 +38,14 @@ class BonsaiTwigPanel extends Panel implements ViewContextInterface
     /** @return array<string, mixed> */
     public function save(): array
     {
+        $request = Craft::$app->getRequest();
+        $isConsole = $request->getIsConsoleRequest();
+
         return [
             'resolutions' => ResolutionCollector::getLog(),
             'droppedCount' => ResolutionCollector::getDroppedCount(),
-            'beastmodeParam' => Craft::$app->getRequest()->getIsConsoleRequest()
-                ? ''
-                : (Craft::$app->getRequest()->getParam('beastmode') ?? ''),
+            'beastmodeParam' => $isConsole ? '' : ($request->getParam('beastmode') ?? ''),
+            'pageUrl' => $isConsole ? '' : $request->getUrl(),
             'hasCategories' => !empty(Craft::$app->categories->getAllGroups()),
             'hasCommerce' => Craft::$app->plugins->isPluginInstalled('commerce'),
         ];

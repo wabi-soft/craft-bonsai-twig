@@ -7,8 +7,8 @@ $beastmodeParam = $panel->data['beastmodeParam'] ?? '';
 $hasCategories = $panel->data['hasCategories'] ?? false;
 $hasCommerce = $panel->data['hasCommerce'] ?? false;
 
+$pageUrl = $panel->data['pageUrl'] ?? '';
 $activeModes = $beastmodeParam !== '' ? array_map('trim', explode(',', $beastmodeParam)) : [];
-$pageUrl = Craft::$app->getRequest()->getIsConsoleRequest() ? '' : Craft::$app->getRequest()->getUrl();
 ?>
 <style>
     .bonsai-panel { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -39,7 +39,7 @@ $pageUrl = Craft::$app->getRequest()->getIsConsoleRequest() ? '' : Craft::$app->
 </style>
 
 <div class="bonsai-panel">
-    <h1>Bonsai Twig</h1>
+    <h1>TPL Routing</h1>
 
     <h2>Beast Mode</h2>
     <div class="bonsai-toggles" id="bonsai-toggles">

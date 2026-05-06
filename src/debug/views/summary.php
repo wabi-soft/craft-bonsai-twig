@@ -4,6 +4,6 @@
 ?>
 <div class="yii-debug-toolbar__block">
     <a href="<?= $panel->getUrl() ?>">
-        Bonsai <span class="yii-debug-toolbar__label yii-debug-toolbar__label_<?= $count > 0 ? 'info' : 'default' ?>"><?= $count ?></span>
+        TPL <span class="yii-debug-toolbar__label yii-debug-toolbar__label_<?= $count > 0 ? 'info' : 'default' ?>"><?= $count ?></span>
     </a>
 </div>
