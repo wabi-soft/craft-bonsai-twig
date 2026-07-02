@@ -9,6 +9,7 @@ Welcome to the **Bonsai Twig Plugin** README! This plugin is designed as a **dev
 - **Simple Debug Tools**: Clean, focused debugging that shows template paths and resolution without performance overhead
 - **Development-Focused**: Designed specifically for development workflow - no production features or optimizations
 - **Enhanced btPath() Function**: Returns complete HTML output with styling, eliminating need for manual Twig wrapping
+- **LLM Trace Comments**: Opt-in, dev-only HTML comments mapping rendered DOM back to the winning template, consumable by AI agents reading page source
 - **Zero Production Overhead**: Debug features return empty strings in production mode
 
 ## Pure Twig Equivalents
@@ -562,6 +563,84 @@ The debug output focuses on essential information without performance metrics or
 
 {# Or use in HTML comments for minimal impact #}
 <!-- {{ btPath() }} -->
+```
+
+### LLM Trace Comments (v9.3)
+
+When enabled, every Bonsai-resolved render is bracketed in machine-parseable HTML comments mapping the rendered DOM back to the winning template and its resolution context — the same map the beastmode overlay shows, but inline in the page source, consumable by an LLM/agent:
+
+```html
+<!-- bonsai:start id="3" tpl="default/_entry/solutionsIndex/default" type="entry" el="solutionsIndex#1234" -->
+…rendered template output…
+<!-- bonsai:end id="3" -->
+```
+
+- `id` — per-request counter; pairs match on it (nesting-safe)
+- `tpl` — resolved (winning) template path, relative to `templates/`
+- `type` — `entry` | `item` | `matrix` | `category` | `product` | `asset`
+- `el` — `<typeOrGroupHandle>#<elementId>`; omitted when no element id is known
+- `strategy` — only present when non-default (≠ `section`)
+
+Comments carry paths, ids, and handles only — never field values. Nested loader calls yield nested pairs, so the comment tree mirrors the render tree.
+
+#### Enabling
+
+Two independent conditions, both required:
+
+```
+emit == devMode === true AND llmMode === true
+```
+
+`llmMode` is the switch; `devMode` is the safety floor — trace comments **never** render in production, even with `BONSAI_LLM_MODE=true` in a production `.env`.
+
+Enable via any of (precedence: env > config file > CP setting):
+
+```php
+// config/bonsai-twig.php
+return [
+    'llmMode' => true,
+];
+```
+
+```bash
+# .env
+BONSAI_LLM_MODE=true
+```
+
+Or toggle "LLM trace comments" in the plugin's CP settings.
+
+#### Opting out (non-HTML contexts)
+
+A wrapped template rendering into JSON-LD, `<script>`, `<style>`, `<title>`, or an attribute value would be corrupted by an HTML comment. Two escape hatches:
+
+```twig
+{# Per-call: suppress wrapping for this render #}
+{{ entryTemplates({ entry, bonsaiTrace: false }) }}
+```
+
+```php
+// config/bonsai-twig.php — resolved paths never wrapped (exact match)
+return [
+    'traceBlocklist' => [
+        '_entry/jsonLd/default',
+    ],
+];
+```
+
+#### Agent consumption recipe (paste into a consumer project's CLAUDE.md)
+
+```markdown
+## Template debugging (Bonsai trace comments)
+
+- Dev pages emit `<!-- bonsai:start id="…" tpl="…" type="…" el="…" -->` /
+  `<!-- bonsai:end id="…" -->` pairs around each dynamically resolved template.
+- Browser accessibility/text tools strip HTML comments — fetch the raw source
+  instead (`curl <url>`, `ddev exec curl <url>`, or
+  `document.documentElement.outerHTML`).
+- To map a DOM chunk to its source: find the nearest enclosing `bonsai:start`,
+  open the `tpl` path (relative to `templates/`), then follow plain
+  `{% include %}`/`{% embed %}` statically in the source.
+- Requires `devMode` + the plugin's `llmMode` setting (or `BONSAI_LLM_MODE=true`).
 ```
 
 ### Suggested Minimum Usage
