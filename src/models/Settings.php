@@ -53,7 +53,6 @@ class Settings extends Model
     {
         return [
             [['strategy'], 'in', 'range' => array_column(Strategy::cases(), 'value')],
-            [['nestByElementType'], 'boolean'],
             [['paths'], function($attribute): void {
                 $validKeys = array_column(TemplateType::cases(), 'value');
                 foreach ($this->$attribute as $k => $v) {
