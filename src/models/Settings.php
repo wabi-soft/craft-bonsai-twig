@@ -31,6 +31,23 @@ class Settings extends Model
     public array $paths = [];
 
     /**
+     * @var bool When true AND devMode is on, wrap Bonsai-resolved output in
+     * LLM trace comments mapping rendered DOM back to the winning template.
+     * Never emits in production. Overridable via config/bonsai-twig.php or
+     * the BONSAI_LLM_MODE env var (env > config > CP).
+     * @since 9.3.0
+     */
+    public bool $llmMode = false;
+
+    /**
+     * @var array<string> Resolved template paths never wrapped in trace
+     * comments (exact match) — for templates rendering into non-HTML contexts
+     * such as JSON-LD, <script>, or attribute values.
+     * @since 9.3.0
+     */
+    public array $traceBlocklist = [];
+
+    /**
      * Returns the resolved base path for a given element type.
      *
      * Resolution order: paths config map > TemplateType default.
@@ -53,6 +70,15 @@ class Settings extends Model
     {
         return [
             [['strategy'], 'in', 'range' => array_column(Strategy::cases(), 'value')],
+            [['llmMode'], 'boolean'],
+            [['traceBlocklist'], function($attribute): void {
+                foreach ($this->$attribute as $v) {
+                    if (!is_string($v) || trim($v) === '') {
+                        $this->addError($attribute, 'traceBlocklist must be a list of non-empty template path strings.');
+                        break;
+                    }
+                }
+            }],
             [['paths'], function($attribute): void {
                 $validKeys = array_column(TemplateType::cases(), 'value');
                 foreach ($this->$attribute as $k => $v) {

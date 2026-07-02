@@ -69,6 +69,24 @@ class BonsaiTwig extends Plugin
     }
 
     /**
+     * Whether LLM trace comments should be emitted for this request.
+     *
+     * llmMode is the switch; devMode is the safety floor — never drop the
+     * devMode check. Production must never emit trace comments, even with
+     * BONSAI_LLM_MODE=true in the environment.
+     *
+     * @since 9.3.0
+     */
+    public function traceEnabled(): bool
+    {
+        if (!Craft::$app->getConfig()->general->devMode) {
+            return false;
+        }
+
+        return App::parseBooleanEnv('$BONSAI_LLM_MODE') ?? (bool) $this->getSettings()->llmMode;
+    }
+
+    /**
      * Returns the rendered settings HTML, which will be inserted into the content
      * block on the settings page.
      *
