@@ -33,6 +33,7 @@ use yii\base\Event;
  * @author Wabisoft
  * @since 6.4.0
  * @method static BonsaiTwig getInstance()
+ * @method Settings getSettings()
  * @property-read EntryLoader $entryLoader Service for loading entry-based templates
  * @property-read CategoryLoader $categoryLoader Service for loading category-based templates
  * @property-read ItemLoader $itemLoader Service for loading item-based templates
