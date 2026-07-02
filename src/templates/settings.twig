@@ -21,6 +21,14 @@
     ],
 }) }}
 
+{{ forms.lightswitchField({
+    label: "LLM trace comments"|t('bonsai-twig'),
+    instructions: "Dev-only. Wraps Bonsai-resolved output in <code>&lt;!-- bonsai:start … --&gt;</code> comments mapping DOM to template. Never emits in production. Overridable via config/bonsai-twig.php and env <code>BONSAI_LLM_MODE</code>."|t('bonsai-twig'),
+    id: 'llmMode',
+    name: 'llmMode',
+    on: settings.llmMode,
+}) }}
+
 
 <hr>
 
@@ -35,6 +43,10 @@ return [
         'matrix' => '_matrix',
         'asset' => '_asset',
         'product' => '_product',
+    ],
+    'llmMode' => true,
+    'traceBlocklist' => [
+        '_entry/jsonLd/default',
     ],
 ];</pre>
 </details>
