@@ -10,6 +10,7 @@ use Twig\Error\RuntimeError;
 use Twig\Error\SyntaxError;
 use wabisoft\bonsaitwig\BonsaiTwig;
 use wabisoft\bonsaitwig\debug\ResolutionCollector;
+use wabisoft\bonsaitwig\debug\TraceComment;
 
 use wabisoft\bonsaitwig\enums\TemplateType;
 use wabisoft\bonsaitwig\exceptions\TemplateNotFoundException;
@@ -111,15 +112,14 @@ class HierarchyTemplateLoader extends Component
 
         if (ResolutionCollector::isActive()) {
             $strategy = (string) ($validatedVariables['_btStrategy'] ?? 'section');
-            $element = $validatedVariables['entry'] ?? $validatedVariables['category'] ?? $validatedVariables['asset'] ?? $validatedVariables['product'] ?? null;
-            $elementHandle = $element?->type?->handle ?? $element?->group?->handle ?? null;
+            [$elementId, $elementHandle] = self::elementInfo($validatedVariables);
             ResolutionCollector::log(
                 $templateType->value,
                 $strategy,
                 $finalAttemptedPaths,
                 $matchedOriginalTemplate,
                 $resolvedPath,
-                $element?->id ?? null,
+                $elementId,
                 $elementHandle,
             );
         }
@@ -144,6 +144,23 @@ class HierarchyTemplateLoader extends Component
             // In production, return content directly
             if (!$isDev) {
                 return $content;
+            }
+
+            // LLM trace comments: llmMode is the switch; devMode is the safety
+            // floor (enforced in traceEnabled()) — never drop the devMode check.
+            // bonsaiTrace: false opts a single call out (non-HTML contexts).
+            if (($validatedVariables['bonsaiTrace'] ?? true) !== false
+                && $plugin->traceEnabled()
+                && !in_array($resolvedPath, $plugin->getSettings()->traceBlocklist, true)) {
+                [$elementId, $elementHandle] = self::elementInfo($validatedVariables);
+                $el = $elementId !== null ? ($elementHandle ?? $templateType->value) . '#' . $elementId : null;
+                $content = TraceComment::wrap(
+                    $content,
+                    $resolvedPath,
+                    $templateType->value,
+                    $el,
+                    (string) ($validatedVariables['_btStrategy'] ?? 'section'),
+                );
             }
 
             // In dev mode, always add the beastmode keyboard shortcut (once per page load)
@@ -283,6 +300,25 @@ class HierarchyTemplateLoader extends Component
 
         // In production, return empty string
         return '';
+    }
+
+    /**
+     * Resolves the element id and type/group handle from common loader variables.
+     *
+     * Shared by the ResolutionCollector log and the LLM trace comment so the
+     * trace never depends on the collector being active (beastmode-only).
+     *
+     * @param array<string, mixed> $variables Validated template variables
+     * @return array{0: int|null, 1: string|null} Element id and type/group handle
+     */
+    private static function elementInfo(array $variables): array
+    {
+        $element = $variables['entry'] ?? $variables['category'] ?? $variables['asset'] ?? $variables['product'] ?? null;
+
+        return [
+            $element?->id ?? null,
+            $element?->type?->handle ?? $element?->group?->handle ?? null,
+        ];
     }
 
     /**
