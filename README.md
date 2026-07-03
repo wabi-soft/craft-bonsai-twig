@@ -28,6 +28,54 @@ If you need to remove the plugin, see these guides for native Twig replacements:
 - **PHP**: 8.2.0 or higher
 - **Craft CMS**: 5.0.0 or higher
 
+## Getting Started
+
+### 1. Install
+
+The plugin ships inside the project as a Composer path repository:
+
+```jsonc
+// composer.json
+{
+    "repositories": [
+        { "type": "path", "url": "_dev/plugins/craft-bonsai-twig" }
+    ]
+}
+```
+
+```bash
+ddev composer require wabisoft/craft-bonsai-twig
+ddev craft plugin/install bonsai-twig
+```
+
+### 2. Add your first template tree
+
+Call a loader where you'd normally write an `{% include %}`:
+
+```twig
+{{ entryTemplates({ entry }) }}
+```
+
+Then create templates under `templates/_entry/`. Bonsai tries paths from most to least specific and renders the first one that exists:
+
+```
+templates/_entry/
+├── blog/
+│   ├── article/
+│   │   └── my-post.twig    ← just this slug
+│   ├── article.twig        ← this entry type
+│   └── default.twig        ← anything in blog
+└── default.twig            ← global fallback
+```
+
+Start with a single `_entry/{section}/default.twig` and add more specific templates only where a page needs to differ — no template calls change, resolution picks them up automatically.
+
+The same pattern applies to the other trees: `_matrix/`, `_category/`, `_item/`, `_asset/`, `_product/` — each with its own loader function (see [Usage Guide](#usage-guide)).
+
+### 3. See what's resolving
+
+Add `?beastmode` to any URL (or press **Cmd+B**) to see every path tried and which one won. For AI agents reading page source, enable [LLM trace comments](#llm-trace-comments-v93) instead.
+
 ## Template Resolution Strategy (v8.0)
 
 By default, templates resolve **section-first** (`entry/{section}/{type}/...`). In v8.0, you can opt into **type-first** resolution (`entry/{type}/{section}/...`), aligning with Craft 5's standalone entry types.
