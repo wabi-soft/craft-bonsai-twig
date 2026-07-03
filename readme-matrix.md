@@ -12,7 +12,7 @@ Full parameter reference, plus how to replicate the function using native Twig i
 - `path` — base path override (default `_matrix`, or `paths.matrix` in config)
 - `loopIndex` / `loopLength` — pass `loop.index0` / `loop.length` to expose a Twig-style `loop` variable inside the block template
 - `blockIndex`, `nextBlock`, `prevBlock`, `parentBlock` — position-aware resolution
-- Any other key (`entry`, `next`, `prev`, `isFirst`, `variables: {…}`, custom data) passes through to the template as a variable; `bonsaiTrace: false` skips LLM trace wrapping for this call
+- Any other key (`entry`, `next`, `prev`, `isFirst`, `variables: {…}`, custom data) passes through to the template as a variable; `bonsaiTrace: false` skips LLM trace wrapping for this call and everything it renders
 
 ## With Plugin
 

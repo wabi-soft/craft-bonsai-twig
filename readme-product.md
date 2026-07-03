@@ -7,7 +7,7 @@ Full parameter reference, plus how to replicate the function using native Twig i
 - `product` (required) — the Commerce product element
 - `path` — base path override (default `_product`, or `paths.product` in config)
 - `baseSite` — site handle to prefix paths for multi-site template trees
-- Any other key passes through to the template as a variable; `bonsaiTrace: false` skips LLM trace wrapping for this call
+- Any other key passes through to the template as a variable; `bonsaiTrace: false` skips LLM trace wrapping for this call and everything it renders
 
 ## With Plugin
 

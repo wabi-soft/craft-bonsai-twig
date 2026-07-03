@@ -7,7 +7,7 @@ Full parameter reference, plus how to replicate the function using native Twig i
 - `asset` (required) — the asset element
 - `path` — base path override (default `_asset`, or `paths.asset` in config)
 - `baseSite` — site handle to prefix paths for multi-site template trees
-- Any other key passes through to the template as a variable; `bonsaiTrace: false` skips LLM trace wrapping for this call
+- Any other key passes through to the template as a variable; `bonsaiTrace: false` skips LLM trace wrapping for this call and everything it renders
 
 ## Example Template Structure
 

@@ -5,10 +5,10 @@ Full parameter reference, plus how to replicate the function using native Twig i
 ## Parameters
 
 - `entry` (required) — the entry element
-- `path` — base path override (default `_entry`, or `paths.entry` in config)
 - `strategy` — `'section'` (default) or `'type'` for type-first resolution
+- `path` — base path override (default `_entry`, or `paths.entry` in config)
 - `baseSite` — site handle to prefix paths for multi-site template trees
-- Any other key (`style`, `context`, `variables: {…}`, custom data) passes through to the template as a variable; `bonsaiTrace: false` skips LLM trace wrapping for this call
+- Any other key (`style`, `context`, custom data) passes through to the template as a variable; `bonsaiTrace: false` skips LLM trace wrapping for this call and everything it renders
 
 ## With Plugin
 
