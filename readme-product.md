@@ -1,6 +1,13 @@
-# Product Loader - Pure Twig Equivalent
+# Product Loader — `productTemplates()`
 
-How to replicate the `productTemplates()` function using native Twig if you remove the plugin.
+Full parameter reference, plus how to replicate the function using native Twig if you remove the plugin.
+
+## Parameters
+
+- `product` (required) — the Commerce product element
+- `path` — base path override (default `_product`, or `paths.product` in config)
+- `baseSite` — site handle to prefix paths for multi-site template trees
+- Any other key passes through to the template as a variable; `bonsaiTrace: false` skips LLM trace wrapping for this call
 
 ## With Plugin
 

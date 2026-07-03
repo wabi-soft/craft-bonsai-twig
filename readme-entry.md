@@ -1,6 +1,14 @@
-# Entry Loader - Pure Twig Equivalent
+# Entry Loader — `entryTemplates()`
 
-How to replicate the `entryTemplates()` function using native Twig if you remove the plugin.
+Full parameter reference, plus how to replicate the function using native Twig if you remove the plugin.
+
+## Parameters
+
+- `entry` (required) — the entry element
+- `path` — base path override (default `_entry`, or `paths.entry` in config)
+- `strategy` — `'section'` (default) or `'type'` for type-first resolution
+- `baseSite` — site handle to prefix paths for multi-site template trees
+- Any other key (`style`, `context`, `variables: {…}`, custom data) passes through to the template as a variable; `bonsaiTrace: false` skips LLM trace wrapping for this call
 
 ## With Plugin
 

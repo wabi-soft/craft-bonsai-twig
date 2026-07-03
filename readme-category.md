@@ -1,6 +1,13 @@
-# Category Loader - Pure Twig Equivalent
+# Category Loader — `categoryTemplates()`
 
-How to replicate the `categoryTemplates()` function using native Twig if you remove the plugin.
+Full parameter reference, plus how to replicate the function using native Twig if you remove the plugin.
+
+## Parameters
+
+- `entry` (required) — the category element (in Craft 5, categories are entries)
+- `path` — base path override (default `_category`, or `paths.category` in config)
+- `baseSite` — site handle to prefix paths for multi-site template trees
+- Any other key (`style`, custom data) passes through to the template as a variable; `bonsaiTrace: false` skips LLM trace wrapping for this call
 
 ## With Plugin
 

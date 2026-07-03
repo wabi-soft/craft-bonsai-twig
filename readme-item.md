@@ -1,6 +1,18 @@
-# Item Loader - Pure Twig Equivalent
+# Item Loader — `itemTemplates()`
 
-How to replicate the `itemTemplates()` function using native Twig if you remove the plugin.
+Full parameter reference, plus how to replicate the function using native Twig if you remove the plugin.
+
+## Parameters
+
+- `entry` (required) — the entry element to render as an item
+- `style` — style variant; participates in path resolution (see hierarchy below)
+- `ctx` — context element; adds context-aware paths (`…/ctx/{section}/{type}/…`)
+- `ctxPath` — context path segment (default `ctx`)
+- `strategy` — `'section'` (default) or `'type'` for type-first resolution
+- `path` — base path override (default `_item`, or `paths.item` in config)
+- `default` — fallback template name (default `default`)
+- `baseSite` — site handle to prefix paths for multi-site template trees
+- Any other key passes through to the template as a variable; `bonsaiTrace: false` skips LLM trace wrapping for this call
 
 ## With Plugin
 

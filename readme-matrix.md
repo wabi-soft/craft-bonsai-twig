@@ -1,6 +1,18 @@
-# Matrix Loader - Pure Twig Equivalent
+# Matrix Loader — `matrixTemplates()`
 
-How to replicate the `matrixTemplates()` function using native Twig if you remove the plugin.
+Full parameter reference, plus how to replicate the function using native Twig if you remove the plugin.
+
+## Parameters
+
+- `block` (required) — the matrix block (or nested entry in Craft 5)
+- `style` — style variant; adds `_matrix/style/{style}/{blockType}` to resolution
+- `handle` — handle variant; adds `_matrix/handle/{handle}/{blockType}` to resolution
+- `ctx` — parent context element; adds `_matrix/ctx/{section}/{type}/…` paths
+- `ctxPath` — context path segment (default `ctx`)
+- `path` — base path override (default `_matrix`, or `paths.matrix` in config)
+- `loopIndex` / `loopLength` — pass `loop.index0` / `loop.length` to expose a Twig-style `loop` variable inside the block template
+- `blockIndex`, `nextBlock`, `prevBlock`, `parentBlock` — position-aware resolution
+- Any other key (`entry`, `next`, `prev`, `isFirst`, `variables: {…}`, custom data) passes through to the template as a variable; `bonsaiTrace: false` skips LLM trace wrapping for this call
 
 ## With Plugin
 
@@ -52,9 +64,12 @@ How to replicate the `matrixTemplates()` function using native Twig if you remov
 
 The include checks templates in order (first match wins):
 
-1. `_matrix/style/{style}/{blockType}` - Style variation
-2. `_matrix/{blockType}` - Default for type
-3. `_matrix/default` - Fallback
+1. `_matrix/handle/{handle}/{blockType}` - Handle variation (if `handle` provided)
+2. `_matrix/style/{style}/{blockType}` - Style variation (if `style` provided)
+3. `_matrix/{blockType}` - Default for type
+4. `_matrix/default` - Fallback
+
+Context (`ctx`) and position (`blockIndex`) parameters add further paths ahead of the fallback.
 
 ## What You Lose
 

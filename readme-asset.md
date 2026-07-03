@@ -1,6 +1,28 @@
-# Asset Loader - Pure Twig Equivalent
+# Asset Loader — `assetTemplates()`
 
-How to replicate the `assetTemplates()` function using native Twig if you remove the plugin.
+Full parameter reference, plus how to replicate the function using native Twig if you remove the plugin.
+
+## Parameters
+
+- `asset` (required) — the asset element
+- `path` — base path override (default `_asset`, or `paths.asset` in config)
+- `baseSite` — site handle to prefix paths for multi-site template trees
+- Any other key passes through to the template as a variable; `bonsaiTrace: false` skips LLM trace wrapping for this call
+
+## Example Template Structure
+
+For an asset with volume `images`, folder `products/featured`, filename `hero.jpg`:
+
+```
+templates/_asset/
+  images/
+    products/
+      featured/
+        hero.twig       ← matches this file
+        default.twig    ← folder fallback
+    default.twig        ← volume fallback
+  default.twig          ← global fallback
+```
 
 ## With Plugin
 
