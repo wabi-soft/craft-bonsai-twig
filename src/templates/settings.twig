@@ -1,5 +1,7 @@
 {% import "_includes/forms" as forms %}
 
+{% set configWarning = "Overridden by config/bonsai-twig.php — changes saved here won't take effect."|t('bonsai-twig') %}
+
 {{ forms.radioGroupField({
     label: "Template Resolution Strategy"|t('bonsai-twig'),
     instructions: "<strong>Section-first</strong> uses section as the primary folder (default). <strong>Type-first</strong> uses entry type as the primary folder, aligning with Craft 5's standalone entry types. Can also be set per-template call."|t('bonsai-twig'),
@@ -7,34 +9,26 @@
     name: 'strategy',
     value: settings.strategy,
     disabled: 'strategy' in overrides,
-    warning: 'strategy' in overrides
-        ? "Overridden by config/bonsai-twig.php — changes saved here won't take effect."|t('bonsai-twig'),
+    warning: 'strategy' in overrides ? configWarning,
     options: [
         { label: 'Section-first (default)'|t('bonsai-twig'), value: 'section' },
         { label: 'Type-first (Craft 5)'|t('bonsai-twig'), value: 'type' },
     ],
 }) }}
 
-{% set llmOverridden = llmEnv is not null or 'llmMode' in overrides %}
-{% set llmEffective = llmEnv ?? settings.llmMode %}
-{% set llmWarnings = [] %}
-{% if llmEnv is not null %}
-    {% set llmWarnings = llmWarnings|merge(["Overridden by the BONSAI_LLM_MODE environment variable (currently {state}) — this toggle has no effect."|t('bonsai-twig', { state: llmEnv ? 'on' : 'off' })]) %}
-{% elseif 'llmMode' in overrides %}
-    {% set llmWarnings = llmWarnings|merge(["Overridden by config/bonsai-twig.php — changes saved here won't take effect."|t('bonsai-twig')]) %}
-{% endif %}
-{% if not devMode %}
-    {% set llmWarnings = llmWarnings|merge(["Dev mode is off, so trace comments won't emit regardless of this setting."|t('bonsai-twig')]) %}
-{% endif %}
+{% set llmOverrideWarning = llmEnv is not null
+    ? "Overridden by the BONSAI_LLM_MODE environment variable (currently {state}) — this toggle has no effect."|t('bonsai-twig', { state: llmEnv ? 'on' : 'off' })
+    : ('llmMode' in overrides ? configWarning : null) %}
+{% set devWarning = not devMode ? "Dev mode is off, so trace comments won't emit regardless of this setting."|t('bonsai-twig') : null %}
 
 {{ forms.lightswitchField({
-    label: "LLM trace comments"|t('bonsai-twig'),
+    label: "LLM Trace Comments"|t('bonsai-twig'),
     instructions: "Wraps Bonsai-resolved output in <code>&lt;!-- bonsai:start … --&gt;</code> comments so AI agents reading page source can map DOM back to templates. Dev-only — never emits in production."|t('bonsai-twig'),
     id: 'llmMode',
     name: 'llmMode',
-    on: llmEffective,
-    disabled: llmOverridden,
-    warning: llmWarnings is not empty ? llmWarnings|join(' '),
+    on: llmEnv ?? settings.llmMode,
+    disabled: llmOverrideWarning is not null,
+    warning: [llmOverrideWarning, devWarning]|filter(w => w)|join(' ') ?: null,
 }) }}
 
 
