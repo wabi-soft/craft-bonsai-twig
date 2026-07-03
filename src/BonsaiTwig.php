@@ -100,6 +100,9 @@ class BonsaiTwig extends Plugin
         return Craft::$app->view->renderTemplate('bonsai-twig/settings', [
             'plugin' => $this,
             'settings' => $this->getSettings(),
+            'overrides' => array_keys(Craft::$app->getConfig()->getConfigFromFile('bonsai-twig')),
+            'llmEnv' => App::parseBooleanEnv('$BONSAI_LLM_MODE'),
+            'devMode' => Craft::$app->getConfig()->general->devMode,
         ]);
     }
 
