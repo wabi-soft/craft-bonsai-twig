@@ -78,6 +78,13 @@ class Templates extends AbstractExtension
                 [$this, 'getTemplatePath'],
                 ['needs_context' => true, 'is_safe' => ['html']]
             ),
+            // Lets templates gate their own LLM-facing annotations (e.g. a
+            // component self-label macro) on the same devMode + llmMode switch
+            // as the trace comments.
+            new TwigFunction(
+                'bonsaiTraceEnabled',
+                [$plugin, 'traceEnabled']
+            ),
         ];
     }
 

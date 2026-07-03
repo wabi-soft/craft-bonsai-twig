@@ -295,6 +295,24 @@ A wrapped template rendering into JSON-LD, `<script>`, `<style>`, `<title>`, an 
 {{ entryTemplates({ entry, bonsaiTrace: false }) }}
 ```
 
+#### Labelling static components
+
+Trace comments mark dynamic resolutions only — plain `{% include %}`s are followed by reading source. For components included through *dynamic* names (or just for convenience), templates can self-label using `bonsaiTraceEnabled()`, which gates on the same devMode + llmMode switch:
+
+```twig
+{# Inline, inside any component #}
+{% if bonsaiTraceEnabled() %}<!-- cmp: {{ _self }} -->{% endif %}
+```
+
+```twig
+{# Or as a shared macro — note: _self inside a macro names the macro's own
+   file, so the caller must pass it #}
+{% macro cmp(tpl) %}{% if bonsaiTraceEnabled() %}<!-- cmp: {{ tpl }} -->{% endif %}{% endmacro %}
+
+{# In a component: #}
+{{ m.cmp(_self) }}
+```
+
 #### Agent consumption recipe
 
 [example.CLAUDE.md](example.CLAUDE.md) is a ready-to-append snippet for a consumer project's CLAUDE.md — the comment grammar, how to fetch raw source, nesting semantics, and how to read a fallthrough:
