@@ -11,7 +11,7 @@ namespace wabisoft\bonsaitwig\debug;
  *
  * Comment grammar:
  *
- *     <!-- bonsai:start id="3" tpl="default/_entry/foo/default" type="entry" el="foo#1234" -->
+ *     <!-- bonsai:start id="3" tpl="_entry/blog/blogPost" type="entry" el="blogPost#64" section="blog" -->
  *     …rendered template output…
  *     <!-- bonsai:end id="3" -->
  *
@@ -26,6 +26,11 @@ namespace wabisoft\bonsaitwig\debug;
 class TraceComment
 {
     /**
+     * Attribute output order; keys not listed here are dropped.
+     */
+    private const ATTR_ORDER = ['tpl', 'type', 'el', 'section', 'block', 'strategy', 'tried'];
+
+    /**
      * Per-request monotonic id; pairs match on it.
      */
     private static int $counter = 0;
@@ -34,24 +39,28 @@ class TraceComment
      * Wraps rendered content in a bonsai:start/end comment pair.
      *
      * @param string $content Rendered template output
-     * @param string $tpl Resolved (winning) template path
-     * @param string $type Template type (entry, item, matrix, category, product, asset)
-     * @param string|null $el "<typeOrGroupHandle>#<elementId>", omitted when null
-     * @param string $strategy Resolution strategy; attribute omitted for the default 'section'
+     * @param array<string, string|array<string>|null> $attrs Attribute map (see ATTR_ORDER).
+     *        Null values are omitted; array values (tried) are space-joined.
      */
-    public static function wrap(string $content, string $tpl, string $type, ?string $el, string $strategy): string
+    public static function wrap(string $content, array $attrs): string
     {
         $id = ++self::$counter;
 
-        $attrs = 'id="' . $id . '" tpl="' . self::esc($tpl) . '" type="' . self::esc($type) . '"';
-        if ($el !== null) {
-            $attrs .= ' el="' . self::esc($el) . '"';
-        }
-        if ($strategy !== 'section') {
-            $attrs .= ' strategy="' . self::esc($strategy) . '"';
+        $parts = ['id="' . $id . '"'];
+        foreach (self::ATTR_ORDER as $key) {
+            $value = $attrs[$key] ?? null;
+            if ($value === null || $value === [] || $value === '') {
+                continue;
+            }
+            if (is_array($value)) {
+                $value = implode(' ', $value);
+            }
+            $parts[] = $key . '="' . self::esc($value) . '"';
         }
 
-        return "<!-- bonsai:start {$attrs} -->\n{$content}\n<!-- bonsai:end id=\"{$id}\" -->";
+        $attrString = implode(' ', $parts);
+
+        return "<!-- bonsai:start {$attrString} -->\n{$content}\n<!-- bonsai:end id=\"{$id}\" -->";
     }
 
     /**

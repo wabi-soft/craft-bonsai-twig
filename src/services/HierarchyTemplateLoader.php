@@ -152,15 +152,27 @@ class HierarchyTemplateLoader extends Component
             if (($validatedVariables['bonsaiTrace'] ?? true) !== false
                 && $plugin->traceEnabled()
                 && !in_array($resolvedPath, $plugin->getSettings()->traceBlocklist, true)) {
-                [$elementId, $elementHandle] = self::elementInfo($validatedVariables);
-                $el = $elementId !== null ? ($elementHandle ?? $templateType->value) . '#' . $elementId : null;
-                $content = TraceComment::wrap(
-                    $content,
-                    $resolvedPath,
-                    $templateType->value,
-                    $el,
-                    (string) ($validatedVariables['_btStrategy'] ?? 'section'),
-                );
+                [$elementId, $elementHandle, $sectionHandle] = self::elementInfo($validatedVariables);
+
+                $block = $validatedVariables['block'] ?? null;
+                $blockId = $block?->id ?? null;
+                $blockAttr = $blockId !== null
+                    ? ($block?->type?->handle ?? 'block') . '#' . $blockId
+                    : null;
+
+                $strategy = (string) ($validatedVariables['_btStrategy'] ?? 'section');
+
+                $content = TraceComment::wrap($content, [
+                    'tpl' => $resolvedPath,
+                    'type' => $templateType->value,
+                    'el' => $elementId !== null ? ($elementHandle ?? $templateType->value) . '#' . $elementId : null,
+                    'section' => $sectionHandle,
+                    'block' => $blockAttr,
+                    'strategy' => $strategy !== 'section' ? $strategy : null,
+                    // More-specific candidates that missed before the winner —
+                    // empty (and omitted) when the most specific path won.
+                    'tried' => array_slice($finalAttemptedPaths, 0, -1),
+                ]);
             }
 
             // In dev mode, always add the beastmode keyboard shortcut (once per page load)
@@ -303,13 +315,14 @@ class HierarchyTemplateLoader extends Component
     }
 
     /**
-     * Resolves the element id and type/group handle from common loader variables.
+     * Resolves the element id, type/group handle, and section handle from
+     * common loader variables.
      *
      * Shared by the ResolutionCollector log and the LLM trace comment so the
      * trace never depends on the collector being active (beastmode-only).
      *
      * @param array<string, mixed> $variables Validated template variables
-     * @return array{0: int|null, 1: string|null} Element id and type/group handle
+     * @return array{0: int|null, 1: string|null, 2: string|null} Element id, type/group handle, section handle
      */
     private static function elementInfo(array $variables): array
     {
@@ -318,6 +331,7 @@ class HierarchyTemplateLoader extends Component
         return [
             $element?->id ?? null,
             $element?->type?->handle ?? $element?->group?->handle ?? null,
+            $element?->section?->handle ?? null,
         ];
     }
 
