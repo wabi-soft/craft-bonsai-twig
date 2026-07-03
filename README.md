@@ -249,21 +249,14 @@ Every loader call gains the overlay automatically — no template changes needed
 When enabled, every Bonsai-resolved render is bracketed in machine-parseable HTML comments mapping the rendered DOM back to the winning template and its resolution context — the same map the beastmode overlay shows, but inline in the page source, consumable by an LLM/agent:
 
 ```html
-<!-- bonsai:start id="3" tpl="_entry/blog/default" type="entry" el="blogPost#64" section="blog" tried="_entry/blog/blogPost/my-post _entry/blog/blogPost/_entry _entry/blog/my-post _entry/blog/blogPost" -->
+<!-- bonsai:start id="c4f9-3" tpl="_entry/blog/default" type="entry" el="blogPost#64" section="blog" tried="_entry/blog/blogPost/my-post|_entry/blog/blogPost/_entry|_entry/blog/my-post|_entry/blog/blogPost" -->
 …rendered template output…
-<!-- bonsai:end id="3" -->
+<!-- bonsai:end id="c4f9-3" -->
 ```
 
-- `id` — per-request counter; pairs match on it (nesting-safe)
-- `tpl` — resolved (winning) template path, relative to `templates/`
-- `type` — `entry` | `item` | `matrix` | `category` | `product` | `asset`
-- `el` — `<typeOrGroupHandle>#<elementId>`; omitted when no element id is known
-- `section` — section handle of the element; omitted when not applicable
-- `block` — `<blockTypeHandle>#<blockId>` on matrix renders (`el` is the owner)
-- `strategy` — only present when non-default (≠ `section`)
-- `tried` — space-separated, more-specific paths that missed before the winner; omitted when the most specific path won. A winner ending in `default` with a long `tried` list means a template you expected to exist doesn't.
+Pairs match on `id` (a per-page nonce + counter, so page content can't forge plausible pairs); nested loader calls yield nested pairs, so the comment tree mirrors the render tree. A page-level `<!-- bonsai:trace v="1" nonce="…" -->` marker is emitted whenever tracing is active — even on pages with no Bonsai renders. Comments carry paths, ids, and handles only — never field values.
 
-Comments carry paths, ids, and handles only — never field values. Nested loader calls yield nested pairs, so the comment tree mirrors the render tree.
+The full attribute grammar lives in [example.CLAUDE.md](example.CLAUDE.md) — the one file consuming agents read.
 
 #### Enabling
 
@@ -274,6 +267,8 @@ emit == devMode === true AND llmMode === true
 ```
 
 `llmMode` is the switch; `devMode` is the safety floor — trace comments **never** render in production, even with `BONSAI_LLM_MODE=true` in a production `.env`.
+
+> **Staging caveat:** `tried` enumerates your template tree and content-model handles in every page's source. Don't enable `llmMode` on internet-reachable staging servers that run `devMode=true`.
 
 Enable via any of (precedence: env > config file > CP setting):
 
