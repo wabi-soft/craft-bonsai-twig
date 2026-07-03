@@ -305,9 +305,15 @@ Trace comments mark dynamic resolutions only — plain `{% include %}`s are foll
 ```
 
 ```twig
-{# Or as a shared macro, e.g. templates/_macros/dev.twig — note: _self inside
-   a macro names the macro's own file, so the caller must pass it #}
-{% macro trace(tpl) %}{% if bonsaiTraceEnabled() %}<!-- cmp: {{ tpl }} -->{% endif %}{% endmacro %}
+{# Or as a shared macro, e.g. templates/_macros/dev.twig. This form calls the
+   plugin instance instead of the Twig function, so templates keep compiling
+   if the plugin is ever removed (an undefined Twig function is a
+   compile-time error). Note: _self inside a macro names the macro's own
+   file, so the caller must pass it. #}
+{% macro trace(tpl) -%}
+    {%- set bonsai = craft.app.plugins.getPlugin('bonsai-twig') -%}
+    {%- if bonsai and bonsai.traceEnabled() %}<!-- cmp: {{ tpl }} -->{% endif -%}
+{%- endmacro %}
 
 {# In a component: #}
 {% import '_macros/dev' as dev %}
