@@ -249,9 +249,9 @@ Every loader call gains the overlay automatically — no template changes needed
 When enabled, every Bonsai-resolved render is bracketed in machine-parseable HTML comments mapping the rendered DOM back to the winning template and its resolution context — the same map the beastmode overlay shows, but inline in the page source, consumable by an LLM/agent:
 
 ```html
-<!-- bonsai:start id="c4f9-3" tpl="_entry/blog/default" type="entry" el="blogPost#64" section="blog" tried="_entry/blog/blogPost/my-post|_entry/blog/blogPost/_entry|_entry/blog/my-post|_entry/blog/blogPost" -->
+<!-- bonsai:start id="c4f91a2b-3" tpl="_entry/blog/default" type="entry" el="blogPost#64" section="blog" tried="_entry/blog/blogPost/my-post|_entry/blog/blogPost/_entry|_entry/blog/my-post|_entry/blog/blogPost" -->
 …rendered template output…
-<!-- bonsai:end id="c4f9-3" -->
+<!-- bonsai:end id="c4f91a2b-3" -->
 ```
 
 Pairs match on `id` (a per-page nonce + counter, so page content can't forge plausible pairs); nested loader calls yield nested pairs, so the comment tree mirrors the render tree. A page-level `<!-- bonsai:trace v="1" nonce="…" -->` marker is emitted whenever tracing is active — even on pages with no Bonsai renders. Comments carry paths, ids, and handles only — never field values.

@@ -11,10 +11,10 @@ namespace wabisoft\bonsaitwig\debug;
  *
  * Comment grammar:
  *
- *     <!-- bonsai:trace v="1" nonce="c4f9" -->      (once per page when tracing is active)
- *     <!-- bonsai:start id="c4f9-3" tpl="_entry/blog/blogPost" type="entry" el="blogPost#64" section="blog" -->
+ *     <!-- bonsai:trace v="1" nonce="c4f91a2b" -->      (once per page when tracing is active)
+ *     <!-- bonsai:start id="c4f91a2b-3" tpl="_entry/blog/blogPost" type="entry" el="blogPost#64" section="blog" -->
  *     …rendered template output…
- *     <!-- bonsai:end id="c4f9-3" -->
+ *     <!-- bonsai:end id="c4f91a2b-3" -->
  *
  * Pairs match on id (same-template nesting makes tpl-matched ends ambiguous).
  * Ids are prefixed with a per-process random nonce so page content cannot
@@ -87,7 +87,7 @@ class TraceComment
 
     private static function nonce(): string
     {
-        return self::$nonce ??= bin2hex(random_bytes(2));
+        return self::$nonce ??= bin2hex(random_bytes(4));
     }
 
     /**

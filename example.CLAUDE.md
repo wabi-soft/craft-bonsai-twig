@@ -4,11 +4,11 @@ Dev pages carry a page-level marker plus id-matched HTML comments around every
 dynamically resolved template:
 
 ```html
-<!-- bonsai:start id="c4f9-4" tpl="_entry/default" type="entry" el="blogPost#64" section="blog" strategy="type" tried="_entry/blogPost/blog/my-post|_entry/blogPost|_entry/blog" -->
-  <!-- bonsai:start id="c4f9-1" tpl="_matrix/text" type="matrix" el="blogPost#64" block="text#123" --> … <!-- bonsai:end id="c4f9-1" -->
-<!-- bonsai:end id="c4f9-4" -->
+<!-- bonsai:start id="c4f91a2b-4" tpl="_entry/default" type="entry" el="blogPost#64" section="blog" strategy="type" tried="_entry/blogPost/blog/my-post|_entry/blogPost|_entry/blog" -->
+  <!-- bonsai:start id="c4f91a2b-1" tpl="_matrix/text" type="matrix" el="blogPost#64" block="text#123" --> … <!-- bonsai:end id="c4f91a2b-1" -->
+<!-- bonsai:end id="c4f91a2b-4" -->
 ...
-<!-- bonsai:trace v="1" nonce="c4f9" -->
+<!-- bonsai:trace v="1" nonce="c4f91a2b" -->
 ```
 
 - **Fetch raw source** — browser accessibility/text tools strip HTML comments.
