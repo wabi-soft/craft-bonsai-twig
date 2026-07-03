@@ -9,7 +9,7 @@
     name: 'strategy',
     value: settings.strategy,
     disabled: 'strategy' in overrides,
-    warning: 'strategy' in overrides ? configWarning,
+    warning: 'strategy' in overrides ? configWarning : null,
     options: [
         { label: 'Section-first (default)'|t('bonsai-twig'), value: 'section' },
         { label: 'Type-first (Craft 5)'|t('bonsai-twig'), value: 'type' },
