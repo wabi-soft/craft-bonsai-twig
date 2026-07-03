@@ -31,6 +31,15 @@ class Settings extends Model
     public array $paths = [];
 
     /**
+     * @var bool When true AND devMode is on, wrap Bonsai-resolved output in
+     * LLM trace comments mapping rendered DOM back to the winning template.
+     * Never emits in production. Overridable via config/bonsai-twig.php or
+     * the BONSAI_LLM_MODE env var (env > config > CP).
+     * @since 9.3.0
+     */
+    public bool $llmMode = false;
+
+    /**
      * Returns the resolved base path for a given element type.
      *
      * Resolution order: paths config map > TemplateType default.
@@ -53,7 +62,7 @@ class Settings extends Model
     {
         return [
             [['strategy'], 'in', 'range' => array_column(Strategy::cases(), 'value')],
-            [['nestByElementType'], 'boolean'],
+            [['llmMode'], 'boolean'],
             [['paths'], function($attribute): void {
                 $validKeys = array_column(TemplateType::cases(), 'value');
                 foreach ($this->$attribute as $k => $v) {

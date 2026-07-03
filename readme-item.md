@@ -1,6 +1,18 @@
-# Item Loader - Pure Twig Equivalent
+# Item Loader — `itemTemplates()`
 
-How to replicate the `itemTemplates()` function using native Twig if you remove the plugin.
+Full parameter reference, plus how to replicate the function using native Twig if you remove the plugin.
+
+## Parameters
+
+- `entry` (required) — the entry element to render as an item
+- `style` — style variant; participates in path resolution (see hierarchy below)
+- `ctx` — context element; adds context-aware paths (`…/ctx/{section}/{type}/…`)
+- `ctxPath` — context path segment (default `ctx`)
+- `strategy` — `'section'` (default) or `'type'` for type-first resolution
+- `path` — base path override (default `_item`, or `paths.item` in config)
+- `default` — fallback template name (default `default`)
+- `baseSite` — site handle to prefix paths for multi-site template trees
+- Any other key passes through to the template as a variable; `bonsaiTrace: false` skips LLM trace wrapping for this call and everything it renders
 
 ## With Plugin
 
@@ -20,32 +32,32 @@ How to replicate the `itemTemplates()` function using native Twig if you remove 
 
 ```twig
 {% set itemPath = '_item/' %}
-{% set style = style is defined ? style : 'none' %}
+{% set style = style ?? null %}
 
 {% include [
-    itemPath ~ entry.section.handle ~ '/' ~ style,
-    itemPath ~ style,
+    style ? itemPath ~ entry.section.handle ~ '/' ~ style : '',
+    style ? itemPath ~ style : '',
     itemPath ~ entry.section.handle ~ '/' ~ entry.type.handle ~ '/' ~ entry.slug,
     itemPath ~ entry.section.handle ~ '/' ~ entry.type.handle,
     itemPath ~ entry.section.handle ~ '/default',
     itemPath ~ 'default'
-] ignore missing %}
+]|filter(v => v != '') ignore missing %}
 ```
 
 ### Type-first (v8.0)
 
 ```twig
 {% set itemPath = '_item/' %}
-{% set style = style is defined ? style : 'none' %}
+{% set style = style ?? null %}
 
 {% include [
-    itemPath ~ entry.type.handle ~ '/' ~ style,
-    itemPath ~ style,
+    style ? itemPath ~ entry.type.handle ~ '/' ~ style : '',
+    style ? itemPath ~ style : '',
     itemPath ~ entry.type.handle ~ '/' ~ entry.section.handle ~ '/' ~ entry.slug,
     itemPath ~ entry.type.handle ~ '/' ~ entry.section.handle,
     itemPath ~ entry.type.handle ~ '/default',
     itemPath ~ 'default'
-] ignore missing %}
+]|filter(v => v != '') ignore missing %}
 ```
 
 ## Template Path Resolution
@@ -89,27 +101,27 @@ Pure Twig equivalent:
 
 ```twig
 {% set itemPath = '_item/' %}
-{% set style = style is defined ? style : 'none' %}
+{% set style = style ?? null %}
 {% if entry.section.handle in ['blog', 'resources'] %}
     {# type-first #}
     {% include [
-        itemPath ~ entry.type.handle ~ '/' ~ style,
-        itemPath ~ style,
+        style ? itemPath ~ entry.type.handle ~ '/' ~ style : '',
+        style ? itemPath ~ style : '',
         itemPath ~ entry.type.handle ~ '/' ~ entry.section.handle ~ '/' ~ entry.slug,
         itemPath ~ entry.type.handle ~ '/' ~ entry.section.handle,
         itemPath ~ entry.type.handle ~ '/default',
         itemPath ~ 'default'
-    ] ignore missing %}
+    ]|filter(v => v != '') ignore missing %}
 {% else %}
     {# section-first #}
     {% include [
-        itemPath ~ entry.section.handle ~ '/' ~ style,
-        itemPath ~ style,
+        style ? itemPath ~ entry.section.handle ~ '/' ~ style : '',
+        style ? itemPath ~ style : '',
         itemPath ~ entry.section.handle ~ '/' ~ entry.type.handle ~ '/' ~ entry.slug,
         itemPath ~ entry.section.handle ~ '/' ~ entry.type.handle,
         itemPath ~ entry.section.handle ~ '/default',
         itemPath ~ 'default'
-    ] ignore missing %}
+    ]|filter(v => v != '') ignore missing %}
 {% endif %}
 ```
 

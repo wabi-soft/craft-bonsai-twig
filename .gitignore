@@ -5,4 +5,5 @@
 /.kiro
 /.vscode
 /.phpunit.cache
-docs
+/docs
+/todos/*

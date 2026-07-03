@@ -11,6 +11,7 @@ use craft\helpers\App;
 use craft\web\View;
 use wabisoft\bonsaitwig\debug\BonsaiTwigPanel;
 use wabisoft\bonsaitwig\debug\ResolutionCollector;
+use wabisoft\bonsaitwig\debug\TraceComment;
 use wabisoft\bonsaitwig\models\Settings;
 use wabisoft\bonsaitwig\services\AssetLoader;
 use wabisoft\bonsaitwig\services\CategoryLoader;
@@ -33,6 +34,7 @@ use yii\base\Event;
  * @author Wabisoft
  * @since 6.4.0
  * @method static BonsaiTwig getInstance()
+ * @method Settings getSettings()
  * @property-read EntryLoader $entryLoader Service for loading entry-based templates
  * @property-read CategoryLoader $categoryLoader Service for loading category-based templates
  * @property-read ItemLoader $itemLoader Service for loading item-based templates
@@ -69,6 +71,24 @@ class BonsaiTwig extends Plugin
     }
 
     /**
+     * Whether LLM trace comments should be emitted for this request.
+     *
+     * llmMode is the switch; devMode is the safety floor — never drop the
+     * devMode check. Production must never emit trace comments, even with
+     * BONSAI_LLM_MODE=true in the environment.
+     *
+     * @since 9.3.0
+     */
+    public function traceEnabled(): bool
+    {
+        if (!Craft::$app->getConfig()->general->devMode) {
+            return false;
+        }
+
+        return App::parseBooleanEnv('$BONSAI_LLM_MODE') ?? (bool) $this->getSettings()->llmMode;
+    }
+
+    /**
      * Returns the rendered settings HTML, which will be inserted into the content
      * block on the settings page.
      *
@@ -76,9 +96,14 @@ class BonsaiTwig extends Plugin
      */
     protected function settingsHtml(): string
     {
-        return Craft::$app->view->renderTemplate('_bonsai-twig/settings', [
+        // CP requests resolve plugin templates via the auto-registered handle
+        // root, not the site-only _bonsai-twig root.
+        return Craft::$app->view->renderTemplate('bonsai-twig/settings', [
             'plugin' => $this,
             'settings' => $this->getSettings(),
+            'overrides' => array_keys(Craft::$app->getConfig()->getConfigFromFile('bonsai-twig')),
+            'llmEnv' => App::parseBooleanEnv('$BONSAI_LLM_MODE'),
+            'devMode' => Craft::$app->getConfig()->general->devMode,
         ]);
     }
 
@@ -208,6 +233,19 @@ class BonsaiTwig extends Plugin
                     // Underscore prefix is intentional — prevents direct URL access to plugin templates.
                     // This is distinct from the plugin handle ('bonsai-twig').
                     $event->roots['_bonsai-twig'] = __DIR__ . '/templates';
+                }
+            );
+
+            // Page-level trace marker: emitted even when the page has no
+            // Bonsai renders, so an agent can tell "tracing off" from "no
+            // dynamically resolved templates here".
+            Event::on(
+                View::class,
+                View::EVENT_BEFORE_RENDER_PAGE_TEMPLATE,
+                function(): void {
+                    if ($this->traceEnabled() && Craft::$app->request->getIsSiteRequest()) {
+                        Craft::$app->view->registerHtml(TraceComment::marker(), View::POS_END, 'bonsai-trace-marker');
+                    }
                 }
             );
         }
