@@ -314,7 +314,7 @@ return [
 [example.CLAUDE.md](example.CLAUDE.md) is a ready-to-append snippet for a consumer project's CLAUDE.md — the comment grammar, how to fetch raw source, nesting semantics, and how to read a fallthrough:
 
 ```bash
-cat _dev/plugins/craft-bonsai-twig/example.CLAUDE.md >> CLAUDE.md
+cat vendor/wabisoft/craft-bonsai-twig/example.CLAUDE.md >> CLAUDE.md
 ```
 
 ## Integration with Craft 5
