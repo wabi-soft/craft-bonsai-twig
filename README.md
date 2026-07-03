@@ -249,7 +249,7 @@ Every loader call gains the overlay automatically — no template changes needed
 When enabled, every Bonsai-resolved render is bracketed in machine-parseable HTML comments mapping the rendered DOM back to the winning template and its resolution context — the same map the beastmode overlay shows, but inline in the page source, consumable by an LLM/agent:
 
 ```html
-<!-- bonsai:start id="3" tpl="default/_entry/solutionsIndex/default" type="entry" el="solutionsIndex#1234" -->
+<!-- bonsai:start id="3" tpl="_entry/blog/default" type="entry" el="blogPost#64" section="blog" tried="_entry/blog/blogPost/my-post _entry/blog/blogPost/_entry _entry/blog/my-post _entry/blog/blogPost" -->
 …rendered template output…
 <!-- bonsai:end id="3" -->
 ```
@@ -258,7 +258,10 @@ When enabled, every Bonsai-resolved render is bracketed in machine-parseable HTM
 - `tpl` — resolved (winning) template path, relative to `templates/`
 - `type` — `entry` | `item` | `matrix` | `category` | `product` | `asset`
 - `el` — `<typeOrGroupHandle>#<elementId>`; omitted when no element id is known
+- `section` — section handle of the element; omitted when not applicable
+- `block` — `<blockTypeHandle>#<blockId>` on matrix renders (`el` is the owner)
 - `strategy` — only present when non-default (≠ `section`)
+- `tried` — space-separated, more-specific paths that missed before the winner; omitted when the most specific path won. A winner ending in `default` with a long `tried` list means a template you expected to exist doesn't.
 
 Comments carry paths, ids, and handles only — never field values. Nested loader calls yield nested pairs, so the comment tree mirrors the render tree.
 
@@ -311,14 +314,26 @@ return [
 ```markdown
 ## Template debugging (Bonsai trace comments)
 
-- Dev pages emit `<!-- bonsai:start id="…" tpl="…" type="…" el="…" -->` /
-  `<!-- bonsai:end id="…" -->` pairs around each dynamically resolved template.
+- Dev pages emit `<!-- bonsai:start id="…" … -->` / `<!-- bonsai:end id="…" -->`
+  pairs around each dynamically resolved template. Pairs match on `id`; pairs
+  nest, so the comment tree mirrors the render tree.
 - Browser accessibility/text tools strip HTML comments — fetch the raw source
   instead (`curl <url>`, `ddev exec curl <url>`, or
-  `document.documentElement.outerHTML`).
+  `document.documentElement.outerHTML`). Extract the full trace with:
+  `curl -s <url> | grep -o '<!-- bonsai:start[^>]*-->'`
+- Attributes: `tpl` (winning template, relative to `templates/`), `type`
+  (entry/item/matrix/category/product/asset), `el` (`typeHandle#id`),
+  `section` (section handle), `block` (`blockType#id` on matrix renders),
+  `strategy` (only when non-default), `tried` (more-specific paths that missed
+  before the winner; omitted when the most specific path won).
 - To map a DOM chunk to its source: find the nearest enclosing `bonsai:start`,
-  open the `tpl` path (relative to `templates/`), then follow plain
-  `{% include %}`/`{% embed %}` statically in the source.
+  open the `tpl` path, then follow plain `{% include %}`/`{% embed %}`
+  statically in the source.
+- Reading a fallthrough: if `tpl` ends in `default` and `tried` is long, a
+  more specific template was expected but doesn't exist — check `tried` for the
+  path that *should* have won (e.g. a section-first-shaped file in a
+  type-first-resolved section). This catches "page renders fine but the wrong
+  template is silently serving it" bugs.
 - Requires `devMode` + the plugin's `llmMode` setting (or `BONSAI_LLM_MODE=true`).
 ```
 
