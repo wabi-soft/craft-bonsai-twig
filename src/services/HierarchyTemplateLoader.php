@@ -12,6 +12,7 @@ use wabisoft\bonsaitwig\BonsaiTwig;
 use wabisoft\bonsaitwig\debug\ResolutionCollector;
 use wabisoft\bonsaitwig\debug\TraceComment;
 
+use wabisoft\bonsaitwig\enums\Strategy;
 use wabisoft\bonsaitwig\enums\TemplateType;
 use wabisoft\bonsaitwig\exceptions\TemplateNotFoundException;
 use wabisoft\bonsaitwig\utilities\InputValidator;
@@ -64,7 +65,8 @@ class HierarchyTemplateLoader extends Component
      * - Zero production overhead (debug features disabled in production)
      *
      * @param array<string> $templates Array of template paths to try loading in priority order
-     * @param array<string, mixed> $variables Variables to pass to the template for rendering
+     * @param array<string, mixed> $variables Variables to pass to the template for rendering.
+     *        bonsaiTrace: false suppresses LLM trace comments for this render and its descendants.
      * @param TemplateType|string $type Type of template being loaded (entry, category, item, matrix)
      * @return string The rendered template content or empty string if no template found
      *
@@ -119,7 +121,7 @@ class HierarchyTemplateLoader extends Component
 
         if (ResolutionCollector::isActive()) {
             $strategy = (string) ($validatedVariables['_btStrategy'] ?? 'section');
-            [$elementId, $elementHandle] = self::elementInfo($validatedVariables);
+            [$elementId, $elementHandle] = self::elementIdentity($validatedVariables);
             ResolutionCollector::log(
                 $templateType->value,
                 $strategy,
@@ -170,27 +172,7 @@ class HierarchyTemplateLoader extends Component
             if (!$traceOptedOut
                 && self::$traceSuppressed === 0
                 && $plugin->traceEnabled()) {
-                [$elementId, $elementHandle, $sectionHandle] = self::elementInfo($validatedVariables);
-
-                $block = $validatedVariables['block'] ?? null;
-                $blockId = $block?->id ?? null;
-                $blockAttr = $blockId !== null
-                    ? ($block?->type?->handle ?? 'block') . '#' . $blockId
-                    : null;
-
-                $strategy = (string) ($validatedVariables['_btStrategy'] ?? 'section');
-
-                $content = TraceComment::wrap($content, [
-                    'tpl' => $resolvedPath,
-                    'type' => $templateType->value,
-                    'el' => $elementId !== null ? ($elementHandle ?? $templateType->value) . '#' . $elementId : null,
-                    'section' => $sectionHandle,
-                    'block' => $blockAttr,
-                    'strategy' => $strategy !== 'section' ? $strategy : null,
-                    // More-specific candidates that missed before the winner —
-                    // empty (and omitted) when the most specific path won.
-                    'tried' => array_slice($finalAttemptedPaths, 0, -1),
-                ]);
+                $content = self::wrapTrace($content, $resolvedPath, $templateType, $validatedVariables, $finalAttemptedPaths);
             }
 
             // In dev mode, always add the beastmode keyboard shortcut (once per page load)
@@ -333,22 +315,59 @@ class HierarchyTemplateLoader extends Component
     }
 
     /**
-     * Resolves the element id, type/group handle, and section handle from
-     * common loader variables.
+     * Wraps rendered output in an LLM trace comment pair.
+     *
+     * @param array<string, mixed> $variables Validated template variables
+     * @param array<string> $attemptedPaths Candidate paths, winner last
+     */
+    private static function wrapTrace(string $content, string $resolvedPath, TemplateType $templateType, array $variables, array $attemptedPaths): string
+    {
+        [$elementId, $elementHandle, $sectionHandle] = self::elementIdentity($variables);
+
+        $block = $variables['block'] ?? null;
+        $blockId = $block?->id ?? null;
+
+        // Matrix comments carry the block itself in `block`; `el` is the
+        // owner, derived when the calling template didn't pass it.
+        if ($elementId === null && $blockId !== null) {
+            $owner = $block?->owner ?? null;
+            $elementId = $owner?->id ?? null;
+            $elementHandle = $owner?->type?->handle ?? null;
+            $sectionHandle = $owner?->section?->handle ?? null;
+        }
+
+        $strategy = (string) ($variables['_btStrategy'] ?? Strategy::SECTION->value);
+
+        return TraceComment::wrap($content, [
+            'tpl' => $resolvedPath,
+            'type' => $templateType->value,
+            'el' => $elementId !== null ? ($elementHandle ?? $templateType->value) . '#' . $elementId : null,
+            'section' => $sectionHandle,
+            'block' => $blockId !== null ? ($block?->type?->handle ?? 'block') . '#' . $blockId : null,
+            'strategy' => $strategy !== Strategy::SECTION->value ? $strategy : null,
+            // More-specific candidates that missed before the winner —
+            // empty (and omitted) when the most specific path won.
+            'tried' => array_slice($attemptedPaths, 0, -1),
+        ]);
+    }
+
+    /**
+     * Resolves the element id, type/group/volume handle, and section handle
+     * from common loader variables.
      *
      * Shared by the ResolutionCollector log and the LLM trace comment so the
      * trace never depends on the collector being active (beastmode-only).
      *
      * @param array<string, mixed> $variables Validated template variables
-     * @return array{0: int|null, 1: string|null, 2: string|null} Element id, type/group handle, section handle
+     * @return array{0: int|null, 1: string|null, 2: string|null} Element id, type/group/volume handle, section handle
      */
-    private static function elementInfo(array $variables): array
+    private static function elementIdentity(array $variables): array
     {
         $element = $variables['entry'] ?? $variables['category'] ?? $variables['asset'] ?? $variables['product'] ?? null;
 
         return [
             $element?->id ?? null,
-            $element?->type?->handle ?? $element?->group?->handle ?? null,
+            $element?->type?->handle ?? $element?->group?->handle ?? $element?->volume?->handle ?? null,
             $element?->section?->handle ?? null,
         ];
     }
