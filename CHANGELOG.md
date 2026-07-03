@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ## [9.3.0](https://github.com/wabi-soft/craft-bonsai-twig/compare/v9.2.6...v9.3.0) (2026-07-03)
 
+- Add LLM trace comments: dev-only, opt-in HTML comments mapping rendered DOM back to the winning template (`llmMode` setting, `BONSAI_LLM_MODE` env override, `bonsaiTrace: false` per-call opt-out)
+- Add page-level `bonsai:trace` marker with nonce-authenticated pair ids
+- Add `bonsaiTraceEnabled()` Twig function for project-side dev annotations
+- Add `example.CLAUDE.md` agent consumption recipe
+- Fix settings page failing to render (CP template path)
+- Show config/env override warnings and effective state on the settings page
 
 ---
 
