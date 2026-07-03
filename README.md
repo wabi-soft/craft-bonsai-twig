@@ -12,16 +12,18 @@ Welcome to the **Bonsai Twig Plugin** README! This plugin is designed as a **dev
 - **LLM Trace Comments**: Opt-in, dev-only HTML comments mapping rendered DOM back to the winning template, consumable by AI agents reading page source
 - **Zero Production Overhead**: Debug features return empty strings in production mode
 
-## Pure Twig Equivalents
+## Function Reference
 
-If you need to remove the plugin, see these guides for native Twig replacements:
+Each loader has its own doc with the full parameter list, resolution hierarchy, and a pure-Twig replacement if you ever remove the plugin:
 
-- [Entry Templates](readme-entry.md) - `entryTemplates()`
-- [Category Templates](readme-category.md) - `categoryTemplates()`
-- [Item Templates](readme-item.md) - `itemTemplates()`
-- [Matrix Templates](readme-matrix.md) - `matrixTemplates()`
-- [Asset Templates](readme-asset.md) - `assetTemplates()`
-- [Product Templates](readme-product.md) - `productTemplates()`
+- [`entryTemplates()`](readme-entry.md)
+- [`categoryTemplates()`](readme-category.md)
+- [`itemTemplates()`](readme-item.md)
+- [`matrixTemplates()`](readme-matrix.md)
+- [`assetTemplates()`](readme-asset.md)
+- [`productTemplates()`](readme-product.md)
+
+Also: [MIGRATION.md](MIGRATION.md) (v8 → v9 upgrade) · [CHANGELOG.md](CHANGELOG.md)
 
 ## Requirements
 
@@ -100,22 +102,6 @@ return [
 ];
 ```
 
-**Upgrading from v8?** To keep your existing template directories working without renaming them:
-
-```php
-// config/bonsai-twig.php
-return [
-    'paths' => [
-        'entry'    => 'entry',
-        'item'     => 'item',
-        'category' => 'category',
-        'matrix'   => 'matrix',
-        'asset'    => 'asset',
-        'product'  => 'product',
-    ],
-];
-```
-
 **3. Control Panel:**
 
 Radio buttons in Settings > Bonsai Twig > Template Resolution Strategy.
@@ -137,34 +123,7 @@ For an entry with section `blog` and type `article`:
 | 7 | `_entry/article` | `_entry/blog` |
 | 8 | `_entry/default` | `_entry/default` |
 
-### Mixed Strategies
-
-You can use both strategies in the same project. Set a global default via config, then override per-template:
-
-```twig
-{# Most templates use global strategy (e.g., 'type') #}
-{{ entryTemplates({ entry: entry }) }}
-
-{# This one overrides to section-first #}
-{{ entryTemplates({ entry: entry, strategy: 'section' }) }}
-```
-
-#### Per-Section Strategy
-
-Use a conditional to pick the strategy based on the current section:
-
-```twig
-{# Sections with shared entry types use type-first; the rest use section-first #}
-{% set strategy = entry.section.handle in ['blog', 'resources'] ? 'type' : 'section' %}
-{{ entryTemplates({ entry: entry, strategy: strategy }) }}
-```
-
-The same pattern works with `itemTemplates()`:
-
-```twig
-{% set strategy = item.section.handle in ['blog', 'resources'] ? 'type' : 'section' %}
-{{ itemTemplates({ entry: item, strategy: strategy }) }}
-```
+Strategies can be mixed — set a global default, then override per template call or per section. Patterns in [readme-entry.md](readme-entry.md) and [readme-item.md](readme-item.md).
 
 ### Which Loaders Support Strategy?
 
@@ -180,353 +139,69 @@ The same pattern works with `itemTemplates()`:
 
 ## Usage Guide
 
-### Core Template Functions
+Six loader functions, one pattern: pass the element, get the most specific template that exists. Each heading links to the full reference (all parameters, complete hierarchy).
 
-The plugin provides five main Twig functions for hierarchical template loading:
-
-#### 1. Entry Templates
+### Entry — [`entryTemplates()`](readme-entry.md)
 
 ```twig
 {{ entryTemplates({ entry }) }}
+{{ entryTemplates({ entry, style: 'featured', strategy: 'type' }) }}
 ```
 
-**Description**: Loads templates for entry elements with intelligent hierarchy resolution.
-
-**Parameters**:
-
-- `entry` (Entry): The entry element to render
-- `path` (string, optional): Custom template path override
-- `strategy` (string, optional): `'section'` (default) or `'type'` for type-first resolution
-- `style` (string, optional): Style variant (forwarded to the template; does not alter Entry path resolution)
-- `context` (Element, optional): Additional context element
-- `baseSite` (string, optional): Base site handle for multi-site setups
-- `variables` (array, optional): Additional variables to pass to the template
-  **Example**:
+### Category — [`categoryTemplates()`](readme-category.md)
 
 ```twig
-{# Basic usage #}
-{{ entryTemplates({ entry }) }}
-
-{# With custom path and style #}
-{{ entryTemplates({
-    entry: entry,
-    path: 'custom/path',
-    style: 'featured'
-}) }}
-
-{# With type-first strategy #}
-{{ entryTemplates({
-    entry: entry,
-    strategy: 'type'
-}) }}
-
-{# With additional context #}
-{{ entryTemplates({
-    entry: entry,
-    context: parentEntry,
-    variables: { customVar: 'value' }
-}) }}
-```
-
-#### 2. Category Templates
-
-```twig
-{{ categoryTemplates({ entry }) }}
-```
-
-**Description**: Loads templates for category elements (in Craft 5, categories are entries).
-
-**Parameters**: Same as `entryTemplates`
-
-**Example**:
-
-```twig
-{# Basic category rendering #}
 {{ categoryTemplates({ entry: category }) }}
-
-{# Category with style variant #}
-{{ categoryTemplates({
-    entry: category,
-    style: 'card'
-}) }}
 ```
 
-#### 3. Item Templates
+### Item — [`itemTemplates()`](readme-item.md)
+
+For related/nested entries; `style` participates in path resolution.
 
 ```twig
-{{ itemTemplates({ entry }) }}
-```
-
-**Description**: Specialized template loading for nested entry relationships and complex hierarchies.
-
-**Parameters**: Same as `entryTemplates`
-
-**Example**:
-
-```twig
-{# Render related items #}
 {% for item in entry.relatedItems.all() %}
-    {{ itemTemplates({ entry: item }) }}
+    {{ itemTemplates({ entry: item, style: 'compact' }) }}
 {% endfor %}
-
-{# Item with context awareness #}
-{{ itemTemplates({
-    entry: item,
-    context: parentEntry,
-    style: 'compact'
-}) }}
-
-{# Item with type-first strategy #}
-{{ itemTemplates({
-    entry: item,
-    strategy: 'type'
-}) }}
 ```
 
-#### 4. Matrix Templates
+### Matrix — [`matrixTemplates()`](readme-matrix.md)
+
+Style-, handle-, context-, and position-aware. Pass `loopIndex`/`loopLength` to expose a `loop` variable inside block templates.
 
 ```twig
-{{ matrixTemplates({ block }) }}
-```
-
-**Description**: Advanced template loading for Matrix blocks with style and context awareness.
-
-**Parameters**:
-
-- `block` (MatrixBlock): The matrix block to render
-- `style` (string, optional): Style variant for the block
-- `ctx` or `context` (Element, optional): Parent context element
-- `loopIndex` (int, optional): Current loop iteration (0-indexed) for Twig loop variable
-- `loopLength` (int, optional): Total number of items in loop for Twig loop variable
-- `variables` (array, optional): Additional variables to pass to the template
-- `next` (string, optional): Next block type for navigation
-- `prev` (string, optional): Previous block type for navigation
-- `isFirst` (bool, optional): Whether this is the first block
-- `entry` (Entry, optional): Parent entry element
-- `variables` (array, optional): Additional template variables
-
-**Basic Example**:
-
-```twig
-{# Simple matrix block rendering #}
 {% for block in entry.matrixField.all() %}
-    {{ matrixTemplates({ block: block }) }}
+    {{ matrixTemplates({
+        block: block,
+        ctx: entry,
+        loopIndex: loop.index0,
+        loopLength: loop.length,
+    }) }}
 {% endfor %}
 ```
 
-**Advanced Example**:
+### Asset — [`assetTemplates()`](readme-asset.md)
+
+Resolves by volume → folder → filename.
 
 ```twig
-{# Advanced matrix with full context and loop variables #}
-{% if entry.matrixField|length %}
-    {% set style = style ?? null %}
-    {% for block in entry.matrixField.all() %}
-        {{ matrixTemplates({
-            block: block,
-            style: style,
-            loopIndex: loop.index0,    {# Pass current iteration (0-indexed) #}
-            loopLength: loop.length,   {# Pass total number of blocks #}
-            ctx: entry,
-            next: block.next.type ?? false,
-            prev: block.prev.type ?? false,
-            isFirst: loop.first,
-            context: context|default('basic'),
-            entry: entry,
-            variables: {
-                customData: customValue,
-                sectionHandle: entry.section.handle,
-                blockPosition: loop.index,
-                totalBlocks: loop.length
-            }
-        }) }}
-    {% endfor %}
-{% endif %}
-```
-
-**Variables Parameter**:
-
-You can pass additional variables using either approach:
-
-```twig
-{# Approach 1: Direct parameters (backward compatible) #}
-{{ matrixTemplates({
-    block: block,
-    customData: 'some value',
-    sectionHandle: entry.section.handle
-}) }}
-
-{# Approach 2: Using variables parameter (recommended) #}
-{{ matrixTemplates({
-    block: block,
-    loopIndex: loop.index0,
-    loopLength: loop.length,
-    variables: {
-        customData: 'some value',
-        sectionHandle: entry.section.handle,
-        blockPosition: loop.index
-    }
-}) }}
-```
-
-Both approaches make the variables available in your matrix template. The `variables` parameter is useful for organizing custom data separately from system parameters.
-
-#### 5. Asset Templates
-
-```twig
-{{ assetTemplates({ asset }) }}
-```
-
-**Description**: Loads templates for Craft asset elements with intelligent hierarchy based on volume, folder, and filename.
-
-**Parameters**:
-
-- `asset` (Asset): The asset element to render
-- `path` (string, optional): Custom template path override (defaults to 'asset')
-- `baseSite` (string, optional): Base site handle for multi-site setups
-
-**Template Hierarchy**:
-
-The asset loader checks for templates in this order:
-
-1. `asset/{volume}/{folder}/{filename}` - Most specific match for a particular file
-2. `asset/{volume}/{filename}` - For assets in root of volume (no folder)
-3. `asset/{volume}/{folder}/default` - Default template for a specific folder
-4. `asset/{volume}/default` - Default template for the volume
-5. `asset/{volume}` - Volume-level template
-6. `asset/default` - Global fallback
-
-**Example Usage**:
-
-```twig
-{# Basic asset rendering #}
 {{ assetTemplates({ asset: image }) }}
-
-{# Render images in a gallery #}
-{% for image in entry.gallery.all() %}
-    {{ assetTemplates({ asset: image }) }}
-{% endfor %}
-
-{# Custom path #}
-{{ assetTemplates({
-    asset: document,
-    path: 'downloads'
-}) }}
-
-{# Multi-site support #}
-{{ assetTemplates({
-    asset: image,
-    baseSite: 'fr'
-}) }}
 ```
 
-**Example Template Structure**:
+### Product — [`productTemplates()`](readme-product.md)
 
-For an asset with volume `images`, folder `products/featured`, filename `hero.jpg`:
-
-```
-templates/
-  asset/
-    images/
-      products/
-        featured/
-          hero.twig           ← Matches specific file
-          default.twig        ← Folder fallback
-      default.twig            ← Volume fallback
-    default.twig              ← Global fallback
+```twig
+{{ productTemplates({ product }) }}
 ```
 
-**Use Cases**:
+### Template Path Display — `btPath()`
 
-- Custom rendering for different asset types (images, videos, PDFs)
-- Volume-specific templates (e.g., different rendering for "documents" vs "images")
-- Folder-based organization (e.g., "products" vs "blog" assets)
-- File-specific templates for important assets
-
-### 6. Enhanced Template Path Display (`btPath()`)
-
-The `btPath()` function has been enhanced to provide complete HTML output with styling, eliminating the need for manual Twig wrapping. This is particularly useful for item and matrix templates where you need to quickly identify which template is being used.
-
-**Key Features:**
-- **Complete HTML Output**: Returns formatted HTML with styling instead of plain text
-- **Automatic Context Detection**: Shows appropriate template type (Matrix, Entry, Category, Item)
-- **Zero Production Overhead**: Returns empty string in production mode
-- **No Manual Wrapping**: No need for conditional blocks or manual HTML
-
-#### Enhanced Usage Examples
-
-##### Simple Usage (New - Recommended)
-Just call the function directly - it returns complete HTML:
+Returns a self-styled HTML block listing every attempted path with the resolved one marked ✓. Call it anywhere in a template — no wrapping needed; returns an empty string in production.
 
 ```twig
 {{ btPath() }}
-```
 
-This automatically outputs styled HTML like:
-```html
-<div class="bt-debug-output" id="bt-debug-abc123">
-<style>
-#bt-debug-abc123 {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-size: 12px;
-  background: #1e1e1e;
-  color: #d4d4d4;
-  border: 1px solid #454545;
-  border-radius: 6px;
-  padding: 12px;
-  margin: 8px 0;
-}
-/* Additional scoped styles... */
-</style>
-<div class="bt-debug-header">Matrix Block Template</div>
-<ul class="bt-debug-list">
-  <li class="bt-debug-item bt-debug-item--missing">→ matrix/textBlock--hero.twig</li>
-  <li class="bt-debug-item bt-debug-item--resolved">✓ matrix/textBlock.twig</li>
-  <li class="bt-debug-item bt-debug-item--missing">→ matrix/default.twig</li>
-</ul>
-</div>
-```
-
-The output includes:
-- A unique `id` attribute to scope CSS and avoid conflicts
-- Inline `<style>` block with scoped selectors
-- Dark theme styling for developer-friendly display
-- Visual indicators: ✓ for resolved template, → for attempts
-
-##### Legacy Usage (Manual Wrapping)
-You can still manually wrap the output if needed, though it's no longer necessary:
-
-```twig
-{% if btPath() %}
-    <div class="custom-wrapper">
-        {{ btPath() }}
-    </div>
-{% endif %}
-```
-
-**Note**: The legacy `<pre class="bonsai-debug">` output format from earlier versions is no longer used. The current implementation uses the `<div class="bt-debug-output">` wrapper with inline styles shown above.
-
-##### HTML Comment Usage
-For minimal visual impact:
-
-```twig
+{# Or inside an HTML comment for minimal visual impact #}
 <!-- {{ btPath() }} -->
-```
-
-#### Output Features
-
-The enhanced `btPath()` automatically includes:
-
-- **Template Type Context**: Shows "Matrix Block Template", "Entry Template", etc.
-- **Resolved Template Marking**: The found template is marked with ✓
-- **Clean Styling**: Simple, unobtrusive CSS styling
-- **Attempted Paths**: All paths checked during resolution
-
-#### Production Mode Behavior
-
-In production mode (`devMode = false`), `btPath()` returns an empty string with zero overhead:
-
-```twig
-{{ btPath() }}  <!-- Returns empty string in production -->
 ```
 
 ## Debug Features
@@ -567,51 +242,7 @@ When debug mode is active, you'll see clean debug output showing:
 
 The debug output focuses on essential information without performance metrics or complex styling.
 
-### Debug Examples
-
-#### Entry Debug Example
-
-```twig
-{# Entry template with debug capability #}
-{# Add ?beastmode to URL to see template resolution info #}
-{{ entryTemplates({ entry }) }}
-```
-
-#### Category Debug Example
-
-```twig
-{# Category template with debug capability #}
-{# Add ?beastmode to URL to see template resolution info #}
-{{ categoryTemplates({ entry: category }) }}
-```
-
-#### Item Debug Example
-
-```twig
-{# Item template with debug capability #}
-{# Add ?beastmode to URL to see template resolution info #}
-{{ itemTemplates({ entry: item }) }}
-```
-
-#### Matrix Debug Example
-
-```twig
-{# Matrix template with debug capability #}
-{# Add ?beastmode to URL to see template resolution info #}
-{% for block in entry.matrixField.all() %}
-    {{ matrixTemplates({ block: block }) }}
-{% endfor %}
-```
-
-#### Enhanced btPath() Debug Example
-
-```twig
-{# Enhanced btPath() - returns complete HTML output #}
-{{ btPath() }}
-
-{# Or use in HTML comments for minimal impact #}
-<!-- {{ btPath() }} -->
-```
+Every loader call gains the overlay automatically — no template changes needed.
 
 ### LLM Trace Comments (v9.3)
 
@@ -691,97 +322,6 @@ return [
 - Requires `devMode` + the plugin's `llmMode` setting (or `BONSAI_LLM_MODE=true`).
 ```
 
-### Suggested Minimum Usage
-
-For the most common use cases, here are the recommended minimal implementations:
-
-#### Basic Matrix Templates (Craft 4→5 Migration)
-
-```twig
-{# Replaces the old matrix include pattern #}
-{% for block in matrix.all() %}
-    {{ matrixTemplates({
-        block: block,
-        handle: handle ?? null,
-        style: style ?? null
-    }) }}
-{% endfor %}
-```
-
-This automatically resolves templates in this order:
-
-1. `matrix/handle/{handle}/{blockType}.twig` (if handle provided)
-2. `matrix/style/{style}/{blockType}.twig` (if style provided)
-3. `matrix/{blockType}.twig` (main template)
-4. `matrix/default.twig` (fallback)
-
-#### Simple Entry Templates
-
-```twig
-{# Basic entry rendering #}
-{{ entryTemplates({ entry: entry }) }}
-
-{# Entry with style variant #}
-{{ entryTemplates({ entry: entry, style: 'featured' }) }}
-```
-
-#### Basic Category Templates
-
-```twig
-{# Simple category rendering #}
-{{ categoryTemplates({ entry: category }) }}
-```
-
-#### Basic Item Templates
-
-```twig
-{# For related entries or nested content #}
-{% for item in entry.relatedItems.all() %}
-    {{ itemTemplates({ entry: item }) }}
-{% endfor %}
-```
-
-Template Resolution
-
-### How Template Resolution Works
-
-The plugin uses intelligent hierarchical template resolution that checks multiple paths in priority order:
-
-1. **Type-Specific Templates**: Templates based on element type and handle (e.g., `entry/blog/article`)
-2. **Style Variants**: Style-based paths for items and matrix blocks (e.g., `item/{section}/{style}`, `matrix/style/{style}/{blockType}`)
-3. **Fallback Templates**: Generic templates (e.g., `entry/default.twig`)
-
-### Template Path Examples
-
-For an entry with section handle `blog` and type handle `article`:
-
-```
-# Checked in this order:
-_entry/blog/article/{slug}
-_entry/blog/article/_entry
-_entry/blog/{slug}
-_entry/blog/article
-_entry/blog/default
-_entry/blog
-_entry/article
-_entry/default
-```
-
-Note: The `style` parameter is passed to the template as a variable but does not change the entry path resolution. For style-aware path resolution, use `itemTemplates()` or `matrixTemplates()` instead.
-
-### Matrix Block Resolution
-
-Matrix blocks have style-aware path resolution:
-
-```
-# For a matrix block of type 'textBlock' with style 'hero':
-_matrix/style/hero/textBlock
-_matrix/textBlock
-_matrix/default
-```
-
-Additional context-aware paths are available when using `ctx`, `handle`, or position parameters.
-
 ## Integration with Craft 5
 
 ### Unified Element Model
@@ -823,72 +363,9 @@ This plugin is designed specifically as a development tool and includes:
 - **Input Validation**: Simple parameter type checking
 - **Safe Property Access**: Uses null-safe operators for element properties
 
-## Migration Guide
+## Migration
 
-### Upgrading from Previous Versions
-
-The plugin maintains full backward compatibility, but you can take advantage of new features:
-
-#### Enhanced Debug Parameters
-
-**Old way:**
-
-```
-?showEntryPath=true&showEntryHierarchy=true
-```
-
-**New way (recommended):**
-
-```
-?beastmode
-?beastmode=entry
-?beastmode=entry,matrix
-```
-
-Or use the keyboard shortcut: **Cmd+B** / **Ctrl+B**
-
-#### Template Function Signatures
-
-All existing function signatures remain unchanged:
-
-```twig
-{# These continue to work exactly as before #}
-{{ entryTemplates({ entry }) }}
-{{ categoryTemplates({ entry }) }}
-{{ itemTemplates({ entry }) }}
-{{ matrixTemplates({ block }) }}
-```
-
-#### New Optional Parameters
-
-You can now use additional parameters for enhanced functionality:
-
-```twig
-{# New optional parameters #}
-{{ entryTemplates({
-    entry: entry,
-    style: 'featured',        # New: style variants
-    context: parentEntry,     # New: context awareness
-    variables: { key: value } # New: additional variables
-}) }}
-```
-
-### Simplified Implementation
-
-The simplified version focuses on reliability and maintainability:
-
-- **Straightforward Logic**: Simple template resolution without complex optimization
-- **Reduced Complexity**: Fewer moving parts means fewer potential issues
-- **Enhanced Debug Experience**: Improved btPath() function with complete HTML output
-- **Zero Production Overhead**: Debug features automatically disabled in production
-
-### PHP 8.2 Features
-
-The plugin leverages essential modern PHP features:
-
-- **Null-safe operators** for safer property access
-- **Union types** for flexible parameter handling
-- **Enums** for type-safe constants
+Upgrading from v8? The v9 breaking changes (underscore path prefixes, plugin handle, config file rename) are covered in [MIGRATION.md](MIGRATION.md).
 
 ## Troubleshooting
 
@@ -910,29 +387,6 @@ The plugin leverages essential modern PHP features:
 2. Use the enhanced `btPath()` function in your templates to see resolution info
 3. Consider simplifying complex template hierarchies
 
-## Support
-
-For issues, feature requests, or questions:
-
-1. Check the debug information using `?beastmode`
-2. Use `{{ btPath() }}` in your templates to see resolution hierarchy
-3. Verify your template structure matches the expected patterns
-4. Check Craft and PHP version compatibility
-
 ## Changelog
 
-### Version 8.0.0
-
-- **Type-first template resolution strategy** — opt-in `strategy: 'type'` parameter for EntryLoader and ItemLoader
-- Three-level configuration: per-template, config file, or CP settings
-- Strategy displayed in beastmode overlay and `btPath()` debug output
-- Version bump to 8.0.0 (no breaking changes when strategy is unset)
-
-### Version 6.4.0
-
-- Full Craft CMS 5 compatibility
-- Simplified architecture focused on development workflow
-- Enhanced btPath() function with complete HTML output
-- Removed performance monitoring and caching complexity
-- Streamlined debug tools for essential information only
-- Development-only tool focus with zero production overhead
+See [CHANGELOG.md](CHANGELOG.md).
