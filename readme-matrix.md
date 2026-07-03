@@ -26,6 +26,8 @@ Full parameter reference, plus how to replicate the function using native Twig i
             block: block,
             style: style,
             ctx: entry ?? null,
+            loopIndex: loop.index0,
+            loopLength: loop.length,
             next: block.next.type ?? false,
             prev: block.prev.type ?? false,
             isFirst: loop.first,
@@ -43,12 +45,14 @@ Full parameter reference, plus how to replicate the function using native Twig i
 {% set matrixPath = '_matrix/' %}
 {% if matrix|length %}
     {% set style = style ?? null %}
+    {% set handle = handle ?? null %}
     {% for block in matrix.all() ?? null %}
         {% include [
-            matrixPath ~ 'style/' ~ style ~ '/' ~ block.type,
+            handle ? matrixPath ~ 'handle/' ~ handle ~ '/' ~ block.type : '',
+            style ? matrixPath ~ 'style/' ~ style ~ '/' ~ block.type : '',
             matrixPath ~ block.type,
             matrixPath ~ 'default'
-        ] with {
+        ]|filter(v => v != '') with {
             block: block,
             index: loop.index,
             next: block.next.type ?? false,

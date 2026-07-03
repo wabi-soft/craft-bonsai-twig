@@ -32,32 +32,32 @@ Full parameter reference, plus how to replicate the function using native Twig i
 
 ```twig
 {% set itemPath = '_item/' %}
-{% set style = style is defined ? style : 'none' %}
+{% set style = style ?? null %}
 
 {% include [
-    itemPath ~ entry.section.handle ~ '/' ~ style,
-    itemPath ~ style,
+    style ? itemPath ~ entry.section.handle ~ '/' ~ style : '',
+    style ? itemPath ~ style : '',
     itemPath ~ entry.section.handle ~ '/' ~ entry.type.handle ~ '/' ~ entry.slug,
     itemPath ~ entry.section.handle ~ '/' ~ entry.type.handle,
     itemPath ~ entry.section.handle ~ '/default',
     itemPath ~ 'default'
-] ignore missing %}
+]|filter(v => v != '') ignore missing %}
 ```
 
 ### Type-first (v8.0)
 
 ```twig
 {% set itemPath = '_item/' %}
-{% set style = style is defined ? style : 'none' %}
+{% set style = style ?? null %}
 
 {% include [
-    itemPath ~ entry.type.handle ~ '/' ~ style,
-    itemPath ~ style,
+    style ? itemPath ~ entry.type.handle ~ '/' ~ style : '',
+    style ? itemPath ~ style : '',
     itemPath ~ entry.type.handle ~ '/' ~ entry.section.handle ~ '/' ~ entry.slug,
     itemPath ~ entry.type.handle ~ '/' ~ entry.section.handle,
     itemPath ~ entry.type.handle ~ '/default',
     itemPath ~ 'default'
-] ignore missing %}
+]|filter(v => v != '') ignore missing %}
 ```
 
 ## Template Path Resolution
@@ -101,27 +101,27 @@ Pure Twig equivalent:
 
 ```twig
 {% set itemPath = '_item/' %}
-{% set style = style is defined ? style : 'none' %}
+{% set style = style ?? null %}
 {% if entry.section.handle in ['blog', 'resources'] %}
     {# type-first #}
     {% include [
-        itemPath ~ entry.type.handle ~ '/' ~ style,
-        itemPath ~ style,
+        style ? itemPath ~ entry.type.handle ~ '/' ~ style : '',
+        style ? itemPath ~ style : '',
         itemPath ~ entry.type.handle ~ '/' ~ entry.section.handle ~ '/' ~ entry.slug,
         itemPath ~ entry.type.handle ~ '/' ~ entry.section.handle,
         itemPath ~ entry.type.handle ~ '/default',
         itemPath ~ 'default'
-    ] ignore missing %}
+    ]|filter(v => v != '') ignore missing %}
 {% else %}
     {# section-first #}
     {% include [
-        itemPath ~ entry.section.handle ~ '/' ~ style,
-        itemPath ~ style,
+        style ? itemPath ~ entry.section.handle ~ '/' ~ style : '',
+        style ? itemPath ~ style : '',
         itemPath ~ entry.section.handle ~ '/' ~ entry.type.handle ~ '/' ~ entry.slug,
         itemPath ~ entry.section.handle ~ '/' ~ entry.type.handle,
         itemPath ~ entry.section.handle ~ '/default',
         itemPath ~ 'default'
-    ] ignore missing %}
+    ]|filter(v => v != '') ignore missing %}
 {% endif %}
 ```
 

@@ -38,7 +38,8 @@ templates/_asset/
 {% set assetPath = '_asset/' %}
 {% set volume = asset.volume.handle %}
 {% set folder = asset.folder.path|trim('/') %}
-{% set filename = asset.filename|split('.')|first %}
+{# last-dot stem, matching PHP's pathinfo(): "hero.banner.jpg" -> "hero.banner" #}
+{% set filename = asset.filename|split('.')|slice(0, -1)|join('.') %}
 
 {% include [
     folder ? assetPath ~ volume ~ '/' ~ folder ~ '/' ~ filename : assetPath ~ volume ~ '/' ~ filename,
