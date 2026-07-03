@@ -40,6 +40,9 @@ dynamically resolved template:
   then follow plain `{% include %}`/`{% embed %}` statically from there. A DOM
   chunk with no enclosing pair comes from the route's page template or layout —
   check `templates/` entry points or the section's template setting.
+- **Component labels:** projects may additionally emit `<!-- cmp: {path} -->`
+  inside reusable components (same dev-only gate) — the nearest preceding
+  `cmp` names the component file that produced the following markup.
 - **Reading a fallthrough:** a generic winner (`…/default`) with a long `tried`
   list means a template you expected doesn't exist — the path that *should*
   have won is in `tried` (watch for section-first-shaped files in a type-first
