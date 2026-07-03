@@ -305,12 +305,13 @@ Trace comments mark dynamic resolutions only — plain `{% include %}`s are foll
 ```
 
 ```twig
-{# Or as a shared macro — note: _self inside a macro names the macro's own
-   file, so the caller must pass it #}
-{% macro cmp(tpl) %}{% if bonsaiTraceEnabled() %}<!-- cmp: {{ tpl }} -->{% endif %}{% endmacro %}
+{# Or as a shared macro, e.g. templates/_macros/dev.twig — note: _self inside
+   a macro names the macro's own file, so the caller must pass it #}
+{% macro trace(tpl) %}{% if bonsaiTraceEnabled() %}<!-- cmp: {{ tpl }} -->{% endif %}{% endmacro %}
 
 {# In a component: #}
-{{ m.cmp(_self) }}
+{% import '_macros/dev' as dev %}
+{{ dev.trace(_self) }}
 ```
 
 #### Agent consumption recipe
