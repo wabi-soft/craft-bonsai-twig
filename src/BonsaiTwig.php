@@ -11,6 +11,7 @@ use craft\helpers\App;
 use craft\web\View;
 use wabisoft\bonsaitwig\debug\BonsaiTwigPanel;
 use wabisoft\bonsaitwig\debug\ResolutionCollector;
+use wabisoft\bonsaitwig\debug\TraceComment;
 use wabisoft\bonsaitwig\models\Settings;
 use wabisoft\bonsaitwig\services\AssetLoader;
 use wabisoft\bonsaitwig\services\CategoryLoader;
@@ -232,6 +233,19 @@ class BonsaiTwig extends Plugin
                     // Underscore prefix is intentional — prevents direct URL access to plugin templates.
                     // This is distinct from the plugin handle ('bonsai-twig').
                     $event->roots['_bonsai-twig'] = __DIR__ . '/templates';
+                }
+            );
+
+            // Page-level trace marker: emitted even when the page has no
+            // Bonsai renders, so an agent can tell "tracing off" from "no
+            // dynamically resolved templates here".
+            Event::on(
+                View::class,
+                View::EVENT_BEFORE_RENDER_PAGE_TEMPLATE,
+                function(): void {
+                    if ($this->traceEnabled() && Craft::$app->request->getIsSiteRequest()) {
+                        Craft::$app->view->registerHtml(TraceComment::marker(), View::POS_END, 'bonsai-trace-marker');
+                    }
                 }
             );
         }

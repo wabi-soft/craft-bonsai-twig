@@ -11,11 +11,14 @@ namespace wabisoft\bonsaitwig\debug;
  *
  * Comment grammar:
  *
- *     <!-- bonsai:start id="3" tpl="_entry/blog/blogPost" type="entry" el="blogPost#64" section="blog" -->
+ *     <!-- bonsai:trace v="1" nonce="c4f9" -->      (once per page when tracing is active)
+ *     <!-- bonsai:start id="c4f9-3" tpl="_entry/blog/blogPost" type="entry" el="blogPost#64" section="blog" -->
  *     …rendered template output…
- *     <!-- bonsai:end id="3" -->
+ *     <!-- bonsai:end id="c4f9-3" -->
  *
  * Pairs match on id (same-template nesting makes tpl-matched ends ambiguous).
+ * Ids are prefixed with a per-process random nonce so page content cannot
+ * forge plausible pairs; the marker carries the same nonce for verification.
  * Attribute values carry template paths, ids, and handles only — never field
  * values.
  *
@@ -31,9 +34,20 @@ class TraceComment
     private const ATTR_ORDER = ['tpl', 'type', 'el', 'section', 'block', 'strategy', 'tried'];
 
     /**
-     * Per-request monotonic id; pairs match on it.
+     * Per-process monotonic id; pairs match on nonce + counter.
      */
     private static int $counter = 0;
+
+    private static ?string $nonce = null;
+
+    /**
+     * The once-per-page marker: distinguishes "tracing off" from "page has no
+     * Bonsai renders", and publishes the nonce that authenticates pair ids.
+     */
+    public static function marker(): string
+    {
+        return '<!-- bonsai:trace v="1" nonce="' . self::nonce() . '" -->';
+    }
 
     /**
      * Wraps rendered content in a bonsai:start/end comment pair.
@@ -46,7 +60,7 @@ class TraceComment
      */
     public static function wrap(string $content, array $attrs): string
     {
-        $id = ++self::$counter;
+        $id = self::nonce() . '-' . ++self::$counter;
 
         $parts = ['id="' . $id . '"'];
         foreach (self::ATTR_ORDER as $key) {
@@ -63,6 +77,17 @@ class TraceComment
         $attrString = implode(' ', $parts);
 
         return "<!-- bonsai:start {$attrString} -->\n{$content}\n<!-- bonsai:end id=\"{$id}\" -->";
+    }
+
+    public static function reset(): void
+    {
+        self::$counter = 0;
+        self::$nonce = null;
+    }
+
+    private static function nonce(): string
+    {
+        return self::$nonce ??= bin2hex(random_bytes(2));
     }
 
     /**
