@@ -95,7 +95,9 @@ class BonsaiTwig extends Plugin
      */
     protected function settingsHtml(): string
     {
-        return Craft::$app->view->renderTemplate('_bonsai-twig/settings', [
+        // CP requests resolve plugin templates via the auto-registered handle
+        // root, not the site-only _bonsai-twig root.
+        return Craft::$app->view->renderTemplate('bonsai-twig/settings', [
             'plugin' => $this,
             'settings' => $this->getSettings(),
         ]);
