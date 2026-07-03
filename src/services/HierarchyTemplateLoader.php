@@ -43,6 +43,13 @@ class HierarchyTemplateLoader extends Component
     private static bool $shortcutScriptAdded = false;
 
     /**
+     * Depth of renders opted out of tracing via bonsaiTrace: false. While > 0,
+     * nested loader renders are inside a non-HTML context (JSON-LD, <script>)
+     * and must not be wrapped either.
+     */
+    private static int $traceSuppressed = 0;
+
+    /**
      * Loads and renders a template from a hierarchical list of possible templates.
      *
      * Core method for template resolution focused on development workflow support.
@@ -138,8 +145,20 @@ class HierarchyTemplateLoader extends Component
                 $validatedVariables['_btResolvedTemplate'] = $matchedOriginalTemplate ?? $resolvedPath;
             }
 
-            // Render the template
-            $content = Craft::$app->view->renderTemplate($resolvedPath, $validatedVariables);
+            // Render the template. An opted-out render suppresses tracing for
+            // everything rendered beneath it — nested loader calls re-enter
+            // load() while the depth is raised.
+            $traceOptedOut = $isDev && ($validatedVariables['bonsaiTrace'] ?? null) === false;
+            if ($traceOptedOut) {
+                self::$traceSuppressed++;
+            }
+            try {
+                $content = Craft::$app->view->renderTemplate($resolvedPath, $validatedVariables);
+            } finally {
+                if ($traceOptedOut) {
+                    self::$traceSuppressed--;
+                }
+            }
 
             // In production, return content directly
             if (!$isDev) {
@@ -148,8 +167,8 @@ class HierarchyTemplateLoader extends Component
 
             // LLM trace comments: llmMode is the switch; devMode is the safety
             // floor (enforced in traceEnabled()) — never drop the devMode check.
-            // bonsaiTrace: false opts a single call out (non-HTML contexts).
-            if (($validatedVariables['bonsaiTrace'] ?? true) !== false
+            if (!$traceOptedOut
+                && self::$traceSuppressed === 0
                 && $plugin->traceEnabled()) {
                 [$elementId, $elementHandle, $sectionHandle] = self::elementInfo($validatedVariables);
 
