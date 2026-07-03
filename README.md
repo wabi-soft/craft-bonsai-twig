@@ -293,20 +293,11 @@ Or toggle "LLM trace comments" in the plugin's CP settings.
 
 #### Opting out (non-HTML contexts)
 
-A wrapped template rendering into JSON-LD, `<script>`, `<style>`, `<title>`, or an attribute value would be corrupted by an HTML comment. Two escape hatches:
+A wrapped template rendering into JSON-LD, `<script>`, `<style>`, `<title>`, an attribute value, or whitespace-sensitive output (`<pre>`) would be corrupted by an HTML comment:
 
 ```twig
-{# Per-call: suppress wrapping for this render #}
+{# Suppress wrapping for this render and everything it renders #}
 {{ entryTemplates({ entry, bonsaiTrace: false }) }}
-```
-
-```php
-// config/bonsai-twig.php — resolved paths never wrapped (exact match)
-return [
-    'traceBlocklist' => [
-        '_entry/jsonLd/default',
-    ],
-];
 ```
 
 #### Agent consumption recipe

@@ -150,8 +150,7 @@ class HierarchyTemplateLoader extends Component
             // floor (enforced in traceEnabled()) — never drop the devMode check.
             // bonsaiTrace: false opts a single call out (non-HTML contexts).
             if (($validatedVariables['bonsaiTrace'] ?? true) !== false
-                && $plugin->traceEnabled()
-                && !in_array($resolvedPath, $plugin->getSettings()->traceBlocklist, true)) {
+                && $plugin->traceEnabled()) {
                 [$elementId, $elementHandle, $sectionHandle] = self::elementInfo($validatedVariables);
 
                 $block = $validatedVariables['block'] ?? null;
