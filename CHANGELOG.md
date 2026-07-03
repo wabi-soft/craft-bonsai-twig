@@ -4,6 +4,11 @@
 All notable changes to this project will be documented in this file.
 <!--- END HEADER -->
 
+## [9.3.1](https://github.com/wabi-soft/craft-bonsai-twig/compare/v9.3.0...v9.3.1) (2026-07-03)
+
+
+---
+
 ## [9.3.0](https://github.com/wabi-soft/craft-bonsai-twig/compare/v9.2.6...v9.3.0) (2026-07-03)
 
 - Add LLM trace comments: dev-only, opt-in HTML comments mapping rendered DOM back to the winning template (`llmMode` setting, `BONSAI_LLM_MODE` env override, `bonsaiTrace: false` per-call opt-out)
